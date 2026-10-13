@@ -1,9 +1,10 @@
 # Corn Utopia — Game Design Document
 
-> Working title: **Corn Utopia**. Alternatives: *Pop Cob*, *Cob Mob*, *Kernel Krunch*, *A-Maize-ing*.
+> Game title: **Corn Utopia**. A free game for iPad and iPhone (web/PWA).
 >
-> Status: brainstorm draft. Anything marked **[Decision]** is a recommendation to confirm; anything in
-> [Open Questions](#15-open-questions) still needs an answer.
+> Status: design draft, with the core decisions made. Anything marked **[Decision]** is settled unless
+> playtesting says otherwise. [Decisions and Open Questions](#15-decisions-and-open-questions) lists
+> everything decided so far and what's left to tune.
 
 ---
 
@@ -548,7 +549,8 @@ be added later without a rewrite (§14.2).
 ### 10.1 Seeds (Currency)
 
 Earned from every run based on time, size, chomps, chomp streaks, and Goldie kernels.
-**No real-money purchases.**
+**The game is completely free:** no real-money purchases, no ads, and nothing locked behind payment.
+Everything is earned by playing.
 
 ### 10.2 The Farm (Hub Screen)
 
@@ -565,7 +567,6 @@ Earned from every run based on time, size, chomps, chomp streaks, and Goldie ker
 - Kernel pages show **matchups with pictures** (a flame bouncing off a Soggy kernel) so kids can learn
   them without reading.
 - Each entry has a silly one-line joke ("Frosty kernels are the coolest kernels. Literally.").
-- Optional **read-aloud** button for pre-readers.
 
 ### 10.4 Achievements / Stickers
 
@@ -811,8 +812,8 @@ to the Heart Kernel: worried, sweaty eyebrows. Just chomped: chewing, happy chee
   hit always sounds like *tink!* so players can hear when to switch powers. Pickup pitch rises with
   each kernel in a quick streak. Chomp = crunch, and chomp streaks climb in pitch. All Popped Out =
   yawn + a sleepy music-box jingle.
-- **Voice:** optional cute vocal barks ("Yum!", "Whee!", "Uh-oh!", "Try another power!"), plus a
-  read-aloud narrator for menus and the Kernelpedia.
+- **Voice:** short, cute vocal sound effects only ("Yum!", "Whee!", "Uh-oh!"). **No narration or
+  read-aloud voice-over**; menus and the Kernelpedia rely on icons, pictures, and short text.
 - **iOS note:** web audio has to be "unlocked" by the first tap. Start audio from the title screen's
   "Play" tap.
 
@@ -922,7 +923,8 @@ This is where web games on iPad usually run into trouble, so plan for it from da
 
 ### 14.5 Privacy and Kid Safety
 
-- **No accounts, no ads, no in-app purchases, no chat, no tracking.** Everything is saved on the device.
+- **Free, with no accounts, no ads, no in-app purchases, no chat, no tracking.** Everything is saved
+  on the device.
 - Design to **COPPA**-friendly standards. Analytics, if any, are anonymous and opt-in through a
   parent setting.
 - Any outside link (website, credits) sits behind a simple **parent gate** (e.g. "hold for 3 seconds"
@@ -933,7 +935,7 @@ This is where web games on iPad usually run into trouble, so plan for it from da
 
 ---
 
-## 15. Open Questions
+## 15. Decisions and Open Questions
 
 Decided so far:
 
@@ -952,7 +954,6 @@ Decided so far:
 - **Sprout is a planted helper plant** that shoots on its own for a few seconds. (§5.2)
 - **Smart Fire is an option for everyone**, and turned on automatically on Easy Peasy. (§11.1)
 - **Art style is based on _How Many Dudes?_**, and a cob's appearance is built from its kernels. (§12)
-
 - **Auto-target plus tap-to-lock** is the default; drag-to-aim is optional and off by default. (§4.2)
 - **Enemies can pick up kernels you fired** on normal difficulty, but not on Easy Peasy. (§6.1, §7.3)
 - **Size tiers only go up** during a run. (§4.5)
@@ -960,15 +961,17 @@ Decided so far:
 - **10-minute Harvest Runs**, adjusted after playtesting. (§9.1)
 - **Single-player at launch.** No couch co-op. Online multiplayer is a possible future feature. (§9.3)
 
-Still open:
+- **No narration or read-aloud voice-over.** Short vocal sound effects only. (§13)
+- **Free game:** no purchases and no ads. (§10.1)
+- **No story wrapper for now.** The game is pure play; a story can be added later if wanted.
+- **The name is _Corn Utopia_.**
 
-1. **Narration:** is read-aloud voice-over still wanted? It matters less for 10-year-olds, but helps
-   younger siblings.
-2. **Monetization:** free? A one-time paid version? (Strongly recommend no ads/IAP for this audience.)
-3. **Story wrapper:** is there a reason the cobs are chomping each other? (e.g. "The Great Harvest is
-   coming and whoever chomps King Cob becomes the new ruler of Corn Utopia.")
-4. **Name:** keep *Corn Utopia*, or something punnier?
-5. **After playtesting:** run length, and whether to add hold-to-repeat firing if thumbs get tired.
+To revisit after playtesting:
+
+1. **Run length:** is 10 minutes right?
+2. **Hold-to-repeat firing:** add it if kids' thumbs get tired from one tap per shot?
+3. **Balance numbers:** shots needed to make a cob chompable, recharge times, magnet radius, Chomp
+   Bonus size, and how many cobs resist your current powers.
 
 ---
 
