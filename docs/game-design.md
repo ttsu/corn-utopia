@@ -32,7 +32,8 @@ cobs, crows, and the ground until somebody scoops them up.
 with **hand-fired powers instead of auto-attack**, mixed with agar.io-style "eat smaller things,
 wear down bigger things" growth.
 
-**Audience:** Elementary age (about 6–11), plus parents and siblings playing along.
+**Audience:** Designed around **10-year-olds** (core range about 8–11). Younger siblings can still
+play on Easy Peasy, and parents can play along.
 
 **Platform:** Web game, installable as a PWA. iPad is the main target and controls are touch-first.
 It also has to be playable on iPhone. Desktop and keyboard work as a bonus.
@@ -51,7 +52,8 @@ It also has to be playable on iPhone. Desktop and keyboard work as a bonus.
 3. **Pick the right power.** Some cobs are fireproof, some are freeze-proof, some are rock-hard. Choosing
    which power button to press is the main strategy decision.
 4. **Easy to learn, fun to master.** Left thumb moves, right thumb presses power buttons. Kids can
-   play with no reading at all. Older kids learn the matchups.
+   play without reading much: icons come first, with short labels. The matchups and combos give
+   10-year-olds something to master.
 5. **Silly, never scary.** Nobody gets hurt. Cobs get dizzy, go *boing*, and poof into husks.
    Faces, googly eyes, and kazoo sounds.
 6. **Forgiving, not punishing.** Losing kernels hurts, but you can always grab them back. Comebacks
@@ -123,8 +125,9 @@ Both kinds count toward your **kernel count** (for chomping), your **health**, a
 - **Auto-target:** a bouncy **target ring** sits on the cob you're most likely trying to wear down
   (by default, the nearest cob with a red outline, favoring ones in front of you). Shots go there.
 - **Tap a cob** on the right side of the screen to lock the target ring onto it.
-- **Drag-to-aim (optional, Settings):** drag from a power button like a slingshot to aim by hand.
-  This is for older kids who want more control.
+- **[Decision] Auto-target plus tap-to-lock is the default.** No manual aiming is needed.
+- **Drag-to-aim (optional, off by default, in Settings):** drag from a power button like a slingshot
+  to aim by hand, for players who want more control.
 
 **Heart Kernel (minimum of 1):**
 - You can **never fire your last kernel**. If your cob is down to a single kernel, the buttons lock.
@@ -463,8 +466,8 @@ budget/sec  = base + a × smoothedPower + b × minutesElapsed + c × distanceFro
 
 | Setting        | Who it's for                    | Changes                                                       |
 |----------------|---------------------------------|---------------------------------------------------------------|
-| **Easy Peasy** | Youngest kids (5–7)             | **Smart Fire turned on automatically** (see §11.1), slower enemies, much bigger pickup magnet, fewer resistant cobs, enemies don't grab your fired kernels, Last Chance 6 s, no Crows |
-| **Just Right** | Default                         | As designed                                                    |
+| **Easy Peasy** | Younger siblings (6–7) and new players | **Smart Fire turned on automatically** (see §11.1), slower enemies, much bigger pickup magnet, fewer resistant cobs, enemies don't grab your fired kernels, Last Chance 6 s, no Crows |
+| **Just Right** | Default, tuned for 10-year-olds | As designed                                                    |
 | **Spicy**      | Older kids / parents            | Faster director ramp, more resistant and "project" cobs, enemies grab ground kernels faster, smaller magnet |
 
 ---
@@ -515,7 +518,8 @@ These give players places to steer toward on an infinite map:
 
 ### 9.1 Harvest Run (Main Mode)
 
-- **10 minutes.** At 10:00 the **Harvest Moon** rises and King Cob arrives.
+- **10 minutes.** At 10:00 the **Harvest Moon** rises and King Cob arrives. The length is a
+  config value to adjust after playtesting.
 - Chomp King Cob to **win the run** (fireworks, popcorn rain, big Seed reward). After that you can
   keep going in **Overtime** for bonus Seeds.
 - Clear structure for kids: "grow big enough to chomp the King when the moon comes."
@@ -527,9 +531,15 @@ These give players places to steer toward on an infinite map:
 ### 9.3 Later Modes (Post-Launch Ideas)
 
 - **Daily Seed:** everyone gets the same map and the same starting kernels.
-- **Couch Co-op (2 cobs, one iPad):** each player gets a movement area and a small set of power
-  buttons on their side. Hard to build, but very fun for siblings. **Design for it now** (don't assume
-  a single player in the code) even if it ships later.
+- **Online multiplayer (possible future feature, not at launch).** Ideas: team up with a friend to
+  chomp King Cob together, or a friendly "who can grow biggest" race. Kid-safe rules if it happens:
+  - **Friends only:** join with a short room code shared in person. No public matchmaking with strangers.
+  - **No chat.** Only preset emotes and stickers ("Yum!", "Help!", "Nice chomp!").
+  - **A parent turns it on** behind the parent gate, with a clear explanation of what's shared.
+  - No couch co-op (two players on one iPad) is planned.
+
+The launch game is **single-player only**. The code should still be structured so online play could
+be added later without a rewrite (§14.2).
 
 ---
 
@@ -845,9 +855,15 @@ from rendering so you could swap engines later.
   can't drift apart.
 - **Floating origin:** every so often, shift the world back toward 0,0 so positions don't lose
   precision far from the start on the infinite map.
-- **Input layer** turns touch, mouse, keyboard, and gamepad into one "move vector + power buttons +
-  target" object, with multiple players in mind for later co-op. It must track several touches at
-  once (joystick plus one or two held buttons).
+- **Input layer** turns touch, mouse, keyboard, and gamepad into one "move vector + power taps +
+  target" command each tick. It must track several touches at once (joystick plus button taps).
+- **Keep the door open for online multiplayer** (§9.3) without building it now:
+  - The simulation only changes through **input commands**, never by reading the touch screen directly.
+  - The simulation is **deterministic** (fixed timestep, seeded RNG, no wall-clock time or
+    `Math.random()` inside game rules), so it could later be synced across devices or checked by a server.
+  - The game state is plain data (cobs as kernel lists, ground kernels, chunks), so it can be
+    snapshotted and sent over the network.
+  - Don't assume there is exactly one player cob in the game rules.
 
 ### 14.3 Performance Budget
 
@@ -911,6 +927,9 @@ This is where web games on iPad usually run into trouble, so plan for it from da
   parent setting.
 - Any outside link (website, credits) sits behind a simple **parent gate** (e.g. "hold for 3 seconds"
   or a simple math question).
+- **If online multiplayer is ever added**, it needs its own privacy review before launch: COPPA
+  parental consent, what data a server stores (ideally nothing but a temporary room), and moderation
+  rules (no chat, no custom names, only preset ones like "Speedy Cob").
 
 ---
 
