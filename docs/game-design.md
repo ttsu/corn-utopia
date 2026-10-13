@@ -953,23 +953,22 @@ Decided so far:
 - **Smart Fire is an option for everyone**, and turned on automatically on Easy Peasy. (§11.1)
 - **Art style is based on _How Many Dudes?_**, and a cob's appearance is built from its kernels. (§12)
 
+- **Auto-target plus tap-to-lock** is the default; drag-to-aim is optional and off by default. (§4.2)
+- **Enemies can pick up kernels you fired** on normal difficulty, but not on Easy Peasy. (§6.1, §7.3)
+- **Size tiers only go up** during a run. (§4.5)
+- **Designed around 10-year-olds**, so the full matchup chart and combos ship at launch. (§1)
+- **10-minute Harvest Runs**, adjusted after playtesting. (§9.1)
+- **Single-player at launch.** No couch co-op. Online multiplayer is a possible future feature. (§9.3)
+
 Still open:
 
-1. **Target lock:** is auto-target plus tap-to-lock enough, or do you want drag-to-aim on by default?
-2. **Can enemies pick up kernels you fired?** Recommended yes on normal difficulty (adds a race), no
-   on Easy Peasy.
-3. **Size tiers only go up during a run** (recommended), or should the cob shrink when it's mostly empty?
-4. **Age focus:** closer to 6 or closer to 10? That decides how many resistant kernels and combos to
-   launch with.
-5. **Run length:** is 10 minutes right for the target age? (Consider 6-minute "Snack Runs.")
-6. **Co-op:** is two players on one iPad a launch goal? It affects input and camera design early.
-7. **Narration:** voice-over budget for read-aloud menus?
-8. **Monetization:** free? A one-time paid version? (Strongly recommend no ads/IAP for this audience.)
-9. **Story wrapper:** is there a reason the cobs are chomping each other? (e.g. "The Great Harvest is
+1. **Narration:** is read-aloud voice-over still wanted? It matters less for 10-year-olds, but helps
+   younger siblings.
+2. **Monetization:** free? A one-time paid version? (Strongly recommend no ads/IAP for this audience.)
+3. **Story wrapper:** is there a reason the cobs are chomping each other? (e.g. "The Great Harvest is
    coming and whoever chomps King Cob becomes the new ruler of Corn Utopia.")
-10. **Name:** keep *Corn Utopia*, or something punnier?
-11. **Later: hold-to-repeat firing?** One tap per shot for now. Revisit after playtesting if kids'
-    thumbs get tired.
+4. **Name:** keep *Corn Utopia*, or something punnier?
+5. **After playtesting:** run length, and whether to add hold-to-repeat firing if thumbs get tired.
 
 ---
 
@@ -1014,7 +1013,8 @@ Each milestone has a clear "done when" check. Scope grows only after the previou
 
 ### M4 — Launch and Beyond
 - Polish, bug-fixing, store-like landing page.
-- Post-launch: Daily Seed, couch co-op, new biomes and kernels, seasonal events (Halloween candy corn!).
+- Post-launch: Daily Seed, new biomes and kernels, seasonal events (Halloween candy corn!).
+- Possible later: friends-only online multiplayer (§9.3), after a separate privacy review.
 
 ---
 
@@ -1030,7 +1030,9 @@ Each milestone has a clear "done when" check. Scope grows only after the previou
   - Do they understand that shooting is for making a cob chompable, not the goal by itself?
   - Do they switch powers when a shot doesn't work, or keep pressing the same button?
   - Does spending kernels on shots feel fair, and do they go back to scoop them up?
-  - Can a 6-year-old tell chompable cobs from dangerous ones without help?
+  - Can a 10-year-old tell chompable cobs from dangerous ones, and guess the right power, without help?
+    Can a younger sibling manage on Easy Peasy?
+  - Does a 10-minute run feel too long, too short, or just right?
   - Do players actually go after specific kernel colors?
   - Is the screen readable during a Kernel Swarm on an iPhone?
 
