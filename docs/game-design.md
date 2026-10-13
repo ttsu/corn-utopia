@@ -43,8 +43,9 @@ It also has to be playable on iPhone. Desktop and keyboard work as a bonus.
 
 ## 2. Design Pillars
 
-1. **Your body is your build.** You can always see your power by looking at your cob. More kernels
-   means bigger, tougher, and more colorful. Nothing important is hidden in menus.
+1. **Your body is your build.** Your cob's whole look comes from the kernels it's holding, so you can
+   always see your power by looking at it, and you can read any enemy the same way. Nothing important
+   is hidden in menus.
 2. **Chomp to grow.** Chomping is the main way to get bigger. Shooting is how you set up the chomp:
    wear a big cob down, watch its outline turn green, then gobble it up.
 3. **Pick the right power.** Some cobs are fireproof, some are freeze-proof, some are rock-hard. Choosing
@@ -234,6 +235,8 @@ Kernels are the heart of the game. Every kernel type needs:
 - A **tiny face** with its own expression
 - A distinct **pickup sound** (and a **firing sound** for power kernels)
 - A behavior that kids can recognize just by watching it
+- A **look trait** (plain kernels) or **flair** (power kernels) that changes a cob's whole appearance
+  when it's carrying a lot of them (§12.2)
 
 ### 5.1 Plain Kernels (Body, Can't Be Fired)
 
@@ -340,6 +343,8 @@ replay. The first time a combo happens, it gets a big name pop-up and a fanfare.
   wobble so you can see the variety.
 - **[Decision] The game arranges kernels automatically.** Plain kernels fill the body, and power
   kernels sit in a glowing band near the top so they're easy to spot. No inventory management.
+- Every socket shows the real kernel in it, and the cob's overall look changes with its mix of
+  kernels (see §12.2).
 - **Later idea (not for launch):** an optional "Cob Garden" screen between runs where older kids can
   arrange kernels for small adjacency bonuses.
 
@@ -360,8 +365,9 @@ When you're at the top tier and every socket is full:
 - **Most enemies are cobs made of kernels**, and **they're worth what they're made of**. A teal cob
   is full of Soggy kernels. A cob with a red glowing band is carrying Spicy power kernels. Kids learn
   to hunt the colors they want.
-- **An enemy's kernels tell you how to beat it.** A teal Soggy cob laughs off fire, so reach for Zappy.
-  A gray Stony cob shrugs off Zingers, so lob a Popper. This is the core strategy of the game.
+- **An enemy's kernels tell you how to beat it.** A teal, drippy Soggy cob laughs off fire, so reach
+  for Zappy. A gray, cracked Stony cob shrugs off Zingers, so lob a Popper. Because every cob's look
+  is built from its kernels (§12.2), kids can read this at a glance. This is the core strategy of the game.
 - Enemy cobs **pick up kernels on the ground** too, including ones you fired or dropped, and grow if
   they do. That creates "race them to the loot" moments and gives you a reason to scoop quickly. The
   kernels aren't lost: chomp that enemy and you get them back.
@@ -643,19 +649,107 @@ Earned from every run based on time, size, chomps, chomp streaks, and Goldie ker
 
 ## 12. Art Direction
 
-### 12.1 Style
+### 12.1 Style: "How Many Dudes?" Look
 
-- **Chunky, rounded, cartoon shapes** with **thick dark outlines** (they read well on small screens).
+The main reference is **_How Many Dudes?_** (Butterscotch Shenanigans, the studio behind *Crashlands*).
+What to take from it:
+
+- **Flat, bright, hand-drawn cartoon art** with **thick, slightly wobbly dark outlines** and very
+  little shading (one flat shadow tone at most). Shapes are simple and a bit lumpy on purpose, like
+  confident marker doodles.
+- **Paper-cutout animation.** Characters don't have walk cycles. They **bob, tilt, and wobble** as they
+  slide around, like cutouts on popsicle sticks. Cobs rock side to side as they roll, hop a little when
+  they turn, and lean into their direction of travel. It's funny, it reads clearly, and it's cheap
+  enough to animate hundreds of cobs on screen at once.
+- **Big chaotic crowds** that still read clearly, because every character is a simple flat silhouette.
+- **Lots of particles and pops** for every hit.
+- **Funny writing** on item cards and Kernelpedia entries.
+- **Slightly top-down camera** (looking down at an angle), with cobs drawn standing upright so you can
+  see their faces and kernels.
+
+What to change for our audience:
+
+- **No blood or gore.** Where *How Many Dudes?* sprays blood, we spray **kernels, corn silk, crumbs,
+  confetti, and popcorn**.
+- **Softer, friendlier palette:** sunny yellows, grass greens, sky blues, and candy colors instead of
+  darker tones. Each biome has its own palette, but kernel colors stay the same everywhere.
+- **Kid-friendly humor:** silly puns and corny jokes, not edgy pop-culture references.
+
+General rules:
+
 - **Big googly eyes and expressive faces** on cobs *and* kernels.
 - **Squash and stretch** on everything: cobs squish when they turn, kernels boing when they land.
-- **Bright, saturated, friendly palette** with soft shadows. Each biome has its own palette but
-  kernel colors stay consistent everywhere.
 - **Plain vs. power kernels must read instantly:** plain kernels are matte with calm faces; power
   kernels are shiny, have a glowing icon, and look excited.
-- Inspiration: *Pikmin*, *Kirby*, *Untitled Goose Game*'s simplicity, *VeggieTales*, and the
-  readability of *Vampire Survivors* and *Brotato*.
+- Secondary references: *Crashlands* (same studio, same outline style), *Pikmin* and *Kirby* for
+  cuteness, and the crowd readability of *Vampire Survivors* and *Brotato*.
 
-### 12.2 Tone Rules (Kid-Appropriate)
+### 12.2 Your Cob Looks Like Its Kernels
+
+**[Decision] A cob's appearance is built entirely from the kernels it's holding.** Nothing about how
+a cob looks is decided separately. This applies to the player and every enemy cob.
+
+**Layer 1: real kernels in real sockets.** Every socket on the cob shows the actual kernel in it.
+Pick up three Spicy kernels and you can see three red flame-tufted kernels on your cob. Fire one and
+its socket turns into an empty "hungry" hole. Your cob is a live picture of your inventory.
+
+**Layer 2: the cob's overall look changes with what it's mostly made of.** When one kernel type
+makes up a big share of a cob (about 30% or more), the whole cob picks up that type's **look trait**:
+
+| Mostly made of | Look trait                                                              | Movement wobble              |
+|----------------|-------------------------------------------------------------------------|------------------------------|
+| Sunny          | Classic bright yellow, happy face                                       | Normal bob                   |
+| Sweetie        | Pearly sheen, little hearts float up now and then                       | Gentle sway                  |
+| Tough Nut      | Darker, sturdy shape, the husk wraps around like a helmet               | Slow, heavy rock             |
+| Soggy          | Teal tint, drips falling off, leaves a little puddle trail              | Squishy, jiggly bob          |
+| Toasty         | Golden-brown toast marks, wisps of steam                                | Normal bob                   |
+| Rubbery        | Pink and shiny, squiggly stripes                                        | Extra bouncy hops            |
+| Stony          | Gray, cracked, chunky lumpy outline                                     | Heavy thud on every bob      |
+| Leafy          | Extra leaves, like a leafy cloak                                        | Rustly sway                  |
+| Goldie         | Gold shine and sparkles                                                 | Proud, puffed-up strut       |
+
+A cob can show **two traits at once** (e.g. mostly Soggy with lots of Stony gives a teal, cracked,
+drippy cob).
+
+**Layer 3: power kernels add "flair."** The power kernels you're holding show up as small extras on
+top, scaled by how many you have:
+
+| Power kernel | Flair                                          |
+|--------------|------------------------------------------------|
+| Zinger       | Orange tassel "hair" that sticks straight up   |
+| Spicy        | Little flames flicker from the tassel          |
+| Frosty       | Frosty breath puffs, icicles on the husk       |
+| Boing        | Spring-shaped tassel that boings when you move |
+| Popper       | Popcorn bits pop off now and then              |
+| Zappy        | Little sparks crackle around the cob           |
+| Caramel      | Shiny caramel drips from the top               |
+| Sprout       | Tiny sprouts grow out of the husk              |
+| Gem          | Rainbow shimmer across the whole cob           |
+
+**Layer 4: face and mood follow your fill level.** Full cob: big grin. Half empty: determined. Down
+to the Heart Kernel: worried, sweaty eyebrows. Just chomped: chewing, happy cheeks.
+
+**Why it matters for gameplay:**
+- **You can read an enemy's resistances from how it looks.** A teal, drippy cob is fireproof. A gray,
+  cracked cob laughs off Zingers. A sparking cob is carrying Zappy kernels to drop. That's the core
+  strategy skill, taught entirely through art.
+- **Shield badges above cobs (§5.3) stay as a backup** for younger kids and colorblind players.
+- **Players see their build change in real time.** Collecting a bunch of Soggy kernels visibly turns
+  your cob into a drippy, fireproof cob.
+- **Cosmetics (hats, glasses) sit on top** and never hide the kernels or traits.
+
+### 12.3 Character Rendering Notes
+
+- **Base cob body:** a few hand-drawn shapes per size tier, tinted by the main look trait.
+- **Kernel sprites:** one small sprite per kernel type, placed into sockets by the auto-arranger (§5.6).
+- **Trait overlays and flair:** separate small sprites layered on top (drips, cracks, flames, sparks).
+- **Performance:** for enemy cobs, draw the body, kernels, and overlays into **one cached texture**
+  and only redraw it when the cob's kernels change. Then each enemy is a single sprite that bobs and
+  tilts. The player cob can stay fully live for the most juice.
+- **Far-away or tiny cobs** (when zoomed out) use a simpler version: body tint + trait only, no
+  per-kernel detail.
+
+### 12.4 Tone Rules (Kid-Appropriate)
 
 - **No blood, no gore, no fear.** Cobs that get worn all the way down get dizzy stars, spin, and
   **poof into a husk** and a puff of corn silk.
@@ -665,7 +759,7 @@ Earned from every run based on time, size, chomps, chomp streaks, and Goldie ker
 - Words used: "pop," "boop," "popped out," "nap time," "chomp," "yum" — never "kill," "die,"
   "shucked," or anything that sounds like getting hurt or beaten.
 
-### 12.3 Juice Checklist
+### 12.5 Juice Checklist
 
 - [ ] Power button press: button squishes, the kernel pops off the cob with a "pthoo!" and leaves an empty socket
 - [ ] Kernel lands: squash, one bounce, glow turns on
@@ -680,11 +774,16 @@ Earned from every run based on time, size, chomps, chomp streaks, and Goldie ker
 - [ ] Hit taken: cob flinches, quick white flash, kernel spins off
 - [ ] All Popped Out: big yawn, cob tucks into its husk sleeping bag, "Zzz" bubbles, a sleepy lullaby jingle
 
-### 12.4 Asset Pipeline
+### 12.6 Asset Pipeline
 
 - **Vector source art** (SVG / Figma / Affinity) exported to **sprite atlases** at 1× and 2×.
+  Keep the hand-drawn wobble in the outlines; don't clean them up into perfect vectors.
 - Kernel types can share one base sprite plus **tint + overlay icon** to save memory and art time.
-- Animations: a sprite-sheet for faces/expressions; squash, stretch, and wobble done in code (cheap and juicy).
+- **Animation is mostly code:** bob, tilt, wobble, hop, squash, and stretch are done with simple
+  math on whole sprites, in the *How Many Dudes?* cutout style. Hand-drawn frames are only needed
+  for faces/expressions and a few special effects.
+- Each look trait and flair is a small set of overlay sprites, so a new kernel type only needs a
+  kernel sprite, a trait overlay, and (for power kernels) a flair sprite.
 
 ---
 
@@ -866,7 +965,9 @@ Each milestone has a clear "done when" check. Scope grows only after the previou
   when they hear a *tink!*
 
 ### M1 — Vertical Slice
-- First real art pass on the player cob, a few kernels, Baby Cobs, Sunny Farm biome.
+- First real art pass in the *How Many Dudes?*-inspired style: the player cob, a few kernels with
+  their look traits and flair, cutout bob-and-tilt animation, Baby Cobs, Sunny Farm biome.
+- **Done-when check for art:** a kid can point at an enemy and guess which power to use from its looks alone.
 - Full juice on fire/pop/scoop/chomp. Size tiers + camera zoom. Power Pockets. Ear Up! choices.
   All Popped Out + Last Chance.
 - Audio unlock, music, core SFX. Offline play works.
@@ -938,7 +1039,10 @@ Each milestone has a clear "done when" check. Scope grows only after the previou
 - **Resistance:** a plain kernel ignoring a damage type (*tink!*).
 - **Power combo:** a bonus effect from hitting a cob with one power and then another.
 - **Target ring:** the marker showing which cob your shots will go to.
-- **Cob:** you, or an enemy made of kernels.
+- **Cob:** you, or an enemy made of kernels. A cob's appearance is built from its kernels.
+- **Look trait:** the overall appearance a cob takes on when it's mostly one plain kernel type
+  (e.g. drippy and teal for Soggy).
+- **Flair:** small visual extras from the power kernels a cob is holding (e.g. flames on the tassel for Spicy).
 - **Socket:** a spot on your cob that holds one kernel. Empty sockets show missing health.
 - **Heart Kernel:** your last kernel, which can never be fired.
 - **Chomp:** eating a cob that has fewer kernels than you. The main way to grow.
