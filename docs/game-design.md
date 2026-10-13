@@ -10,19 +10,27 @@
 ## 1. Elevator Pitch
 
 You are a happy little corn cob rolling around a huge, never-ending world of farms, picnics, and
-kitchens. Every kernel on your cob is **both your health and your ammo**. Your cob automatically
-**fires its own kernels** at nearby enemy cobs, and every kernel you fire lands on the ground for
-you to scoop back up. When you hit an enemy cob, its kernels pop off and scatter too. Roll over
-kernels and they *boop* onto your cob, so you get bigger and stronger and pick up whatever power
-that kernel has. Run into a cob with fewer kernels than you and you can **chomp** it whole. Get
-hit and your kernels fall off, but they stay on the ground until someone picks them up. Get hit
-when you're down to your very last kernel and you're **All Popped Out!**
+kitchens. **You grow by chomping other cobs and scooping up kernels.** You can chomp any cob that
+has fewer kernels than you. Bigger cobs are too much to eat, so you **wear them down** first.
+
+Your cob is made of two kinds of kernels:
+
+- **Plain kernels** are your body. They're your health and your size, and they can't be fired.
+  Some are extra tough or shrug off certain kinds of attacks.
+- **Power kernels** are your special shots. Each power type gets its own button. **You choose when to
+  fire** — nothing shoots automatically. Fire, freeze, zap, and popcorn blasts knock kernels off a
+  big cob until it's small enough to chomp.
+
+Every kernel you fire lands on the ground for you to pick up again. Get hit and your kernels fall off,
+but they stay on the ground until someone picks them up. Get hit when you're down to your very last
+kernel and you're **All Popped Out!**
 
 **Kernel rule:** kernels on the ground never fade away on a timer. They just move around between
 cobs, crows, and the ground until somebody scoops them up.
 
-**Genre:** Bullet heaven / "survivors-like" (auto-attack, move-only, a growing horde) mixed with
-agar.io-style "eat smaller things, run from bigger things" growth.
+**Genre:** Bullet heaven / "survivors-like" (a growing horde, an endless map, constant power growth),
+with **hand-fired powers instead of auto-attack**, mixed with agar.io-style "eat smaller things,
+wear down bigger things" growth.
 
 **Audience:** Elementary age (about 6–11), plus parents and siblings playing along.
 
@@ -36,15 +44,16 @@ It also has to be playable on iPhone. Desktop and keyboard work as a bonus.
 ## 2. Design Pillars
 
 1. **Your body is your build.** You can always see your power by looking at your cob. More kernels
-   means bigger, stronger, and more colorful. Nothing important is hidden in menus.
-2. **Fire, dodge, scoop.** Shooting spends your body. Dodging and scooping your kernels back up is
-   the core skill. The best feeling in the game is a cob bursting into a shower of kernels that you
-   then vacuum up. Spend most of the polish budget on that moment.
-3. **Easy to learn, hard to stop.** One thumb to move. Shooting is automatic. Kids can play with no
-   reading at all.
-4. **Silly, never scary.** Nobody gets hurt. Cobs get dizzy, go *boing*, and poof into husks.
+   means bigger, tougher, and more colorful. Nothing important is hidden in menus.
+2. **Chomp to grow.** Chomping is the main way to get bigger. Shooting is how you set up the chomp:
+   wear a big cob down, watch its outline turn green, then gobble it up.
+3. **Pick the right power.** Some cobs are fireproof, some are freeze-proof, some are rock-hard. Choosing
+   which power button to press is the main strategy decision.
+4. **Easy to learn, fun to master.** Left thumb moves, right thumb presses power buttons. Kids can
+   play with no reading at all. Older kids learn the matchups.
+5. **Silly, never scary.** Nobody gets hurt. Cobs get dizzy, go *boing*, and poof into husks.
    Faces, googly eyes, and kazoo sounds.
-5. **Forgiving, not punishing.** Losing kernels hurts, but you can always grab them back. Comebacks
+6. **Forgiving, not punishing.** Losing kernels hurts, but you can always grab them back. Comebacks
    should happen often.
 
 ---
@@ -52,16 +61,19 @@ It also has to be playable on iPhone. Desktop and keyboard work as a bonus.
 ## 3. Core Loop
 
 ```
- Move ─▶ Fire your kernels ─▶ They land + enemy kernels pop off ─▶ Scoop them all up ─▶ Grow + gain powers
-   ▲                                                                                        │
-   └──────────────────── Enemies scale to your power ◀── Explore further ◀─────────────────┘
+ Find a cob ─▶ Small? CHOMP it ─────────────────────────────────▶ Grow + gain kernels
+     │                                                                   ▲
+     └─▶ Big? Pick the right power ─▶ Fire to knock kernels off ─▶ Turns green ─▶ CHOMP
+                                          │
+                                          └─▶ Scoop up your fired kernels + loose kernels
+
+ Grow ─▶ Enemies scale to your power ─▶ Explore further ─▶ Find bigger cobs
 ```
 
-**Moment to moment (seconds):** steer, dodge, scoop up your fired kernels and the enemy's kernels,
-chomp cobs with fewer kernels, avoid bigger ones.
+**Moment to moment (seconds):** steer, dodge, choose a power, fire, scoop kernels, chomp.
 
-**Run (minutes):** grow through size tiers, build kernel combos, beat mini-bosses, survive to the
-Harvest Moon boss or push your Endless high score.
+**Run (minutes):** grow through size tiers, learn which powers beat which cobs, set up power combos,
+beat mini-bosses, and survive to the Harvest Moon boss or push your Endless high score.
 
 **Meta (days/weeks):** earn Seeds, unlock new starting kernels, hats and skins, new biomes, and
 fill in the Kernelpedia collection book.
@@ -70,51 +82,73 @@ fill in the Kernelpedia collection book.
 
 ## 4. The Player Cob
 
-### 4.1 Kernels = Health + Ammo
+### 4.1 Two Kinds of Kernels
 
-**Firing spends your own kernels.** Your cob auto-fires kernels off its body at nearby enemies.
-Each fired kernel flies out, does its type's effect (fireball, freeze, ricochet...), then **drops
-onto the ground** where it hit or where it ran out of range. Roll over it and it pops back onto
-your cob.
+| | **Plain kernels** | **Power kernels** |
+|---|---|---|
+| **Job** | Health and size | Special shots |
+| **Can be fired?** | No | Yes, with that power's button |
+| **Look** | Rounder, matte, calm faces | Shinier, with a glowing icon and an excited face |
+| **Special traits** | Some are extra durable or resist a damage type | Each has a damage type and an effect |
+| **Share of a typical cob** | Most of it (about 70–85%) | The rest |
 
-That makes the core loop **fire → dodge → scoop**. Every shot moves a piece of your health out
-into the world, so you're always deciding whether to push forward and collect, or hang back and dodge.
+Both kinds count toward your **kernel count** (for chomping), your **health**, and your **size**.
 
-**The Heart Kernel (minimum of 1):**
-- Your cob can **never fire its last kernel**. When you're down to 1, auto-fire stops.
+### 4.2 Power Buttons (Manual Firing)
+
+**[Decision] Nothing auto-fires.** Every power type you're holding gets its own button.
+
+- **One button per power type**, on the right side of the screen. Each button shows the power's icon,
+  a **count badge** (how many of that kernel you have), and a **recharge ring**.
+- **Tap** to fire one kernel of that type. **Hold** to keep firing at that power's fire rate.
+  Rapid tapping also works.
+- **Firing spends that kernel.** It flies out, does its effect, then **drops onto the ground** where it
+  hit or where it ran out of range. Roll over it to get it back.
+- When you run out of a power type, its button goes gray and empty until you pick up more.
+
+**Power Pockets (how many buttons):**
+- You start with **3 Power Pockets** (3 buttons). You get +1 at size tier 3 and +1 at tier 5,
+  up to **5**. The Extra Pocket perk can push it to 6 on iPad.
+- If you pick up a new power type while your pockets are full, it goes onto your cob (it still counts
+  as health) and waits in line. Its icon shows up small next to the buttons.
+- When a pocket empties, the next waiting power moves into it automatically. A small **swap arrow**
+  on each button lets you trade it for a waiting power at any time.
+- Fewer buttons keeps the screen simple, especially on iPhone, and makes choosing your loadout part of
+  the strategy.
+
+**Aiming:**
+- **Auto-target:** a bouncy **target ring** sits on the cob you're most likely trying to wear down
+  (by default, the nearest cob with a red outline, favoring ones in front of you). Shots go there.
+- **Tap a cob** on the right side of the screen to lock the target ring onto it.
+- **Drag-to-aim (optional, Settings):** drag from a power button like a slingshot to aim by hand.
+  This is for older kids who want more control.
+
+**Heart Kernel (minimum of 1):**
+- You can **never fire your last kernel**. If your cob is down to a single kernel, the buttons lock.
 - That last kernel is your **Heart Kernel**. It glows and has a little worried face, so kids can see
-  "I'm out of ammo, go grab kernels!"
+  "go grab kernels!"
 - Shooting alone can never make you lose. Only getting hit while you're down to your Heart Kernel
-  can (§4.3).
-
-**Fire order:**
-- The cob fires kernel types **in rotation**, so every power you've collected gets used and seen.
-  Each type has its own fire rate (Sunny is fast, Popper and Sprout are slow).
-- **Armor** kernels are never fired. They only protect you (§5.1).
-- **[Decision] Low-kernel slow-down:** when your cob is under about 25% full, the fire rate eases
-  down so you don't empty yourself by accident. This is a tuning knob to test with kids.
+  can (§4.4).
 
 **Your fired kernels on the ground:**
 - They have a soft **sparkle ring in your color** for a few seconds so you can see which kernels you
   just shot, then they look like any other ground kernel.
-- They're pulled toward you by your **pickup magnet**, so the Big Magnet perk and Goldie kernels
-  become very valuable.
+- Your **pickup magnet** pulls them in, which makes the Big Magnet perk and Goldie kernels valuable.
 
-**Pop Blast (special button):** fire **half your kernels at once** in a big ring burst (it still keeps
-your Heart Kernel). Huge damage and a huge pile of kernels to scoop back up. It's a risky
-"panic button" that rewards good play. It recharges over about 20 seconds.
-
-### 4.2 Taking Damage
+### 4.3 Taking Damage and Resistances
 
 - Each hit knocks **1 kernel** off (big attacks knock off more). The kernel bounces out onto the ground.
-- **Which kernel?** Picked at random, but weighted heavily toward plain **Yellow** filler kernels,
-  so rare kernels feel safe-ish. Rare kernels can still pop off on big hits, which makes them
-  exciting to chase back.
+- **Every hit has a damage type** (Bonk, Fire, Freeze, Zap, Pop, or Sticky; see §5.3). A hit only
+  knocks off kernels that **don't resist** that type. Resistant kernels go *tink!* and stay on.
+- **Which kernel?** Out of the kernels that can be knocked off, the game picks at random, weighted
+  heavily toward plain **Sunny** kernels, so rarer kernels feel safe-ish.
+- That means your plain kernels are also your **armor**. Collect Soggy kernels and enemy fireballs
+  can't knock them off. Tough Nut kernels take 3 hits before popping off.
 - **Knocked-off kernels never disappear.** They stay on the ground until someone picks them up:
   you, an enemy cob, or a crow (§6.1). Getting hit is a setback you can always undo by scooping.
 - **Mercy invulnerability:** about 0.75 s after each hit, with the cob flashing and wobbling.
 
-### 4.3 All Popped Out (Losing)
+### 4.4 All Popped Out (Losing)
 
 - If you get hit while you only have your **Heart Kernel**, it pops off and you become a
   **Bare Cob**: a pale, wobbly cob with a surprised face.
@@ -125,63 +159,70 @@ your Heart Kernel). Huge damage and a huge pile of kernels to scoop back up. It'
   kernels collected, and Seeds earned, with a big **"Wake Up & Play Again!"** button.
 - Language is always gentle: the cob is tired or sleepy, never hurt or beaten.
 
-### 4.4 Growth and Size Tiers
+### 4.5 Growth and Size Tiers
 
 Your cob has a set number of **kernel sockets**. When the sockets fill up, the cob grows to the next tier.
-
-Because firing constantly moves kernels off your cob and back on, size works like this:
 
 - **[Decision] Size tiers only go up during a run, never down.** If firing or hits empty your
   sockets, you see **empty sockets** (little "hungry" holes) instead of shrinking. Empty sockets
   are your "missing health" and show you how much there is to scoop back up.
 - This keeps the camera zoom and your hitbox steady, so the screen doesn't jump around while you fire.
 
-| Tier | Name        | Sockets | Visual                      | Unlock moment             |
-|------|-------------|------:|-------------------------------|---------------------------|
-| 1    | Baby Cob    |    12 | Tiny, chubby, big eyes        | Start                     |
-| 2    | Snack Cob   |    24 | Longer, little leaf hair      | First Ear Up! choice      |
-| 3    | Picnic Cob  |    40 | Husk "cape" appears           | Ear Up! choice            |
-| 4    | Big Cob     |    60 | Thicker, eyebrows             | Ear Up! choice            |
-| 5    | Mega Cob    |    90 | Sparkles, tassel crown        | Ear Up! choice + mini-boss|
-| 6    | Cob-zilla   |   130 | Huge, ground shakes on move   | Ear Up! choice            |
-| 7+   | Golden Ear  |  +40/tier | Gold trim, keeps scaling  | Prestige tiers            |
+| Tier | Name        | Sockets | Power Pockets | Visual                        | Unlock moment             |
+|------|-------------|--------:|--------------:|-------------------------------|---------------------------|
+| 1    | Baby Cob    |      12 |             3 | Tiny, chubby, big eyes        | Start                     |
+| 2    | Snack Cob   |      24 |             3 | Longer, little leaf hair      | First Ear Up! choice      |
+| 3    | Picnic Cob  |      40 |             4 | Husk "cape" appears           | Ear Up! choice            |
+| 4    | Big Cob     |      60 |             4 | Thicker, eyebrows             | Ear Up! choice            |
+| 5    | Mega Cob    |      90 |             5 | Sparkles, tassel crown        | Ear Up! choice + mini-boss|
+| 6    | Cob-zilla   |     130 |             5 | Huge, ground shakes on move   | Ear Up! choice            |
+| 7+   | Golden Ear  | +40/tier |            5 | Gold trim, keeps scaling      | Prestige tiers            |
 
 - **Camera zooms out as you grow** (like agar.io), so your cob takes up about the same amount of
   screen and the world feels like it's shrinking around you. This is very important for readability
   on iPhone.
 - **Trade-offs of size:** a bigger hitbox, slightly slower turning, and a much bigger pickup magnet
-  plus more sockets, which means more ammo and more health.
+  plus more sockets, which means more health and more room for power kernels.
 
-### 4.5 Ear Up! (Level-Up Choice)
-
-Bullet heavens need that "pick 1 of 3" dopamine moment. Kernels are already the main upgrade system,
-so Ear Up! choices are **passive cob perks**, picked from big picture cards (icon first, 1–3 words):
-
-- **Big Magnet:** pickup radius +30%
-- **Zoomies:** move speed +10%
-- **Popper:** all kernels fire 10% faster
-- **Long Shot:** fired kernels fly 20% further
-- **Boomerang:** 1 in 5 fired kernels flies back to your cob by itself
-- **Thick Husk:** every 5th hit is blocked
-- **Sticky Cob:** kernels you pick up come back 2 at a time sometimes
-- **Butter Roll:** a short dash on double-tap (gives you a dash for the run)
-- **Lucky Ear:** rare kernels show up more often
-
-Ear Up! pauses the game (important for kids). Tap a card to choose. You can **re-roll** once per run.
-
-### 4.6 Chomping (Eating)
+### 4.6 Chomping (The Main Way to Grow)
 
 - Touch an enemy cob that has **fewer kernels than you have on your cob right now** to **CHOMP** it.
-  You get all of its kernels at once, plus a big crunchy sound and screen bounce.
 - Touch an enemy with **the same number of kernels or more** and you both bounce apart, and you
   lose a few kernels onto the ground. Enemies never chomp the player.
+- **Chomping is always the best reward:**
+  - All of the cob's kernels go **straight onto your cob**. No scattering, no racing crows for them.
+  - **Chomp Bonus:** each chomp also grows 1–3 brand-new Sunny kernels on your cob.
+  - **Chomp Streak:** chomps within a few seconds of each other build a streak that boosts the bonus
+    (with a rising "nom, NOM, NOM!" sound).
+- **Shooting a cob down to nothing** is allowed: it poofs and drops all its kernels on the ground,
+  but there's **no Chomp Bonus**, and other cobs can grab the loot first. The smart play is to shoot
+  until it's green, then chomp.
 - The comparison uses **kernel count, not size**. That creates strategy:
-  - Shooting thins out big enemies until they're chompable, which gives "shoot, then eat" a natural rhythm.
-  - Firing a lot (or a Pop Blast) lowers *your* count, so a cob you could chomp a second ago might
-    not be chompable anymore. Scoop up your kernels first, then go for the chomp.
+  - Shooting knocks kernels off big cobs until they're chompable.
+  - Firing also lowers *your* count, so a cob you could chomp a second ago might not be chompable
+    anymore. Scoop up your kernels, then go for the chomp.
 - **Readability:** cobs you can chomp get a **green wiggle outline and a "yum" mouth**. Dangerous
   cobs get a **red outline and angry eyebrows**. The outlines update live as counts change. Never
   make players compare kernel counts by eye.
+
+### 4.7 Ear Up! (Level-Up Choice)
+
+Every time you grow a size tier you get a "pick 1 of 3" moment. Kernels are already the main
+upgrade system, so Ear Up! choices are **cob perks**, picked from big picture cards (icon first,
+1–3 words):
+
+- **Big Appetite:** Chomp Bonus +2 kernels
+- **Big Magnet:** pickup radius +30%
+- **Zoomies:** move speed +10%
+- **Quick Hands:** power buttons recharge 15% faster
+- **Extra Pocket:** +1 power button
+- **Long Shot:** fired kernels fly 20% further
+- **Boomerang:** 1 in 5 fired kernels flies back to your cob by itself
+- **Thick Husk:** every 5th hit is blocked
+- **Butter Roll:** a short dash on double-tap
+- **Lucky Ear:** rare kernels show up more often
+
+Ear Up! pauses the game (important for kids). Tap a card to choose. You can **re-roll** once per run.
 
 ---
 
@@ -191,66 +232,118 @@ Kernels are the heart of the game. Every kernel type needs:
 
 - A **unique color AND a unique shape or pattern/icon** (for colorblind players and readability)
 - A **tiny face** with its own expression
-- A distinct **firing sound** and **pickup sound**
+- A distinct **pickup sound** (and a **firing sound** for power kernels)
 - A behavior that kids can recognize just by watching it
 
-### 5.1 Kernel Roster (Launch Set: 12)
+### 5.1 Plain Kernels (Body, Can't Be Fired)
 
-Every kernel below is fired as a projectile and then lands on the ground to be picked up again.
+| Kernel             | Look                         | Trait                                                        | Rarity    |
+|--------------------|------------------------------|--------------------------------------------------------------|-----------|
+| **Sunny** (Yellow) | Classic yellow, smile        | Basic kernel. 1 hit pops it off.                             | Common    |
+| **Sweetie** (White)| Pearly, heart pattern        | Slowly grows a brand-new Sunny kernel on your cob            | Uncommon  |
+| **Tough Nut**      | Dark brown, shiny shield     | Takes **3 hits** of any type before popping off              | Rare      |
+| **Soggy**          | Teal, water-drop pattern     | **Immune to Fire.** Weak to Zap (Zap knocks off 2)           | Uncommon  |
+| **Toasty**         | Golden-brown, toast marks    | **Immune to Freeze**                                         | Uncommon  |
+| **Rubbery**        | Pink, squiggly stripes       | **Immune to Zap.** Bonk shots bounce off it at half strength | Uncommon  |
+| **Stony**          | Gray, little cracks          | **Immune to Bonk.** Weak to Pop (explosions crack it)        | Rare      |
+| **Leafy**          | Green, wrapped in a tiny leaf| **Immune to Pop** explosions                                 | Uncommon  |
+| **Goldie** (Gold)  | Gold, sparkles               | Boosts magnet range and Seeds earned                         | Epic      |
 
-| Kernel             | Look                       | When fired                                                 | Rarity     |
-|--------------------|----------------------------|------------------------------------------------------------|------------|
-| **Sunny** (Yellow) | Classic yellow, smile      | Fast basic shot at the nearest enemy                       | Common     |
-| **Sweetie** (White)| Pearly, heart pattern      | Weak shot. While on your cob, slowly grows a brand-new Sunny kernel | Common |
-| **Spicy** (Red)    | Red, flame tuft            | Fireball that leaves a short burning patch                 | Uncommon   |
-| **Frosty** (Blue)  | Icy blue, snowflake        | Slows enemies; a few hits freeze them                      | Uncommon   |
-| **Boing** (Purple) | Purple, spring stripes     | Ricochets between enemies, then lands near the last one    | Uncommon   |
-| **Popper**         | Puffy popcorn              | Lobbed shot that pops into a small explosion               | Uncommon   |
-| **Sprout** (Green) | Green, little leaf         | Lands and grows into a tiny stalk turret for about 6 s, then turns back into a kernel | Rare |
-| **Caramel**        | Glossy brown, drip         | Sticky glob makes a slow zone on the ground                | Rare       |
-| **Armor** (Black)  | Dark with a shine/shield   | Never fired. Takes 3 hits before it pops off               | Rare       |
-| **Zappy** (Candy Corn)| Tri-color triangle      | Chain lightning between nearby enemies                     | Rare       |
-| **Goldie** (Gold)  | Gold, sparkles             | Weak shot. While on your cob, boosts magnet range + Seeds earned | Epic  |
-| **Gem** (Glass Gem)| Rainbow glass              | Uses a random other kernel's attack each time              | Legendary  |
+### 5.2 Power Kernels (Fired With Buttons)
 
-### 5.2 Stacking and Milestones
+| Kernel             | Look                    | Damage type | When fired                                                  | Rarity    |
+|--------------------|-------------------------|-------------|-------------------------------------------------------------|-----------|
+| **Zinger**         | Orange, arrow icon      | Bonk        | Fast, cheap straight shot. Knocks off 1. Your "basic" power | Common    |
+| **Spicy**          | Red, flame tuft         | Fire        | Fireball knocks off 2 and leaves a short burning patch       | Uncommon  |
+| **Frosty**         | Icy blue, snowflake     | Freeze      | Knocks off 1 and slows; 3 hits freeze the cob in place       | Uncommon  |
+| **Boing**          | Purple, spring stripes  | Bonk        | Ricochets between up to 4 cobs, knocking 1 off each          | Uncommon  |
+| **Popper**         | Puffy popcorn           | Pop         | Lobbed shot that explodes, knocking 1 off every cob nearby   | Uncommon  |
+| **Zappy**          | Candy-corn triangle     | Zap         | Chain lightning hops to nearby cobs                          | Rare      |
+| **Caramel**        | Glossy brown, drip      | Sticky      | Sticky glob: the cob slows way down and can't pick up kernels| Rare      |
+| **Sprout**         | Bright green, sprout    | Bonk        | Lands and grows a tiny stalk turret that plinks the nearest cob for 6 s, then turns back into a kernel | Rare |
+| **Gem** (Glass Gem)| Rainbow glass           | Random      | Uses a random power's attack each time, at double strength   | Legendary |
 
-- The power of each type grows with **how many you have** (count-based, so position on the cob
-  doesn't matter, which keeps things simple for kids).
-- **Fired kernels still count for about 5 seconds** after they leave your cob, so milestones and
-  combos don't flicker on and off every time you shoot. A milestone only switches off if you stay
-  below it for longer than that.
-- **Milestones at 5 / 10 / 20 of a type** give a visible upgrade:
+Sprout's turret is the one thing in the game that shoots by itself. It's a placed helper, so it
+doesn't break the "you choose when to shoot" rule.
+
+### 5.3 Damage Types and Resistances
+
+Six damage types, each with a clear icon that pops up on every hit:
+
+| Damage type | Icon        | Comes from                         |
+|-------------|-------------|------------------------------------|
+| **Bonk**    | Star        | Zinger, Boing, Sprout, bumping     |
+| **Fire**    | Flame       | Spicy                              |
+| **Freeze**  | Snowflake   | Frosty                             |
+| **Zap**     | Lightning   | Zappy                              |
+| **Pop**     | Burst       | Popper, Popcorn Bombers            |
+| **Sticky**  | Drip        | Caramel (slows only, never knocks kernels off) |
+
+**Matchup chart** (what each plain kernel does against each damage type):
+
+| Plain kernel | Bonk  | Fire   | Freeze | Zap    | Pop    |
+|--------------|-------|--------|--------|--------|--------|
+| Sunny        | ✔     | ✔      | ✔      | ✔      | ✔      |
+| Sweetie      | ✔     | ✔      | ✔      | ✔      | ✔      |
+| Tough Nut    | 3 hits| 3 hits | 3 hits | 3 hits | 3 hits |
+| Soggy        | ✔     | 🛡 immune | ✔   | ⚡ weak (×2) | ✔ |
+| Toasty       | ✔     | ✔      | 🛡 immune | ✔   | ✔      |
+| Rubbery      | ½     | ✔      | ✔      | 🛡 immune | ✔   |
+| Stony        | 🛡 immune | ✔  | ✔      | ✔      | ⚡ weak (×2) |
+| Leafy        | ✔     | ✔      | ✔      | ✔      | 🛡 immune |
+| Goldie       | ✔     | ✔      | ✔      | ✔      | ✔      |
+
+Power kernels have no resistances; a hit of any type can knock them off.
+
+**How it plays:**
+- A shot knocks off kernels it **can** affect. If every kernel left on a cob resists that shot, it goes
+  *tink!*, shows a little shield icon, and nothing comes off. That's a clear cue to **switch powers**.
+- Mixed cobs wear down in layers. Fire a Soggy-and-Sunny cob with Spicy and the Sunny kernels pop
+  off, but the Soggy ones stay. Then finish it with Zinger or Zappy.
+- **Resistances protect you too.** The same rules apply to enemy attacks on your cob, so collecting
+  Soggy kernels makes you safer against fire-shooting cobs.
+- **Readability:** cobs show **small shield badges** above them for any resistance that covers most
+  of their kernels. The Kernelpedia teaches matchups with pictures.
+
+### 5.4 Power Milestones
+
+- Each power gets stronger based on **how many of it you're holding**. Fired kernels still count for
+  about 5 seconds, so milestones don't flicker off every time you shoot.
+- **Milestones at 5 / 10 / 20** of a power give a visible upgrade:
   - 5 Spicy: fireballs get bigger
   - 10 Spicy: fireballs split into 3
-  - 20 Spicy: **Flamethrower Mode** (rows of red kernels glow and breathe fire)
-- A milestone triggers a **little celebration** (the kernels on that row dance and a badge pops up).
+  - 20 Spicy: **Flamethrower** (holding the button breathes a short stream of fire)
+- A milestone triggers a **little celebration** (that power's kernels dance, and its button gets a
+  shiny new border).
 
-### 5.3 Combos (Kernel Evolutions)
+### 5.5 Power Combos (Hit Combos)
 
-Holding enough of two types unlocks a combo, which is the equivalent of evolutions in other survivors games:
+Because you fire by hand, combos come from **hitting a cob with one power, then another**. That
+rewards thinking about the order you press your buttons:
 
-| Combo            | Requires              | Effect                                              |
-|------------------|-----------------------|-----------------------------------------------------|
-| **Steam Cloud**  | 5 Spicy + 5 Frosty    | Clouds of steam that hurt and push enemies back     |
-| **Pinball**      | 5 Boing + 5 Popper    | Bouncing shots explode on every bounce              |
-| **Corn Maze**    | 5 Sprout + 5 Caramel  | Grows a ring of stalk walls around you briefly      |
-| **Kettle Corn**  | 5 Sweetie + 5 Popper  | Explosions drop healing Sunny kernels               |
-| **Disco Cob**    | 3 Gem + 3 Zappy       | Rainbow lasers spin around your cob                 |
-| **Golden Shield**| 5 Goldie + 5 Armor    | Armor kernels reflect shots                         |
+| Combo           | How                                         | Effect                                                     |
+|-----------------|---------------------------------------------|------------------------------------------------------------|
+| **Steam Burst** | Spicy on a frozen cob                       | Big puff of steam knocks off 3 extra, **ignores Toasty**   |
+| **Splash Zap**  | Zappy on a cob that's mostly Soggy          | Lightning splashes to every nearby cob                     |
+| **Shatter**     | Popper on a frozen cob                      | Knocks off 4 extra, **ignores Stony**                      |
+| **Kettle Corn** | Popper on a burning cob                     | A popcorn shower drops 5 bonus Sunny kernels               |
+| **Caramel Corn**| Spicy on a caramel-stuck cob                | Caramel hardens; the cob is stuck in place for 4 s         |
+| **Corn Maze**   | Sprout landing in a caramel puddle          | Grows a ring of stalk walls that traps nearby cobs          |
+| **Disco Cob**   | Gem hitting a cob that's zapped             | Rainbow lasers spin out from the target                    |
 
-Combos show up in the Kernelpedia as **silhouettes** until you find them, which drives curiosity and replay.
+Combos show up in the Kernelpedia as **silhouettes** until you find them, which drives curiosity and
+replay. The first time a combo happens, it gets a big name pop-up and a fanfare.
 
-### 5.4 How Kernels Look on the Cob
+### 5.6 How Kernels Look on the Cob
 
 - Kernels sit in **rows** around the cob. The game shows the front face and adds a gentle "rotation"
   wobble so you can see the variety.
-- **[Decision] The game arranges kernels automatically**, grouping same types into rows. No inventory
-  management. A row lighting up is how you see a milestone.
+- **[Decision] The game arranges kernels automatically.** Plain kernels fill the body, and power
+  kernels sit in a glowing band near the top so they're easy to spot. No inventory management.
 - **Later idea (not for launch):** an optional "Cob Garden" screen between runs where older kids can
   arrange kernels for small adjacency bonuses.
 
-### 5.5 Kernel Cap and Overflow
+### 5.7 Kernel Cap and Overflow
 
 When you're at the top tier and every socket is full:
 
@@ -264,46 +357,58 @@ When you're at the top tier and every socket is full:
 
 ### 6.1 Enemy Rules
 
-- **Most enemies are cobs made of kernels**, and **they drop what they're made of**. A red-tinted cob
-  drops Spicy kernels. Kids learn to hunt the colors they want, which gives your choices meaning in a
-  genre where you're mostly just steering.
+- **Most enemies are cobs made of kernels**, and **they're worth what they're made of**. A teal cob
+  is full of Soggy kernels. A cob with a red glowing band is carrying Spicy power kernels. Kids learn
+  to hunt the colors they want.
+- **An enemy's kernels tell you how to beat it.** A teal Soggy cob laughs off fire, so reach for Zappy.
+  A gray Stony cob shrugs off Zingers, so lob a Popper. This is the core strategy of the game.
 - Enemy cobs **pick up kernels on the ground** too, including ones you fired or dropped, and grow if
   they do. That creates "race them to the loot" moments and gives you a reason to scoop quickly. The
-  kernels aren't lost: pop that enemy and you get them back.
-- **Enemies follow the same rules you do.** Shooter cobs fire their own kernels, which land on the
-  ground as free pickups for you. A Shooter cob that fires too much gets small enough to chomp.
+  kernels aren't lost: chomp that enemy and you get them back.
+- **Enemies follow the same rules you do.** Shooter cobs fire their own power kernels, which land on
+  the ground as free pickups for you. A Shooter cob that fires too much gets small enough to chomp.
+- **Most cobs are a mix of plain kernels.** Early cobs are mostly Sunny. Further out and at higher
+  power, cobs carry more resistant kernels, so the matchup choices matter more as the run goes on.
 - Every enemy needs a clear **silhouette + color + movement pattern** so it reads instantly.
 
 ### 6.2 Enemy Roster (Launch)
 
-| Enemy              | Behavior                                                       | Drops                 |
+| Enemy              | Behavior                                                       | Made of / drops       |
 |--------------------|----------------------------------------------------------------|-----------------------|
 | **Nibblers**       | Tiny loose kernels with legs, swarm in packs, easy to chomp    | 1 kernel each         |
-| **Baby Cobs**      | Wander toward you slowly, basic fodder                         | 3–6 Sunny             |
-| **Zoomer Cobs**    | Fast, run straight lines, bonk and bounce off                  | Boing / Sunny         |
-| **Shooter Cobs**   | Keep their distance, fire slow, clearly visible kernel shots that land as pickups | Their kernel type |
-| **Husky**          | Wears a husk shield; shoot the husk off first                  | Armor + lots of Sunny |
+| **Baby Cobs**      | Wander toward you slowly, basic fodder, usually chompable      | 3–8 Sunny             |
+| **Zoomer Cobs**    | Fast, run straight lines, bonk and bounce off                  | Sunny + Boing         |
+| **Shooter Cobs**   | Keep their distance, fire slow, clearly visible shots that land as pickups | Their power type |
+| **Soggy Cob**      | Slow and drippy; fireproof                                     | Mostly Soggy          |
+| **Rocky Cob**      | Slow, heavy, rolls in a straight line; Bonk-proof              | Mostly Stony          |
+| **Bouncy Cob**     | Hops around; Zap-proof                                         | Mostly Rubbery        |
+| **Husky**          | Wears a husk shield; Pop it off first, then wear it down       | Tough Nut + Sunny     |
 | **Popcorn Bomber** | Waddles up, swells up, pops (with a clear 1 s warning)         | Popper                |
 | **Crows**          | Not corn! Fly in and **steal kernels from the ground**, carry them off; shoot them to make them drop the loot | Whatever they stole |
-| **Corn Cousins**   | Rival cobs with mixed kernels that hunt *you*, agar.io style   | Mixed, often rare     |
-| **Kernel Swarm**   | A huge wave event, 100+ Nibblers at once (big power fantasy)   | Tons of kernels       |
+| **Corn Cousins**   | Rival cobs with mixed kernels and power kernels that hunt *you*, agar.io style | Mixed, often rare |
+| **Kernel Swarm**   | A huge wave event, 100+ Nibblers at once (a chomping frenzy)   | Tons of kernels       |
 
 ### 6.3 Mini-Bosses and Bosses
 
-All silly, nothing scary:
+All silly, nothing scary. **Every cob boss is beaten the same way the whole game works: wear it down,
+then chomp it.**
 
 - **Scarecrow Steve** (mini-boss): flaps his arms to make a wind gust that pushes you; calls crows.
+  Not a cob, so you pop him with shots, and he drops a big pile of power kernels.
 - **The Butter Knight** (mini-boss): a stick of butter in armor; leaves slippery butter trails.
-- **King Cob** (boss): a giant crowned cob with every kernel type that fires patterns in phases.
-  Drops a guaranteed Legendary.
-- **Harvey the Harvester** (Harvest Moon boss): a goofy cartoon combine with a big smile; spinning
-  reel pulls you in. You beat him by shooting his "corn hoppers" so he spits out mountains of kernels.
-  *Keep him toy-like: rounded, pastel, with googly eyes. Nothing sharp or grinding on screen.*
+  Freeze his butter trail to make it safe.
+- **Harvey the Harvester** (event): a goofy cartoon combine with a big smile and googly eyes that
+  rolls across the map. Shoot his "corn hoppers" and he spits out mountains of kernels.
+  *Keep him toy-like: rounded, pastel, nothing sharp or grinding on screen.*
+- **King Cob** (Harvest Moon boss): a giant crowned cob. He changes his kernel coat in phases
+  (Soggy coat, then Stony coat, then a mixed coat with Tough Nuts), so you have to switch powers to
+  wear him down. When his outline finally turns green, **you chomp the King** to win the run.
 
 ### 6.4 Enemy Projectiles
 
-- Enemy shots are **slow, big, and round with dark outlines**. Player shots are **smaller, softer, and
-  partly see-through**. Players must never lose track of what can hit them.
+- Enemy shots are **slow, big, and round with dark outlines**, and show their damage-type icon.
+  Player shots are **smaller, softer, and partly see-through**. Players must never lose track of what
+  can hit them.
 - Cap on-screen enemy projectiles so the screen stays readable (see §11.4).
 
 ---
@@ -315,7 +420,7 @@ All silly, nothing scary:
 Enemies scale to your **current power**, so the game always feels like a fair fight.
 
 ```
-power = Σ (kernel.weight)  +  perkCount × 2  +  comboCount × 10
+power = Σ (kernel.weight)  +  perkCount × 2  +  powerPocketsFilled × 3
 ```
 
 Example weights: Sunny 1, Sweetie 1.5, Uncommon 3, Rare 5, Epic 8, Legendary 12.
@@ -332,22 +437,24 @@ budget/sec  = base + a × smoothedPower + b × minutesElapsed + c × distanceFro
 ```
 
 - **smoothedPower** follows your actual power **slowly** (~10 s lag). When you lose a lot of kernels,
-  enemies ease off, which gives you a gentle built-in comeback. When you grow, the challenge ramps up a beat later
-  so you get to feel strong first.
+  enemies ease off, which gives you a gentle built-in comeback. When you grow, the challenge ramps up
+  a beat later so you get to feel strong first.
 - Each enemy type has a cost and a minimum power tier. The director mixes **fodder (lots of cheap
   enemies)** with **threats (fewer expensive ones)**.
-- **Power bands:** at least 70% of spawns should be chompable or easy so the screen stays full of
-  "yum" targets. That's the bullet heaven fantasy.
+- **Chomp bands:** about 60% of spawns should be chompable right away (quick snacks), about 30% should
+  need a little wearing down, and about 10% should be big "project" cobs that take real effort.
+- **Matchup variety:** the director makes sure there's usually at least one cob nearby that your
+  current powers are good against, and mixes in cobs that resist them so you have reasons to switch.
 - **Pacing waves:** about 45 s calm → 20 s rush → calm, with a scripted event every 2–3 minutes
-  (Kernel Swarm, Crow Raid, mini-boss).
+  (Kernel Swarm, Crow Raid, Harvey, mini-boss).
 
 ### 7.3 Difficulty Settings
 
 | Setting        | Who it's for                    | Changes                                                       |
 |----------------|---------------------------------|---------------------------------------------------------------|
-| **Easy Peasy** | Youngest kids (5–7)             | Slower enemies, much bigger pickup magnet, enemies don't grab your fired kernels, Last Chance 6 s, no Crows |
+| **Easy Peasy** | Youngest kids (5–7)             | **Smart Fire** button (see §11.1), slower enemies, much bigger pickup magnet, fewer resistant cobs, enemies don't grab your fired kernels, Last Chance 6 s, no Crows |
 | **Just Right** | Default                         | As designed                                                    |
-| **Spicy**      | Older kids / parents            | Faster director ramp, more threats, enemies grab ground kernels faster, smaller magnet |
+| **Spicy**      | Older kids / parents            | Faster director ramp, more resistant and "project" cobs, enemies grab ground kernels faster, smaller magnet |
 
 ---
 
@@ -362,24 +469,27 @@ budget/sec  = base + a × smoothedPower + b × minutesElapsed + c × distanceFro
 
 ### 8.2 Biomes
 
-Biomes sit in rings or regions moving outward from the start:
+Biomes sit in rings or regions moving outward from the start. Each biome leans toward certain kernel
+types, which changes which powers are useful there:
 
-| Biome              | Vibe                          | Unique feature                                      |
-|--------------------|-------------------------------|-----------------------------------------------------|
-| **Sunny Farm**     | Starting field, tractors, hay | Hay bales block shots; mud puddles slow you down    |
-| **Picnic Park**    | Checkered blankets, ants      | Ants carry kernels away (like Crows)                |
-| **Kitchen Counter**| Giant cutting board, pots     | Butter puddles = speed boost; salt shaker shrine    |
-| **Movie Theater**  | Dark carpet, popcorn buckets  | Popcorn rain event; lots of Popper kernels          |
-| **County Fair**    | Rides, balloons, lights       | Bumper cars bounce everything; prize booths         |
-| **Taco Night**     | Tortillas, salsa rivers       | Spicy-heavy biome; salsa river slows                |
+| Biome              | Vibe                          | Unique feature                                      | Common kernels       |
+|--------------------|-------------------------------|-----------------------------------------------------|----------------------|
+| **Sunny Farm**     | Starting field, tractors, hay | Hay bales block shots; mud puddles slow you down    | Sunny, Zinger        |
+| **Picnic Park**    | Checkered blankets, ants      | Ants carry kernels away (like Crows)                | Sweetie, Boing       |
+| **Kitchen Counter**| Giant cutting board, pots     | Butter puddles = speed boost; sink splashes         | Soggy, Toasty, Frosty|
+| **Movie Theater**  | Dark carpet, popcorn buckets  | Popcorn rain event                                  | Leafy, Popper        |
+| **County Fair**    | Rides, balloons, lights       | Bumper cars bounce everything; prize booths         | Rubbery, Zappy       |
+| **Taco Night**     | Tortillas, salsa rivers       | Salsa river slows                                   | Toasty, Spicy        |
+| **Rock Garden**    | Pebbles, little fountains     | Rolling boulders                                    | Stony, Tough Nut     |
 
 ### 8.3 Points of Interest
 
 These give players places to steer toward on an infinite map:
 
 - **Kernel Piñatas:** shoot them open for a burst of kernels
-- **Sprinklers:** stand under one to slowly regrow kernels
-- **Shrines (Salt Shaker, Butter Dish):** pick 1 of 2 trades (e.g. "lose 10 Sunny, gain 1 Epic")
+- **Power Patches:** a little garden that grows one type of power kernel over time
+- **Sprinklers:** stand under one to slowly regrow Sunny kernels
+- **Shrines (Salt Shaker, Butter Dish):** pick 1 of 2 trades (e.g. "give 10 Sunny, get 1 Epic")
 - **Rescue Kernels:** a trapped kernel family in a cage. Free them and they join you.
 - **Golden Corn Stalk:** a rare landmark that gives a Legendary
 
@@ -394,20 +504,21 @@ These give players places to steer toward on an infinite map:
 
 ### 9.1 Harvest Run (Main Mode)
 
-- **10 minutes.** At 10:00 the **Harvest Moon** rises and the boss arrives.
-- Beat the boss to **win the run** (fireworks, popcorn rain, big Seed reward). After that you can
+- **10 minutes.** At 10:00 the **Harvest Moon** rises and King Cob arrives.
+- Chomp King Cob to **win the run** (fireworks, popcorn rain, big Seed reward). After that you can
   keep going in **Overtime** for bonus Seeds.
-- Clear structure for kids: "survive until the moon comes."
+- Clear structure for kids: "grow big enough to chomp the King when the moon comes."
 
 ### 9.2 Endless
 
-- No boss timer. The director keeps ramping. Go for a high score: biggest cob, time survived.
+- No boss timer. The director keeps ramping. Go for a high score: biggest cob, cobs chomped, time.
 
 ### 9.3 Later Modes (Post-Launch Ideas)
 
-- **Daily Seed:** everyone gets the same map and the same starting kernel.
-- **Couch Co-op (2 cobs, one iPad):** split controls, two thumbs each side. Hard to build, but very
-  fun for siblings. **Design for it now** (don't assume a single player in the code) even if it ships later.
+- **Daily Seed:** everyone gets the same map and the same starting kernels.
+- **Couch Co-op (2 cobs, one iPad):** each player gets a movement area and a small set of power
+  buttons on their side. Hard to build, but very fun for siblings. **Design for it now** (don't assume
+  a single player in the code) even if it ships later.
 
 ---
 
@@ -415,26 +526,30 @@ These give players places to steer toward on an infinite map:
 
 ### 10.1 Seeds (Currency)
 
-Earned from every run based on time, size, chomps, and Goldie kernels. **No real-money purchases.**
+Earned from every run based on time, size, chomps, chomp streaks, and Goldie kernels.
+**No real-money purchases.**
 
 ### 10.2 The Farm (Hub Screen)
 
 - A cozy farm where you spend Seeds:
-  - **Seed Bank:** unlock new **starting kernels** (start a run with 3 Spicy instead of 3 Sunny)
+  - **Seed Bank:** unlock new **starting loadouts** (e.g. start with 3 Spicy instead of 3 Zinger, or
+    with a few Soggy kernels for armor)
   - **Cob Closet:** hats, glasses, mustaches, husk colors (cosmetic only)
   - **Field Upgrades:** small permanent boosts (+5% magnet, +1 starting kernel, +1 re-roll), with a cap
 - **Unlock biomes** by reaching them for the first time.
 
 ### 10.3 Kernelpedia
 
-- A collection book of every kernel, combo, enemy, and boss. Locked ones are shown as silhouettes.
+- A collection book of every kernel, power combo, enemy, and boss. Locked ones are shown as silhouettes.
+- Kernel pages show **matchups with pictures** (a flame bouncing off a Soggy kernel) so kids can learn
+  them without reading.
 - Each entry has a silly one-line joke ("Frosty kernels are the coolest kernels. Literally.").
 - Optional **read-aloud** button for pre-readers.
 
 ### 10.4 Achievements / Stickers
 
-- Stickers instead of "achievements": a sticker book with tasks like "Chomp 100 cobs," "Find a Gem kernel,"
-  "Beat King Cob on Spicy."
+- Stickers instead of "achievements": a sticker book with tasks like "Chomp 100 cobs," "Find a Gem
+  kernel," "Make a Steam Burst," "Chomp King Cob on Spicy."
 
 ---
 
@@ -442,32 +557,45 @@ Earned from every run based on time, size, chomps, and Goldie kernels. **No real
 
 ### 11.1 Core Controls
 
-| Input           | Action                                                              |
-|-----------------|---------------------------------------------------------------------|
-| **Drag anywhere** | **Floating joystick** shows up where your thumb lands; drag to steer |
-| **Lift finger** | Cob slowly coasts to a stop (doesn't stop instantly; feels smoother) |
-| **Pop button**  | Pop Blast special (bottom-right corner, big)                        |
-| **Double-tap**  | Butter Roll dash (only if you picked that perk)                     |
-| **Pause**       | Top corner, inside the safe area                                    |
+| Input                        | Action                                                              |
+|------------------------------|---------------------------------------------------------------------|
+| **Drag on the left half**    | **Floating joystick** shows up where your thumb lands; drag to steer |
+| **Lift finger**              | Cob slowly coasts to a stop (doesn't stop instantly; feels smoother) |
+| **Tap a power button**       | Fire one of that power kernel at the target                         |
+| **Hold a power button**      | Keep firing that power at its fire rate                             |
+| **Tap a cob (right half)**   | Lock the target ring onto that cob                                  |
+| **Swap arrow on a button**   | Swap that pocket for a waiting power type                           |
+| **Double-tap (left half)**   | Butter Roll dash (only if you picked that perk)                     |
+| **Pause**                    | Top corner, inside the safe area                                    |
 
-- **Shooting is always automatic**, aimed at the nearest or best target. No aiming needed.
-- **[Decision] Alternate control: "Follow My Finger."** The cob rolls toward where you're touching.
-  It's easier for very young kids and works well on iPad. Players can switch in Settings.
-- Keyboard (WASD/arrows + Space) and gamepad (Gamepad API) work on desktop and on iPads with a
-  controller.
+- **Nothing fires on its own** (except a planted Sprout turret). The player always chooses which
+  power to use and when.
+- **Two thumbs at once:** you must be able to steer and hold a power button at the same time, and
+  press two power buttons back to back for combos.
+- **Smart Fire (Easy Peasy, or turn on in Settings):** replaces the power buttons with one big
+  **Fire** button that picks the best power against the current target. This helps the youngest
+  kids and players who find several buttons hard. It still only fires when pressed.
+- **[Decision] Alternate movement: "Follow My Finger."** The cob rolls toward wherever your left-side
+  finger is. It's easier for very young kids and works well on iPad. Players can switch in Settings.
+- Keyboard (WASD/arrows to move, 1–6 for powers, Tab to change target) and gamepad (stick to move,
+  face buttons and shoulders for powers) work on desktop and on iPads with a controller.
 
 ### 11.2 Layout
 
-- **iPad (landscape and portrait):** joystick on the left half, Pop on the right. HUD along the top.
+- **Power buttons sit in an arc around the right thumb**, biggest for the first pocket. Each button is
+  at least 64 pt on iPad and 56 pt on iPhone, with clear space between them so kids don't hit the
+  wrong one.
+- **iPad (landscape and portrait):** joystick on the left half, power arc bottom-right. HUD along the top.
 - **iPhone landscape (recommended):** same layout, smaller HUD, camera zoomed out a bit more.
-- **iPhone portrait:** supported. Joystick in the bottom half, Pop in the bottom-right, HUD on top.
-  Zoom out further, since the view is narrow.
+- **iPhone portrait:** supported. Joystick zone on the bottom-left, power arc bottom-right (two short
+  rows if you have 5 pockets), HUD on top. Zoom out further, since the view is narrow.
+- **Left-handed option:** mirror the layout (powers on the left, joystick on the right).
 - iOS doesn't honor the manifest's `orientation` lock reliably, so **every screen must work in both
   orientations** and re-layout live when the device rotates.
 
 ### 11.3 Touch Rules
 
-- Tap targets **at least 44×44 pt** (bigger for kids: aim for 60+ pt on menu buttons).
+- Tap targets **at least 44×44 pt** (bigger for kids: 56–64 pt for power buttons, 60+ pt for menus).
 - Keep controls **away from the bottom edge** (the iOS home-indicator swipe) and the top-left/right
   corners (system gestures). Use `env(safe-area-inset-*)`.
 - No hover-only anything. No long-press-only actions. No pinch gestures in gameplay.
@@ -475,35 +603,41 @@ Earned from every run based on time, size, chomps, and Goldie kernels. **No real
 
 ### 11.4 Readability (Bullet Heaven Clutter)
 
-- **Layer order (bottom → top):** ground → ground kernels → player shots → enemies → enemy shots → player cob → HUD.
+- **Layer order (bottom → top):** ground → ground kernels → player shots → enemies → enemy shots →
+  player cob → target ring → HUD.
 - Player effects **fade as more stack up** (auto-dim when there are a lot of particles).
 - Settings: **Reduce Flashing** and **Reduce Screen Shake** toggles.
 - Ground kernels get a **gentle pulsing glow** so they read even in busy moments.
 - **Flying kernels and ground kernels must look different at a glance.** Flying ones get a motion
   trail and no glow. Landed ones squash, bounce once, and start glowing. Kids need to know "that one
   is a shot" vs. "that one is a pickup."
-- With every shot turning into a pickup, the ground gets busy. Kernel merging (§14.3) and the
-  pickup magnet keep it tidy.
+- **Hit feedback shows the matchup:** every hit shows its damage icon. Resisted hits show a shield and
+  a *tink!*; weak-spot hits show a big "x2" and a louder pop.
+- Kernel merging (§14.3) and the pickup magnet keep the ground tidy.
 
 ### 11.5 HUD (Minimal, Icon-First)
 
 - **Top:** run timer / moon progress bar, Seeds counter, pause.
 - **Size tier bar:** a "cob fill" meter showing progress to the next tier.
+- **Power buttons double as your power inventory:** icon, count, recharge ring, and milestone border.
+- **Waiting powers:** small icons beside the button arc for power types that don't have a pocket yet.
+- **Target ring:** shows the target's shield badges and a tiny "chomp meter" for how many more
+  kernels need to come off before it turns green.
 - **Heart Kernel warning:** when you're down to your Heart Kernel, the cob's glow pulses and arrows
   point toward the nearest kernels on the ground.
-- **Kernel strip:** small icons with counts for each kernel type you have (tap to see what it does
-  while paused).
 - **No numbers for health** — your cob *is* your health bar.
 
 ### 11.6 Onboarding (No Reading Needed)
 
-1. A first-run "playground" with a big hand-drawn **thumb icon** that shows how to drag.
-2. A single Baby Cob wanders in. Your cob fires kernels at it, the cob gets popped, and **your fired
-   kernels plus its kernels** land on the ground glowing. A hand icon shows you to roll over them.
-   Your cob visibly fills back up.
-3. A smaller cob with a green "yum" outline: arrow + chomp animation shows you can eat it.
-4. A big red cob appears: the hand icon shows you to steer away.
-5. Done in under 60 seconds, then straight into the first real run.
+1. A first-run "playground" with a big hand-drawn **thumb icon** that shows how to drag to move.
+2. A tiny cob with a green "yum" outline wanders in. Arrow + chomp animation shows you can eat it.
+   Your cob grows a little.
+3. A bigger red-outlined cob appears. A **Zinger button pulses** and a hand icon taps it. Each shot
+   knocks kernels off, the chomp meter fills, and the outline turns green. Chomp it!
+4. Your fired kernels are lying on the ground glowing. The hand icon shows you to roll over them.
+5. A teal Soggy cob arrives and you've just picked up a Spicy kernel. Fire goes *tink!* with a shield
+   icon. The Zinger button pulses again: switch powers to wear it down.
+6. Done in about 90 seconds, then straight into the first real run.
 
 ---
 
@@ -516,13 +650,15 @@ Earned from every run based on time, size, chomps, and Goldie kernels. **No real
 - **Squash and stretch** on everything: cobs squish when they turn, kernels boing when they land.
 - **Bright, saturated, friendly palette** with soft shadows. Each biome has its own palette but
   kernel colors stay consistent everywhere.
+- **Plain vs. power kernels must read instantly:** plain kernels are matte with calm faces; power
+  kernels are shiny, have a glowing icon, and look excited.
 - Inspiration: *Pikmin*, *Kirby*, *Untitled Goose Game*'s simplicity, *VeggieTales*, and the
   readability of *Vampire Survivors* and *Brotato*.
 
 ### 12.2 Tone Rules (Kid-Appropriate)
 
-- **No blood, no gore, no fear.** "Defeated" cobs get dizzy stars, spin, and **poof into a husk** and
-  a puff of corn silk.
+- **No blood, no gore, no fear.** Cobs that get worn all the way down get dizzy stars, spin, and
+  **poof into a husk** and a puff of corn silk.
 - Chomping is cartoony: a big "NOM!" text pop, crumbs, a happy cob face. The eaten cob gives a
   surprised "oop!" and disappears in a sparkle. It shouldn't look like it's being hurt.
 - Harvester and crow designs stay **toy-like and goofy**.
@@ -531,11 +667,15 @@ Earned from every run based on time, size, chomps, and Goldie kernels. **No real
 
 ### 12.3 Juice Checklist
 
-- [ ] Kernel fire: the kernel pops off the cob with a little "pthoo!" and leaves an empty socket
+- [ ] Power button press: button squishes, the kernel pops off the cob with a "pthoo!" and leaves an empty socket
 - [ ] Kernel lands: squash, one bounce, glow turns on
-- [ ] Kernel pop: burst particles + a little "pop!" text
+- [ ] Kernels knocked off a cob: burst particles + a little "pop!" text
+- [ ] Resisted hit: *tink!*, a shield icon, the cob makes a smug face
+- [ ] Weak-spot hit: big "x2", extra-loud pop
+- [ ] Cob turns chompable: outline flips red → green with a little "ding!" and the cob looks nervous
 - [ ] Kernel pickup: magnet whoosh → snap onto the cob with a squash + rising pitch sound for each kernel picked up in a row
-- [ ] Chomp: screen bounce, crunch, a crumb burst
+- [ ] Chomp: screen bounce, crunch, a crumb burst, streak counter
+- [ ] Power combo: name pop-up ("STEAM BURST!") and a fanfare sting
 - [ ] Tier up: cob grows with a "ta-da!" spin, camera zooms out smoothly
 - [ ] Hit taken: cob flinches, quick white flash, kernel spins off
 - [ ] All Popped Out: big yawn, cob tucks into its husk sleeping bag, "Zzz" bubbles, a sleepy lullaby jingle
@@ -551,12 +691,14 @@ Earned from every run based on time, size, chomps, and Goldie kernels. **No real
 ## 13. Audio
 
 - **Music:** bouncy, cheerful — banjo, marimba, kazoo, hand claps, toy piano. Each biome gets a theme.
-  The music layers up as action builds up (adaptive stems), and the Harvest Moon boss gets a "big
-  silly hoedown" track.
-- **SFX:** each kernel type has its own firing sound. Pickup pitch rises with each kernel in a quick
-  streak (very satisfying). Chomp = crunch. All Popped Out = yawn + a sleepy music-box jingle.
-- **Voice:** optional cute vocal barks ("Yum!", "Whee!", "Uh-oh!"), plus a read-aloud narrator for
-  menus and the Kernelpedia.
+  The music layers up as action builds up (adaptive stems), and the King Cob fight gets a "big silly
+  hoedown" track.
+- **SFX:** each power has its own firing sound. Each damage type has its own hit sound, and a resisted
+  hit always sounds like *tink!* so players can hear when to switch powers. Pickup pitch rises with
+  each kernel in a quick streak. Chomp = crunch, and chomp streaks climb in pitch. All Popped Out =
+  yawn + a sleepy music-box jingle.
+- **Voice:** optional cute vocal barks ("Yum!", "Whee!", "Uh-oh!", "Try another power!"), plus a
+  read-aloud narrator for menus and the Kernelpedia.
 - **iOS note:** web audio has to be "unlocked" by the first tap. Start audio from the title screen's
   "Play" tap.
 
@@ -591,17 +733,22 @@ from rendering so you could swap engines later.
 - **Spatial hash grid** for collisions (shots vs. cobs, pickups vs. player). No physics engine needed;
   everything is circles.
 - **Object pooling** for projectiles, particles, and kernels (no garbage-collection hitches).
-- **Data-driven content:** kernels, enemies, combos, biomes, and director curves live in JSON/TS
-  config files so they can be balanced without code changes. Add a debug panel to tweak them live.
+- **Data-driven content:** kernel types, damage types, the matchup chart, combos, enemies, biomes, and
+  director curves live in JSON/TS config files so they can be balanced without code changes. Add a
+  debug panel to tweak them live.
+- **Cobs as kernel lists:** every cob (player or enemy) is a list of kernel counts by type. Damage,
+  resistances, chomping, and drops all work on that one shared model, so player and enemy rules
+  can't drift apart.
 - **Floating origin:** every so often, shift the world back toward 0,0 so positions don't lose
   precision far from the start on the infinite map.
-- **Input layer** turns touch, mouse, keyboard, and gamepad into one "move vector + buttons" object,
-  with multiple players in mind for later co-op.
+- **Input layer** turns touch, mouse, keyboard, and gamepad into one "move vector + power buttons +
+  target" object, with multiple players in mind for later co-op. It must track several touches at
+  once (joystick plus one or two held buttons).
 
 ### 14.3 Performance Budget
 
 - **Targets:** 60 fps on **iPad (9th gen)** and **iPhone 12**. 120 fps where available is a bonus.
-- **Entity caps (starting point, tune with profiling):** ~300 enemies, ~800 projectiles,
+- **Entity caps (starting point, tune with profiling):** ~300 enemies, ~400 projectiles,
   ~2,000 ground kernels on screen, ~1,000 particles.
 - **Ground kernels are the biggest load.** Every shot becomes a ground kernel, and they never time out.
   - **Kernel merging:** when the ground gets crowded, nearby kernels **of the same type** merge into
@@ -640,7 +787,8 @@ This is where web games on iPad usually run into trouble, so plan for it from da
 - CSS: `touch-action: none` on the game canvas, `overscroll-behavior: none`, `user-select: none`,
   `-webkit-user-select: none`, `-webkit-touch-callout: none`, `-webkit-tap-highlight-color: transparent`.
 - Use `100dvh` (not `100vh`) and `env(safe-area-inset-*)` padding.
-- Use **Pointer Events** and track multiple pointers (joystick + Pop button at the same time).
+- Use **Pointer Events** and track multiple pointers (joystick + power buttons at the same time).
+- Power buttons should respond on **pointer down**, not on release, so firing feels instant.
 
 **Platform limits to design around**
 - **No Vibration API on iOS.** Haptics aren't possible on the web there, so put the "feel" into
@@ -664,34 +812,40 @@ This is where web games on iPad usually run into trouble, so plan for it from da
 
 ## 15. Open Questions
 
-These would change the design, so they need answers before or during prototyping:
-
 Decided so far:
 
-- **Firing spends your own kernels**, which land on the ground to be picked up again. Shooting can
-  never fire your last (Heart) kernel. (§4.1)
-- **Kernels knocked off by hits never disappear**; they stay on the ground until picked up. (§4.2)
+- **Two kinds of kernels:** plain kernels (body/health, can't be fired, some durable or resistant)
+  and power kernels (fired with buttons). (§4.1, §5)
+- **No auto-fire.** One button per power type; the player chooses when to shoot. (§4.2)
+- **Chomping is the main way to grow.** Shooting wears big cobs down until they can be chomped. (§4.6)
+- **Fired kernels land on the ground** to be picked up again, and you can never fire your last
+  (Heart) kernel. (§4.2)
+- **Kernels knocked off by hits never disappear**; they stay on the ground until picked up. (§4.3)
 - **You can chomp any cob with fewer kernels than you.** (§4.6)
-- **Losing is "All Popped Out!"** with a gentle nap animation; no "shucked." (§4.3)
-- **Color-coded loot** (enemies drop what they're made of) and **green/red chomp outlines** stay.
+- **Losing is "All Popped Out!"** with a gentle nap animation; no "shucked." (§4.4)
+- **Color-coded loot** (enemies are worth what they're made of) and **green/red chomp outlines** stay.
 
 Still open:
 
-1. **Hold-fire button?** Auto-fire only, or a toggle to stop shooting so you can hoard kernels? Auto
-   only is simpler for young kids. A toggle adds strategy for older kids.
-2. **Can enemies pick up kernels you fired?** Recommended yes on normal difficulty (adds a race), no
+1. **How many power buttons?** Recommended 3 to start, up to 5 (6 on iPad with a perk). Is that the
+   right range for the target age?
+2. **Hold to keep firing, or one tap per shot?** Recommended both (tap = 1, hold = repeat). Tap-only
+   makes every kernel feel more precious but is tiring.
+3. **Target lock:** is auto-target plus tap-to-lock enough, or do you want drag-to-aim on by default?
+4. **Should Smart Fire stay limited to Easy Peasy and Settings,** or be offered to everyone?
+5. **Sprout turret:** OK as the one thing that shoots on its own, or should Sprout work differently?
+6. **Can enemies pick up kernels you fired?** Recommended yes on normal difficulty (adds a race), no
    on Easy Peasy.
-3. **Size tiers only go up during a run** (recommended), or should the cob shrink when it's mostly empty?
-4. **Age focus:** closer to 6 or closer to 10? That changes how complex combos and the Ear Up!
-   choices should be.
-5. **Kernel arrangement:** automatic (recommended) or an optional manual "Cob Garden" for older kids?
-6. **Run length:** is 10 minutes right for the target age? (Consider 6-minute "Snack Runs.")
-7. **Co-op:** is two players on one iPad a launch goal? It affects input and camera design early.
-8. **Narration:** voice-over budget for read-aloud menus?
-9. **Monetization:** free? A one-time paid version? (Strongly recommend no ads/IAP for this audience.)
-10. **Story wrapper:** is there a reason the cobs are fighting? (e.g. "The Great Harvest is coming and
-    only the biggest cob gets to be Corn King of Corn Utopia.")
-11. **Name:** keep *Corn Utopia*, or something punnier?
+7. **Size tiers only go up during a run** (recommended), or should the cob shrink when it's mostly empty?
+8. **Age focus:** closer to 6 or closer to 10? That decides how many resistant kernels and combos to
+   launch with.
+9. **Run length:** is 10 minutes right for the target age? (Consider 6-minute "Snack Runs.")
+10. **Co-op:** is two players on one iPad a launch goal? It affects input and camera design early.
+11. **Narration:** voice-over budget for read-aloud menus?
+12. **Monetization:** free? A one-time paid version? (Strongly recommend no ads/IAP for this audience.)
+13. **Story wrapper:** is there a reason the cobs are chomping each other? (e.g. "The Great Harvest is
+    coming and whoever chomps King Cob becomes the new ruler of Corn Utopia.")
+14. **Name:** keep *Corn Utopia*, or something punnier?
 
 ---
 
@@ -700,28 +854,34 @@ Still open:
 Each milestone has a clear "done when" check. Scope grows only after the previous milestone is fun.
 
 ### M0 — Gray-Box Prototype (Find the Fun)
-- Circles and squares only. Touch joystick, auto-fire that spends kernels, Heart Kernel minimum,
-  fired kernels landing as pickups, kernels as health, chomp rule.
-- This is where to tune the most important numbers: fire rate, shot range, magnet radius, and how
-  far fired kernels land. Those decide whether fire → dodge → scoop feels fun or frustrating.
-- 3 kernel types (Sunny, Spicy, Frosty), 2 enemy types, a simple director, an infinite plain field.
-- PWA shell installed on a real iPad and iPhone from the very first build.
-- **Done when:** a kid plays 3 runs in a row without being asked to.
+- Circles and squares only. Touch joystick, power buttons, target ring, chomp rule with green/red
+  outlines, fired kernels landing as pickups, Heart Kernel minimum.
+- 3 plain kernels (Sunny, Soggy, Stony), 3 power kernels (Zinger, Spicy, Popper), so the matchup idea
+  can be tested from day one. 3 enemy types, a simple director, an infinite plain field.
+- This is where to tune the most important numbers: how many shots it takes to make a cob chompable,
+  button recharge times, shot range, magnet radius, and Chomp Bonus size. Those decide whether
+  "wear it down, then chomp" feels fun or like a chore.
+- PWA shell installed on a real iPad and iPhone from the very first build, to test two-thumb play.
+- **Done when:** a kid plays 3 runs in a row without being asked to, and switches powers on their own
+  when they hear a *tink!*
 
 ### M1 — Vertical Slice
-- First real art pass on the player cob, Sunny kernels, Baby Cobs, Sunny Farm biome.
-- Full juice on pop/scoop/chomp. Size tiers + camera zoom. Ear Up! choices. All Popped Out + Last Chance.
+- First real art pass on the player cob, a few kernels, Baby Cobs, Sunny Farm biome.
+- Full juice on fire/pop/scoop/chomp. Size tiers + camera zoom. Power Pockets. Ear Up! choices.
+  All Popped Out + Last Chance.
 - Audio unlock, music, core SFX. Offline play works.
 - **Done when:** a 3-minute run on an iPhone 12 holds 60 fps and *feels* finished.
 
 ### M2 — Content Alpha
-- All 12 kernels, milestones, 6 combos. Full enemy roster, 2 mini-bosses, King Cob.
-- 3 biomes, points of interest, events. Harvest Run 10-minute structure with Harvey.
-- Settings: difficulty, controls, reduce flashing/shake.
+- All plain and power kernels, matchup chart, milestones, power combos. Full enemy roster, mini-bosses,
+  Harvey, King Cob with his coat phases.
+- 3 biomes, points of interest, events. Harvest Run 10-minute structure.
+- Settings: difficulty, Smart Fire, controls (Follow My Finger, drag-to-aim, left-handed), reduce
+  flashing/shake.
 - **Done when:** a full run is winnable and the director feels balanced across power levels.
 
 ### M3 — Meta + Beta
-- The Farm hub, Seeds, unlocks, Kernelpedia, stickers, cosmetics.
+- The Farm hub, Seeds, starting loadouts, Kernelpedia with matchup pictures, stickers, cosmetics.
 - Onboarding, Add to Home Screen helper, update flow, save persistence.
 - Remaining biomes, Endless mode, accessibility pass, performance tuning on older devices.
 - **Done when:** playtesting with kids of the target age shows people coming back for more runs.
@@ -736,15 +896,16 @@ Each milestone has a clear "done when" check. Scope grows only after the previou
 
 - **Test with real kids early** (from M0). Watch, don't explain. Note where they get confused, where
   they laugh, and when they put the device down.
-- Track locally (debug builds only): run length, what caused each All Popped Out, kernels collected
-  per minute, share of fired kernels picked back up, how often Pop Blast is used, Ear Up! picks,
-  average fps.
+- Track locally (debug builds only): run length, what caused each All Popped Out, chomps per minute,
+  shots per chomp, resisted (*tink!*) shots in a row before switching powers, share of fired kernels
+  picked back up, which buttons get pressed, Ear Up! picks, average fps.
 - Key questions:
-  - Do kids understand that shooting uses their kernels, and that they should go pick them back up?
-  - Does auto-fire feel like it's "wasting" kernels, or does the scoop-up feel rewarding?
+  - Can kids steer and press power buttons at the same time on iPad? On iPhone?
+  - Do they understand that shooting is for making a cob chompable, not the goal by itself?
+  - Do they switch powers when a shot doesn't work, or keep pressing the same button?
+  - Does spending kernels on shots feel fair, and do they go back to scoop them up?
   - Can a 6-year-old tell chompable cobs from dangerous ones without help?
   - Do players actually go after specific kernel colors?
-  - Does losing kernels feel fair, and do comebacks happen?
   - Is the screen readable during a Kernel Swarm on an iPhone?
 
 ---
@@ -753,28 +914,40 @@ Each milestone has a clear "done when" check. Scope grows only after the previou
 
 | Risk                                                | Mitigation                                                                 |
 |-----------------------------------------------------|----------------------------------------------------------------------------|
-| **Death spiral** (fewer kernels → weaker → more hits) | Kernels never disappear, Heart Kernel minimum, low-kernel fire slow-down, smoothed-power director, Last Chance |
-| **Auto-fire feels like losing health** for young kids | Clear "your kernels" sparkle, strong magnet, satisfying scoop sounds, Boomerang/Long Shot perks, playtest early |
+| **Two-thumb play is hard** for young kids           | Smart Fire button, Follow My Finger, large spaced buttons, hold-to-repeat, few pockets at the start |
+| **Too many buttons** on iPhone                      | Power Pocket cap, waiting-power queue, swap arrow, two-row arc in portrait |
+| **Matchups are confusing**                          | Color-coded cobs, shield badges, *tink!* sound + icon, onboarding step, Kernelpedia pictures, Smart Fire |
+| **Wearing down big cobs feels like a chore**        | Tune shots-per-chomp in M0, director keeps most cobs as quick snacks, combos give big chunks, chomp meter shows progress |
+| **Death spiral** (fewer kernels → weaker → more hits) | Kernels never disappear, Heart Kernel minimum, smoothed-power director, Chomp Bonus, Last Chance |
 | **Visual clutter** on small screens (shots + piles of ground kernels) | Camera zoom-out, layer rules, flying vs. landed looks, same-type merging, auto-dim effects, projectile caps |
 | **Performance** on older iPhones (many ground kernels) | ECS + pooling, kernel merging, off-screen chunk storage, entity caps, dynamic quality |
 | **iOS PWA quirks** (audio, storage, install)        | Test on real devices from M0, Add to Home Screen helper, save export      |
-| **Too complex** for young kids                      | Auto-arrange kernels, icon-first UI, Easy Peasy mode, no reading required |
-| **Scope creep** (infinite map, many kernels)        | Data-driven content, milestone gates, launch with 12 kernels / 3–6 biomes |
-| **Same-y runs**                                     | Kernel combos, biomes, events, points of interest, starting kernel choices |
+| **Scope creep** (infinite map, many kernels)        | Data-driven content, milestone gates, start M0 with 3 plain + 3 power kernels |
+| **Same-y runs**                                     | Matchups, power combos, biomes that favor different kernels, events, starting loadouts |
 
 ---
 
 ## 19. Glossary
 
-- **Kernel:** a piece on your cob. Health + ammo + ability.
+- **Kernel:** a piece of a cob. Every kernel counts toward health and size.
+- **Plain kernel:** a body kernel that can't be fired. Some are extra durable or resist a damage type.
+- **Power kernel:** a kernel you fire with its power button.
+- **Power button / Power Pocket:** the on-screen button for one power type. You have a limited number
+  of pockets.
+- **Damage type:** what kind of hit a shot is (Bonk, Fire, Freeze, Zap, Pop, Sticky).
+- **Resistance:** a plain kernel ignoring a damage type (*tink!*).
+- **Power combo:** a bonus effect from hitting a cob with one power and then another.
+- **Target ring:** the marker showing which cob your shots will go to.
 - **Cob:** you, or an enemy made of kernels.
 - **Socket:** a spot on your cob that holds one kernel. Empty sockets show missing health.
 - **Heart Kernel:** your last kernel, which can never be fired.
-- **Chomp:** eating a cob that has fewer kernels than you.
-- **Pop Blast:** the special move that fires half your kernels at once.
+- **Chomp:** eating a cob that has fewer kernels than you. The main way to grow.
+- **Chomp Bonus / Chomp Streak:** the extra kernels you grow from chomping, and the boost for chomping
+  several cobs quickly.
 - **Ear Up!:** the level-up choice when you grow a size tier.
 - **All Popped Out:** game over (hit while down to your Heart Kernel, and no kernel grabbed during Last Chance).
 - **Bare Cob / Last Chance:** the short grace period after losing your Heart Kernel.
+- **Smart Fire:** an assist mode with one Fire button that picks the best power for you.
 - **Director:** the system that decides what enemies spawn.
 - **Seeds:** the meta currency spent at the Farm.
 - **Kernelpedia:** the in-game collection book.
