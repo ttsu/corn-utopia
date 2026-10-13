@@ -101,15 +101,17 @@ Both kinds count toward your **kernel count** (for chomping), your **health**, a
 
 - **One button per power type**, on the right side of the screen. Each button shows the power's icon,
   a **count badge** (how many of that kernel you have), and a **recharge ring**.
-- **Tap** to fire one kernel of that type. **Hold** to keep firing at that power's fire rate.
-  Rapid tapping also works.
+- **[Decision] One shot per tap.** Each tap fires one kernel of that type. Holding a button does
+  nothing extra, so every shot is a choice and every kernel feels precious.
+- After a shot, the button's **recharge ring** refills (quick for Zinger, slower for big powers like
+  Popper and Sprout). Taps during the recharge are ignored, so mashing doesn't waste kernels.
 - **Firing spends that kernel.** It flies out, does its effect, then **drops onto the ground** where it
   hit or where it ran out of range. Roll over it to get it back.
 - When you run out of a power type, its button goes gray and empty until you pick up more.
 
 **Power Pockets (how many buttons):**
 - You start with **3 Power Pockets** (3 buttons). You get +1 at size tier 3 and +1 at tier 5,
-  up to **5**. The Extra Pocket perk can push it to 6 on iPad.
+  up to a maximum of **5** on both iPad and iPhone.
 - If you pick up a new power type while your pockets are full, it goes onto your cob (it still counts
   as health) and waits in line. Its icon shows up small next to the buttons.
 - When a pocket empties, the next waiting power moves into it automatically. A small **swap arrow**
@@ -216,7 +218,7 @@ upgrade system, so Ear Up! choices are **cob perks**, picked from big picture ca
 - **Big Magnet:** pickup radius +30%
 - **Zoomies:** move speed +10%
 - **Quick Hands:** power buttons recharge 15% faster
-- **Extra Pocket:** +1 power button
+- **Extra Pocket:** unlock your next power button right away (never more than 5)
 - **Long Shot:** fired kernels fly 20% further
 - **Boomerang:** 1 in 5 fired kernels flies back to your cob by itself
 - **Thick Husk:** every 5th hit is blocked
@@ -263,11 +265,14 @@ Kernels are the heart of the game. Every kernel type needs:
 | **Popper**         | Puffy popcorn           | Pop         | Lobbed shot that explodes, knocking 1 off every cob nearby   | Uncommon  |
 | **Zappy**          | Candy-corn triangle     | Zap         | Chain lightning hops to nearby cobs                          | Rare      |
 | **Caramel**        | Glossy brown, drip      | Sticky      | Sticky glob: the cob slows way down and can't pick up kernels| Rare      |
-| **Sprout**         | Bright green, sprout    | Bonk        | Lands and grows a tiny stalk turret that plinks the nearest cob for 6 s, then turns back into a kernel | Rare |
+| **Sprout**         | Bright green, sprout    | Bonk        | Plants itself where it lands and grows into a little helper plant that shoots seeds at the nearest cob for about 6 s, then turns back into a kernel to pick up | Rare |
 | **Gem** (Glass Gem)| Rainbow glass           | Random      | Uses a random power's attack each time, at double strength   | Legendary |
 
-Sprout's turret is the one thing in the game that shoots by itself. It's a placed helper, so it
-doesn't break the "you choose when to shoot" rule.
+**[Decision] Sprout helper plants** are the one thing in the game that shoots by itself. You still
+choose when and where to plant one, so it fits the "you choose when to shoot" rule. The plant is a
+cute little stalk with a face that turns to aim, puffs out seed shots, and waves goodbye before it
+shrinks back into a Sprout kernel. Planting several near a big cob is a good way to wear it down
+while you dodge.
 
 ### 5.3 Damage Types and Resistances
 
@@ -315,7 +320,7 @@ Power kernels have no resistances; a hit of any type can knock them off.
 - **Milestones at 5 / 10 / 20** of a power give a visible upgrade:
   - 5 Spicy: fireballs get bigger
   - 10 Spicy: fireballs split into 3
-  - 20 Spicy: **Flamethrower** (holding the button breathes a short stream of fire)
+  - 20 Spicy: **Flamethrower** (each tap breathes a short stream of fire instead of one fireball)
 - A milestone triggers a **little celebration** (that power's kernels dance, and its button gets a
   shiny new border).
 
@@ -458,7 +463,7 @@ budget/sec  = base + a × smoothedPower + b × minutesElapsed + c × distanceFro
 
 | Setting        | Who it's for                    | Changes                                                       |
 |----------------|---------------------------------|---------------------------------------------------------------|
-| **Easy Peasy** | Youngest kids (5–7)             | **Smart Fire** button (see §11.1), slower enemies, much bigger pickup magnet, fewer resistant cobs, enemies don't grab your fired kernels, Last Chance 6 s, no Crows |
+| **Easy Peasy** | Youngest kids (5–7)             | **Smart Fire turned on automatically** (see §11.1), slower enemies, much bigger pickup magnet, fewer resistant cobs, enemies don't grab your fired kernels, Last Chance 6 s, no Crows |
 | **Just Right** | Default                         | As designed                                                    |
 | **Spicy**      | Older kids / parents            | Faster director ramp, more resistant and "project" cobs, enemies grab ground kernels faster, smaller magnet |
 
@@ -567,23 +572,23 @@ Earned from every run based on time, size, chomps, chomp streaks, and Goldie ker
 |------------------------------|---------------------------------------------------------------------|
 | **Drag on the left half**    | **Floating joystick** shows up where your thumb lands; drag to steer |
 | **Lift finger**              | Cob slowly coasts to a stop (doesn't stop instantly; feels smoother) |
-| **Tap a power button**       | Fire one of that power kernel at the target                         |
-| **Hold a power button**      | Keep firing that power at its fire rate                             |
+| **Tap a power button**       | Fire one of that power kernel at the target (one shot per tap)      |
 | **Tap a cob (right half)**   | Lock the target ring onto that cob                                  |
 | **Swap arrow on a button**   | Swap that pocket for a waiting power type                           |
 | **Double-tap (left half)**   | Butter Roll dash (only if you picked that perk)                     |
 | **Pause**                    | Top corner, inside the safe area                                    |
 
-- **Nothing fires on its own** (except a planted Sprout turret). The player always chooses which
+- **Nothing fires on its own** (except a planted Sprout helper plant). The player always chooses which
   power to use and when.
-- **Two thumbs at once:** you must be able to steer and hold a power button at the same time, and
-  press two power buttons back to back for combos.
-- **Smart Fire (Easy Peasy, or turn on in Settings):** replaces the power buttons with one big
-  **Fire** button that picks the best power against the current target. This helps the youngest
-  kids and players who find several buttons hard. It still only fires when pressed.
+- **Two thumbs at once:** you must be able to steer and tap power buttons at the same time, and
+  tap two power buttons back to back for combos.
+- **Smart Fire (option for everyone):** replaces the power buttons with one big **Fire** button that
+  picks the best power against the current target. Any player can turn it on or off in Settings,
+  and it's **turned on automatically on Easy Peasy**. It still fires only one shot per tap. It helps
+  the youngest kids and anyone who finds several buttons hard.
 - **[Decision] Alternate movement: "Follow My Finger."** The cob rolls toward wherever your left-side
   finger is. It's easier for very young kids and works well on iPad. Players can switch in Settings.
-- Keyboard (WASD/arrows to move, 1–6 for powers, Tab to change target) and gamepad (stick to move,
+- Keyboard (WASD/arrows to move, 1–5 for powers, Tab to change target) and gamepad (stick to move,
   face buttons and shoulders for powers) work on desktop and on iPads with a controller.
 
 ### 11.2 Layout
@@ -923,28 +928,29 @@ Decided so far:
 - **You can chomp any cob with fewer kernels than you.** (§4.6)
 - **Losing is "All Popped Out!"** with a gentle nap animation; no "shucked." (§4.4)
 - **Color-coded loot** (enemies are worth what they're made of) and **green/red chomp outlines** stay.
+- **3 to 5 power buttons:** start with 3, grow to a maximum of 5. (§4.2)
+- **One shot per tap** for now; holding a button does nothing extra. (§4.2)
+- **Sprout is a planted helper plant** that shoots on its own for a few seconds. (§5.2)
+- **Smart Fire is an option for everyone**, and turned on automatically on Easy Peasy. (§11.1)
+- **Art style is based on _How Many Dudes?_**, and a cob's appearance is built from its kernels. (§12)
 
 Still open:
 
-1. **How many power buttons?** Recommended 3 to start, up to 5 (6 on iPad with a perk). Is that the
-   right range for the target age?
-2. **Hold to keep firing, or one tap per shot?** Recommended both (tap = 1, hold = repeat). Tap-only
-   makes every kernel feel more precious but is tiring.
-3. **Target lock:** is auto-target plus tap-to-lock enough, or do you want drag-to-aim on by default?
-4. **Should Smart Fire stay limited to Easy Peasy and Settings,** or be offered to everyone?
-5. **Sprout turret:** OK as the one thing that shoots on its own, or should Sprout work differently?
-6. **Can enemies pick up kernels you fired?** Recommended yes on normal difficulty (adds a race), no
+1. **Target lock:** is auto-target plus tap-to-lock enough, or do you want drag-to-aim on by default?
+2. **Can enemies pick up kernels you fired?** Recommended yes on normal difficulty (adds a race), no
    on Easy Peasy.
-7. **Size tiers only go up during a run** (recommended), or should the cob shrink when it's mostly empty?
-8. **Age focus:** closer to 6 or closer to 10? That decides how many resistant kernels and combos to
+3. **Size tiers only go up during a run** (recommended), or should the cob shrink when it's mostly empty?
+4. **Age focus:** closer to 6 or closer to 10? That decides how many resistant kernels and combos to
    launch with.
-9. **Run length:** is 10 minutes right for the target age? (Consider 6-minute "Snack Runs.")
-10. **Co-op:** is two players on one iPad a launch goal? It affects input and camera design early.
-11. **Narration:** voice-over budget for read-aloud menus?
-12. **Monetization:** free? A one-time paid version? (Strongly recommend no ads/IAP for this audience.)
-13. **Story wrapper:** is there a reason the cobs are chomping each other? (e.g. "The Great Harvest is
-    coming and whoever chomps King Cob becomes the new ruler of Corn Utopia.")
-14. **Name:** keep *Corn Utopia*, or something punnier?
+5. **Run length:** is 10 minutes right for the target age? (Consider 6-minute "Snack Runs.")
+6. **Co-op:** is two players on one iPad a launch goal? It affects input and camera design early.
+7. **Narration:** voice-over budget for read-aloud menus?
+8. **Monetization:** free? A one-time paid version? (Strongly recommend no ads/IAP for this audience.)
+9. **Story wrapper:** is there a reason the cobs are chomping each other? (e.g. "The Great Harvest is
+   coming and whoever chomps King Cob becomes the new ruler of Corn Utopia.")
+10. **Name:** keep *Corn Utopia*, or something punnier?
+11. **Later: hold-to-repeat firing?** One tap per shot for now. Revisit after playtesting if kids'
+    thumbs get tired.
 
 ---
 
@@ -1015,7 +1021,7 @@ Each milestone has a clear "done when" check. Scope grows only after the previou
 
 | Risk                                                | Mitigation                                                                 |
 |-----------------------------------------------------|----------------------------------------------------------------------------|
-| **Two-thumb play is hard** for young kids           | Smart Fire button, Follow My Finger, large spaced buttons, hold-to-repeat, few pockets at the start |
+| **Two-thumb play is hard** for young kids           | Smart Fire (on by default in Easy Peasy), Follow My Finger, large spaced buttons, recharge rings that make mashing harmless, few pockets at the start |
 | **Too many buttons** on iPhone                      | Power Pocket cap, waiting-power queue, swap arrow, two-row arc in portrait |
 | **Matchups are confusing**                          | Color-coded cobs, shield badges, *tink!* sound + icon, onboarding step, Kernelpedia pictures, Smart Fire |
 | **Wearing down big cobs feels like a chore**        | Tune shots-per-chomp in M0, director keeps most cobs as quick snacks, combos give big chunks, chomp meter shows progress |
