@@ -202,8 +202,9 @@ Your cob has a set number of **kernel sockets**. When the sockets fill up, the c
   - **Chomp Streak:** chomps within a few seconds of each other build a streak that boosts the bonus
     (with a rising "nom, NOM, NOM!" sound).
 - **Shooting a cob down to nothing** is allowed: it poofs and drops all its kernels on the ground,
-  but there's **no Chomp Bonus**, and other cobs can grab the loot first. The smart play is to shoot
-  until it's green, then chomp.
+  but there's **no Chomp Bonus**, and you have to scoop the kernels up before Finders Keepers runs
+  out (§6.1) or other cobs and crows can grab the loot. The smart play is to shoot until it's green,
+  then chomp.
 - The comparison uses **kernel count, not size**. That creates strategy:
   - Shooting knocks kernels off big cobs until they're chompable.
   - Firing also lowers *your* count, so a cob you could chomp a second ago might not be chompable
@@ -380,6 +381,17 @@ When you're at the top tier and every socket is full:
 - Enemy cobs **pick up kernels on the ground** too, including ones you fired or dropped, and grow if
   they do. That creates "race them to the loot" moments and gives you a reason to scoop quickly. The
   kernels aren't lost: chomp that enemy and you get them back.
+- **[Decision] Finders Keepers (10 s).** A kernel that pops off an enemy cob (from any hit, combo,
+  hazard, or a cob poofing) is **player-only for 10 seconds** after it lands. Enemy cobs and crows
+  can't pick it up, and they don't steer toward it. Without this, cobs in a pack scoop up each
+  other's popped kernels right away and a pack never wears down.
+  - These kernels show the same **sparkle ring in your color** as your fired kernels (§4.2), with a
+    ring that shrinks over the 10 s so you can see how long you have. When it runs out, they become
+    normal ground kernels that anyone can grab.
+  - Your pickup magnet works on them as usual. Kernels the player drops or fires don't get this
+    protection; enemies can still race you for those (except on Easy Peasy, §7.3).
+  - Finders Keepers kernels don't merge (§14.3) with unprotected kernels until their timer ends.
+  - The 10 s length is a config value to tune in playtesting.
 - **Enemies follow the same rules you do.** Shooter cobs fire their own power kernels, which land on
   the ground as free pickups for you. A Shooter cob that fires too much gets small enough to chomp.
 - **Most cobs are a mix of plain kernels.** Early cobs are mostly Sunny. Further out and at higher
@@ -956,6 +968,8 @@ Decided so far:
 - **Art style is based on _How Many Dudes?_**, and a cob's appearance is built from its kernels. (§12)
 - **Auto-target plus tap-to-lock** is the default; drag-to-aim is optional and off by default. (§4.2)
 - **Enemies can pick up kernels you fired** on normal difficulty, but not on Easy Peasy. (§6.1, §7.3)
+- **Finders Keepers:** kernels popped off an enemy cob are player-only for 10 s, so packs can't
+  instantly re-absorb each other's kernels. (§6.1)
 - **Size tiers only go up** during a run. (§4.5)
 - **Designed around 10-year-olds**, so the full matchup chart and combos ship at launch. (§1)
 - **10-minute Harvest Runs**, adjusted after playtesting. (§9.1)
@@ -981,7 +995,7 @@ Each milestone has a clear "done when" check. Scope grows only after the previou
 
 ### M0 — Gray-Box Prototype (Find the Fun)
 - Circles and squares only. Touch joystick, power buttons, target ring, chomp rule with green/red
-  outlines, fired kernels landing as pickups, Heart Kernel minimum.
+  outlines, fired kernels landing as pickups, Heart Kernel minimum, Finders Keepers on popped kernels.
 - 3 plain kernels (Sunny, Soggy, Stony), 3 power kernels (Zinger, Spicy, Popper), so the matchup idea
   can be tested from day one. 3 enemy types, a simple director, an infinite plain field.
 - This is where to tune the most important numbers: how many shots it takes to make a cob chompable,
@@ -1075,6 +1089,7 @@ Each milestone has a clear "done when" check. Scope grows only after the previou
 - **Flair:** small visual extras from the power kernels a cob is holding (e.g. flames on the tassel for Spicy).
 - **Socket:** a spot on your cob that holds one kernel. Empty sockets show missing health.
 - **Heart Kernel:** your last kernel, which can never be fired.
+- **Finders Keepers:** the 10 s window after a kernel pops off an enemy cob when only you can pick it up.
 - **Chomp:** eating a cob that has fewer kernels than you. The main way to grow.
 - **Chomp Bonus / Chomp Streak:** the extra kernels you grow from chomping, and the boost for chomping
   several cobs quickly.
