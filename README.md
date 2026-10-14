@@ -16,7 +16,7 @@ and adds the first art pass, Sunny Farm, Power Pockets, Ear Up perks, and music.
 What's new:
 
 - **Cutout cobs.** Player and enemies are hand-drawn-style corn cobs (thick ink, flat color, bob
-  and tilt). Kernel faces, Soggy drips, Stony cracks, and power flair (tassel, flames, popcorn)
+  and tilt). Kernel faces, Soggy drips, Stony cracks, and power flair (frost, popcorn)
   so a cob's look tells you which power to use. Green cobs look nervous. A resisted hit looks smug.
   Frosty adds an icy crystal and little icicles.
 - **Sunny Farm.** Grass, dirt, and flowers are scenery. Hay is stacked in clumps of similar-sized

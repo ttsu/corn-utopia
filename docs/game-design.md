@@ -796,6 +796,9 @@ top, scaled by how many you have:
 |--------------|------------------------------------------------|
 | Zinger       | Orange tassel "hair" that sticks straight up   |
 | Spicy        | Little flames flicker from the tassel          |
+
+**[Decision] The pointed stand-in tassel is not drawn.** A triangle on top of a Zinger or Spicy cob
+read as an arrow, so this slice leaves it off. Frost on the husk and the occasional popcorn bit still show.
 | Frosty       | Frosty breath puffs, icicles on the husk       |
 | Boing        | Spring-shaped tassel that boings when you move |
 | Popper       | Popcorn bits pop off now and then              |

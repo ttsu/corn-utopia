@@ -313,7 +313,7 @@ export function drawCobShell(g: Graphics, c: CobDraw): { primary: PlainKind; sec
   return { primary, secondary };
 }
 
-/** Tassel, flames, or popcorn bits from the power kernels on this cob. */
+/** Frost and popcorn bits from the power kernels on this cob. */
 export function drawFlair(g: Graphics, c: CobDraw): void {
   const { x, y, r, angle, time, kernels } = c;
   const rot = (lx: number, ly: number): [number, number] => {
@@ -322,18 +322,6 @@ export function drawFlair(g: Graphics, c: CobDraw): void {
     return [x + lx * co - ly * si, y + lx * si + ly * co];
   };
   const ink = Math.max(1.5, r * 0.04);
-  if (kernels.zinger > 0 || kernels.spicy > 0) {
-    const flame = kernels.spicy > 0;
-    const h = r * (0.35 + Math.sin(time * 10) * 0.04);
-    const pts = [rot(0, -r * 0.9 - h), rot(r * 0.16, -r * 0.78), rot(-r * 0.16, -r * 0.78)];
-    g.poly(pts.flat(), true)
-      .fill(flame ? 0xff6b35 : 0xff8c1a)
-      .stroke({ width: ink, color: INK });
-    if (flame) {
-      const inner = [rot(0, -r * 0.9 - h * 0.65), rot(r * 0.07, -r * 0.82), rot(-r * 0.07, -r * 0.82)];
-      g.poly(inner.flat(), true).fill(0xffe066);
-    }
-  }
   if (kernels.frosty > 0) {
     for (const side of [-1, 1]) {
       const [ix, iy] = rot(side * r * 0.48, r * 0.05);
