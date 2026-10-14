@@ -3,6 +3,7 @@ import {
   canChomp,
   emptyKernels,
   kernelsOf,
+  knockable,
   powerScore,
   total,
   type Kernels,
@@ -480,6 +481,13 @@ function damageFor(w: World, kind: PowerKind): number {
   return Math.round(base * damageScale(w));
 }
 
+/** Share of the target's knockable kernels a hit shakes loose, so big cobs take similar shots at any size. */
+function shakeFor(w: World, source: PowerKind | null): number {
+  const t = w.tuning;
+  const pct = source === 'zinger' ? t.zingerShake : source === 'spicy' ? t.spicyShake : source === 'popper' ? t.popperShake : t.burnShake;
+  return pct / 100;
+}
+
 function tryFire(w: World, kind: PowerKind): void {
   const p = w.player;
   const t = w.tuning;
@@ -799,6 +807,7 @@ function hitEnemy(
   source: PowerKind | null,
 ): void {
   if (total(e.kernels) === 0) return;
+  amount += Math.round(shakeFor(w, source) * knockable(e.kernels, damage));
   if (e.hunter) {
     // Armor keeps the average damage exact even when a hit is only a kernel or two.
     const scaled = amount * w.tuning.hunterArmor;

@@ -54,6 +54,13 @@ export function shieldBadges(k: Kernels, threshold = 0.5): DamageType[] {
   return out;
 }
 
+/** Kernels a hit of this damage type could knock off (everything not immune to it). */
+export function knockable(k: Kernels, damage: DamageType): number {
+  let n = 0;
+  for (const kind of KERNEL_KINDS) if (KERNELS[kind].resist[damage] !== 'immune') n += k[kind];
+  return n;
+}
+
 export interface HitResult {
   removed: KernelKind[];
   /** True when at least one point of damage was fully resisted (tink!). */
