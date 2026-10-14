@@ -45,6 +45,7 @@ jobs:
           source-dir: dist
           preview-branch: gh-pages
           umbrella-dir: pr
+          pages-base-url: cornutopia.timtsu.com
           wait-for-pages-deployment: false
 
       - name: Add preview link to job summary

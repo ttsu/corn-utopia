@@ -227,8 +227,11 @@ Your cob has a set number of **kernel sockets**. When the sockets fill up, the c
   - **Chomp Streak:** chomps within a few seconds of each other build a streak that boosts the bonus
     (with a rising "nom, NOM, NOM!" sound).
 - **Shooting a cob down to nothing** is allowed: it poofs and drops all its kernels on the ground,
-  but there's **no Chomp Bonus**, and other cobs can grab the loot first. The smart play is to shoot
-  until it's green, then chomp.
+  but there's **no Chomp Bonus**, and other cobs can grab the loot once it's been lying around
+  a while. The smart play is to shoot until it's green, then chomp.
+- **Kernels you knock off are yours first:** for **10 s** after a kernel is knocked off a cob, only
+  the player can pick it up. Other cobs ignore it, so fighting a pack doesn't just pass the
+  kernels from one cob to the next.
 - The comparison uses **kernel count, not size**. That creates strategy:
   - Shooting knocks kernels off big cobs until they're chompable.
   - Firing also lowers *your* count, so a cob you could chomp a second ago might not be chompable

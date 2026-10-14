@@ -5,8 +5,8 @@ Web-based and installable as a PWA, built touch-first for iPad and iPhone.
 
 See the [Game Design Document](docs/game-design.md).
 
-**Play it:** https://ttsu.github.io/corn-utopia/ (every PR also gets a preview at
-`https://ttsu.github.io/corn-utopia/pr/pr-<N>/`; see [docs/deploy.md](docs/deploy.md)).
+**Play it:** https://cornutopia.timtsu.com/ (every PR also gets a preview at
+`https://cornutopia.timtsu.com/pr/pr-<N>/`; see [docs/deploy.md](docs/deploy.md)).
 
 ## M0 gray-box prototype
 
@@ -72,7 +72,7 @@ lower bound.
 
 Service workers and install need HTTPS (or `localhost`). Options:
 
-- **GitHub Pages:** `main` deploys to https://ttsu.github.io/corn-utopia/ and each PR gets a
+- **GitHub Pages:** `main` deploys to https://cornutopia.timtsu.com/ and each PR gets a
   preview link (one-time Pages setup in [docs/deploy.md](docs/deploy.md)). Open the production
   URL in Safari → Share → Add to Home Screen.
 - **Local network:** `npm run dev` and open the printed LAN URL. The game is playable, but iOS
