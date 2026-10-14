@@ -8,10 +8,29 @@ See the [Game Design Document](docs/game-design.md).
 **Play it:** https://cornutopia.timtsu.com/ (every PR also gets a preview at
 `https://cornutopia.timtsu.com/pr/pr-<N>/`; see [docs/deploy.md](docs/deploy.md)).
 
+## M1 vertical slice
+
+The current build is the **M1 vertical slice** from the roadmap (GDD §16). It keeps the M0 rules
+and adds the first art pass, Sunny Farm, Power Pockets, Ear Up perks, and music.
+
+What's new:
+
+- **Cutout cobs.** Player and enemies are hand-drawn-style corn cobs (thick ink, flat color, bob
+  and tilt). Kernel faces, Soggy drips, Stony cracks, and power flair (tassel, flames, popcorn)
+  so a cob's look tells you which power to use. Green cobs look nervous. A resisted hit looks smug.
+- **Sunny Farm.** Grass, dirt, flowers, hay bales that block shots, and mud that slows you down.
+- **Power Pockets.** Three buttons to start, a fourth at size tier 3, a fifth at tier 5 (max 5).
+  A power you pick up with full pockets waits in line; the swap arrow trades it in.
+- **Ear Up!** Growing a size tier pauses the run and offers 3 cob perks (one re-roll per run):
+  Big Appetite, Big Magnet, Zoomies, Quick Hands, Extra Pocket, Long Shot, Boomerang, Thick Husk,
+  Butter Roll (double-tap the left side, or Space), and Lucky Ear.
+- **Juice and music.** Shots pop off, landings squash, chomps shake the screen, tier-ups twirl,
+  and All Popped Out tucks the cob into its husk. A little synthesized tune starts when you play
+  and stops for the nap jingle.
+
 ## M0 gray-box prototype
 
-The current build is the **M0 "find the fun" prototype** from the roadmap (GDD §16): circles and
-squares only, built to test whether "wear it down, then chomp" is fun on a touch screen.
+M0 was the "find the fun" prototype: the rules below, originally drawn as circles and squares.
 
 What's in it:
 

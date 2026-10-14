@@ -24,6 +24,7 @@ const loadout: Loadout = process.env.BOT_LOADOUT === 'playtest' ? 'playtest' : '
 
 function botCommand(w: World, lastShot: { tick: number }): InputCommand {
   const p = w.player;
+  if (w.earUps.length > 0) return { ...EMPTY_COMMAND, pickPerk: 0 };
   if (mode === 'idle') {
     const a = w.tick * DT * 0.4;
     return { ...EMPTY_COMMAND, moveX: Math.cos(a) * 0.3, moveY: Math.sin(a) * 0.3 };
@@ -63,7 +64,7 @@ function botCommand(w: World, lastShot: { tick: number }): InputCommand {
 
   const target = w.enemies.find((e) => e.id === p.targetId);
   if (target && !target.chompable && w.tick - lastShot.tick > 12 && total(p.kernels) > 3) {
-    for (const kind of POWER_KINDS) {
+    for (const kind of p.pockets.length > 0 ? p.pockets : POWER_KINDS) {
       const dmg = POWER_DAMAGE[kind];
       const immune = PLAIN_KINDS.filter((pk) => KERNELS[pk].resist[dmg] === 'immune').reduce((a, pk) => a + target.kernels[pk], 0);
       if (p.kernels[kind] > 0 && immune < total(target.kernels) * 0.6) {

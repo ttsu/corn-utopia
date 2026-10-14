@@ -1,5 +1,5 @@
 import type { PowerKind } from './sim/kernels';
-import type { InputCommand } from './sim/world';
+import { EMPTY_COMMAND, type InputCommand } from './sim/world';
 
 export interface Camera {
   x: number;
@@ -22,7 +22,7 @@ export interface JoystickState {
 }
 
 const JOYSTICK_RADIUS = 60;
-const KEY_POWERS: Record<string, PowerKind> = { Digit1: 'zinger', Digit2: 'spicy', Digit3: 'popper' };
+const KEY_SLOTS: Record<string, number> = { Digit1: 0, Digit2: 1, Digit3: 2, Digit4: 3, Digit5: 4 };
 
 /**
  * Turns touch, mouse, and keyboard into one InputCommand per tick. Tracks several pointers at
@@ -32,8 +32,12 @@ export class Input {
   joystick: (JoystickState & { pointerId: number }) | null = null;
   private keys = new Set<string>();
   private queuedFire: PowerKind[] = [];
+  private queuedSlots: number[] = [];
   private queuedTap: { x: number; y: number } | null = null;
   private queuedCycle = false;
+  private queuedDash = false;
+  private queuedSwap: InputCommand['swap'] = null;
+  private lastLeftDown = 0;
   enabled = true;
 
   constructor(
@@ -56,11 +60,18 @@ export class Input {
     if (this.enabled) this.queuedFire.push(kind);
   }
 
+  queueSwap(pocket: PowerKind, withKind: PowerKind): void {
+    if (this.enabled) this.queuedSwap = { pocket, with: withKind };
+  }
+
   reset(): void {
     this.joystick = null;
     this.queuedFire.length = 0;
+    this.queuedSlots.length = 0;
     this.queuedTap = null;
     this.queuedCycle = false;
+    this.queuedDash = false;
+    this.queuedSwap = null;
   }
 
   private onDown = (e: PointerEvent): void => {
@@ -70,6 +81,9 @@ export class Input {
     const x = e.clientX - rect.left;
     const y = e.clientY - rect.top;
     if (x < rect.width / 2) {
+      const now = performance.now();
+      if (now - this.lastLeftDown < 280) this.queuedDash = true;
+      this.lastLeftDown = now;
       if (this.joystick) return;
       this.joystick = { pointerId: e.pointerId, originX: x, originY: y, x, y };
       this.canvas.setPointerCapture(e.pointerId);
@@ -109,8 +123,9 @@ export class Input {
       this.queuedCycle = true;
       return;
     }
-    const power = KEY_POWERS[e.code];
-    if (power && !e.repeat) this.queuedFire.push(power);
+    const slot = KEY_SLOTS[e.code];
+    if (slot !== undefined && !e.repeat) this.queuedSlots.push(slot);
+    if ((e.code === 'Space' || e.code === 'ShiftLeft') && !e.repeat) this.queuedDash = true;
     this.keys.add(e.code);
   };
 
@@ -127,7 +142,7 @@ export class Input {
     return JOYSTICK_RADIUS;
   }
 
-  sample(cam: Camera): InputCommand {
+  sample(cam: Camera, pockets: readonly PowerKind[] = []): InputCommand {
     let mx = 0;
     let my = 0;
     if (this.keys.has('KeyA') || this.keys.has('ArrowLeft')) mx -= 1;
@@ -142,15 +157,25 @@ export class Input {
         my = v.y;
       }
     }
+    const fire = this.queuedFire.splice(0);
+    for (const slot of this.queuedSlots.splice(0)) {
+      const kind = pockets[slot];
+      if (kind) fire.push(kind);
+    }
     const cmd: InputCommand = {
+      ...EMPTY_COMMAND,
       moveX: mx,
       moveY: my,
-      fire: this.queuedFire.splice(0),
+      fire,
       lockAt: this.queuedTap ? screenToWorld(cam, this.queuedTap.x, this.queuedTap.y) : null,
       cycleTarget: this.queuedCycle,
+      dash: this.queuedDash,
+      swap: this.queuedSwap,
     };
     this.queuedTap = null;
     this.queuedCycle = false;
+    this.queuedDash = false;
+    this.queuedSwap = null;
     return cmd;
   }
 }

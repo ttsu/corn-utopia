@@ -5,17 +5,18 @@ import { Input } from './input';
 import { appendLog, clearLog, formatLog, formatTime, loadLog, summarize } from './playtestLog';
 import { Renderer } from './render';
 import { total } from './sim/cob';
-import { DT, EMPTY_COMMAND, createWorld, debugGrow, step, type Loadout, type SimEvent, type World } from './sim/world';
+import { perkDef } from './sim/perks';
+import { DT, EMPTY_COMMAND, createWorld, debugGrow, step, tierName, type Loadout, type SimEvent, type World } from './sim/world';
 import { PowerButtons } from './ui/powerButtons';
 import { TuningPanel, loadTuning } from './ui/tuningPanel';
 
-type Mode = 'title' | 'playing' | 'paused' | 'over';
+type Mode = 'title' | 'playing' | 'paused' | 'earup' | 'over';
 
 const $ = <T extends HTMLElement = HTMLElement>(id: string) => document.getElementById(id) as T;
 
 const canvas = $<HTMLCanvasElement>('game');
 const hud = $('hud');
-const screens = { title: $('screen-title'), paused: $('screen-pause'), over: $('screen-over') };
+const screens = { title: $('screen-title'), paused: $('screen-pause'), earup: $('screen-earup'), over: $('screen-over') };
 const tierFill = $('tier-fill');
 const tierLabel = $('tier-label');
 const chipTime = $('chip-time');
@@ -28,10 +29,14 @@ const tuningPanel = new TuningPanel($('tuning'), tuning);
 const sfx = new Sfx();
 const renderer = await Renderer.create(canvas);
 const input = new Input(canvas, () => togglePause());
-const powerButtons = new PowerButtons($('powers'), (kind) => {
-  sfx.unlock();
-  input.queueFire(kind);
-});
+const powerButtons = new PowerButtons(
+  $('powers'),
+  (kind) => {
+    sfx.unlock();
+    input.queueFire(kind);
+  },
+  (pocket, withKind) => input.queueSwap(pocket, withKind),
+);
 
 let mode: Mode = 'title';
 let world: World = createWorld(newSeed(), tuning);
@@ -51,8 +56,9 @@ function setMode(next: Mode): void {
   mode = next;
   screens.title.hidden = next !== 'title';
   screens.paused.hidden = next !== 'paused';
+  screens.earup.hidden = next !== 'earup';
   screens.over.hidden = next !== 'over';
-  hud.hidden = next === 'title';
+  hud.hidden = next === 'title' || next === 'earup';
   input.enabled = next === 'playing';
   if (next !== 'playing') input.reset();
   if (next === 'playing') void requestWakeLock();
@@ -63,6 +69,7 @@ let loadout: Loadout = 'game';
 
 function startRun(): void {
   sfx.unlock();
+  sfx.startMusic();
   world = createWorld(newSeed(), tuning, loadout);
   accumulator = 0;
   fpsSamples = 0;
@@ -139,10 +146,48 @@ function playEvents(events: SimEvent[]): void {
         sfx.saved();
         break;
       case 'poppedOut':
+        sfx.stopMusic();
         sfx.poppedOut();
+        break;
+      case 'perk':
+        sfx.perk();
+        break;
+      case 'block':
+        sfx.tink();
+        break;
+      case 'dash':
+        sfx.whoosh();
         break;
     }
   }
+}
+
+function renderEarUp(): void {
+  const offer = world.earUps[0];
+  const sub = document.querySelector('#screen-earup .sub');
+  if (sub) sub.textContent = world.earUps.length > 1 ? `Pick one · ${world.earUps.length} size-ups` : 'Pick one';
+  const cards = $('earup-cards');
+  cards.replaceChildren();
+  if (!offer) return;
+  offer.choices.forEach((id, index) => {
+    const def = perkDef(id);
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'ear-card';
+    btn.innerHTML = `<span class="ear-icon">${def.icon}</span><span class="ear-name">${def.name}</span><span class="ear-blurb">${def.blurb}</span>`;
+    btn.addEventListener('click', () => {
+      sfx.unlock();
+      step(world, { ...EMPTY_COMMAND, pickPerk: index });
+      renderer.handleEvents(world.events);
+      playEvents(world.events);
+      if (world.earUps.length > 0) renderEarUp();
+      else setMode('playing');
+    });
+    cards.append(btn);
+  });
+  const reroll = $<HTMLButtonElement>('earup-reroll');
+  reroll.disabled = world.player.rerolls <= 0;
+  reroll.textContent = world.player.rerolls > 0 ? 'Re-roll' : 'No re-rolls left';
 }
 
 function endRun(): void {
@@ -172,7 +217,7 @@ function updateHud(): void {
   const p = world.player;
   const n = total(p.kernels);
   tierFill.style.width = `${Math.min(100, (n / p.sockets) * 100)}%`;
-  tierLabel.textContent = `Size ${p.tier} · ${n}/${p.sockets}${p.tier >= tuning.maxTier ? ' MAX' : ''}`;
+  tierLabel.textContent = `${tierName(p.tier)} · ${n}/${p.sockets}${p.tier >= tuning.maxTier ? ' MAX' : ''}`;
   chipTime.textContent = formatTime(world.tick * DT);
   chipChomps.textContent = `😋 ${world.stats.chomps}`;
   chipSeeds.hidden = world.stats.seeds === 0;
@@ -198,19 +243,28 @@ function frame(now: number): void {
     }
   }
 
+  if (mode === 'playing' && world.earUps.length > 0) {
+    renderEarUp();
+    setMode('earup');
+  }
+
   if (mode === 'playing') {
     accumulator += dt;
     let steps = 0;
     while (accumulator >= DT && steps < 6) {
-      step(world, input.sample(renderer.cam));
+      step(world, input.sample(renderer.cam, world.player.pockets));
       renderer.handleEvents(world.events);
       playEvents(world.events);
       accumulator -= DT;
       steps++;
-      if (world.over) break;
+      if (world.over || world.earUps.length > 0) break;
     }
     if (steps === 6) accumulator = 0;
     if (world.over) endRun();
+    else if (world.earUps.length > 0) {
+      renderEarUp();
+      setMode('earup');
+    }
   }
 
   const alpha = mode === 'playing' ? Math.min(1, accumulator / DT) : 1;
@@ -241,7 +295,15 @@ $('playtest-btn').addEventListener('click', () => {
 });
 $('again-btn').addEventListener('click', startRun);
 $('restart-btn').addEventListener('click', startRun);
-$('resume-btn').addEventListener('click', () => setMode('playing'));
+$('resume-btn').addEventListener('click', () => setMode(world.earUps.length > 0 ? 'earup' : 'playing'));
+$('earup-reroll').addEventListener('click', () => {
+  if (world.player.rerolls <= 0) return;
+  sfx.unlock();
+  step(world, { ...EMPTY_COMMAND, reroll: true });
+  renderer.handleEvents(world.events);
+  playEvents(world.events);
+  renderEarUp();
+});
 $('pause-btn').addEventListener('pointerdown', (e) => {
   e.stopPropagation();
   togglePause();
