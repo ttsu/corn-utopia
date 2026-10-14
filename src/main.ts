@@ -29,10 +29,17 @@ const tuningPanel = new TuningPanel($('tuning'), tuning);
 const sfx = new Sfx();
 const renderer = await Renderer.create(canvas);
 const input = new Input(canvas, () => togglePause());
-const powerButtons = new PowerButtons($('powers'), (kind) => {
-  sfx.unlock();
-  input.queueFire(kind);
-});
+const powerButtons = new PowerButtons(
+  $('powers'),
+  (kind) => {
+    sfx.unlock();
+    input.queueFire(kind);
+  },
+  () => {
+    sfx.unlock();
+    input.queueDash();
+  },
+);
 
 let mode: Mode = 'title';
 let world: World = createWorld(newSeed(), tuning);

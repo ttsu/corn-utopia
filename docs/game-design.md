@@ -264,16 +264,20 @@ upgrade system, so Ear Up! choices are **cob perks**, picked from big picture ca
 - **Quick Hands:** power buttons recharge 15% faster
 - **Extra Pocket:** unlock your next power button right away (never more than 5)
 - **Long Shot:** fired kernels fly 20% further
-- **Boomerang:** 1 in 5 fired kernels flies back to your cob by itself
-- **Thick Husk:** every 5th hit is blocked
-- **Butter Roll:** a short dash on double-tap
-- **Lucky Ear:** rare kernels show up more often
+- **Boomerang:** 20% of fired kernels fly back to your cob by themselves
+- **Thick Husk:** 20% of hits are blocked
+- **Butter Roll:** your dash goes 25% further
+- **Lucky Ear:** rare kernels show up 25% more often
+
+You **start with a dash**. It is the big button under your right thumb, so one finger can steer
+while the other dashes. Butter Roll does not unlock it. Each copy just makes that dash longer.
 
 Ear Up! pauses the game (important for kids). Tap a card to choose. You can **re-roll** once per run.
 
-**[Decision] Stacking.** Big Appetite, Big Magnet, Zoomies, Quick Hands, Long Shot, and Extra Pocket
-can be taken again, and each copy stacks (Extra Pocket never goes past 5 buttons). Boomerang, Thick
-Husk, Butter Roll, and Lucky Ear are once per run and drop out of later offers.
+**[Decision] Stacking.** Every perk can be taken again, and each copy adds its percentage (or its
+flat bonus) on top of the last. Extra Pocket never goes past 5 buttons. Boomerang and Thick Husk
+each add another 20% (1 more out of every 5) up to all of them. Butter Roll adds another 25% of
+dash distance. Lucky Ear makes rare kernels another 25% more common.
 
 ---
 
@@ -645,10 +649,10 @@ Everything is earned by playing.
 |------------------------------|---------------------------------------------------------------------|
 | **Drag on the left half**    | **Floating joystick** shows up where your thumb lands; drag to steer |
 | **Lift finger**              | Cob slowly coasts to a stop (doesn't stop instantly; feels smoother) |
+| **Tap the dash button**      | Dash the way you are steering (or the way you last moved). You start with it |
 | **Tap a power button**       | Fire one of that power kernel at the target (one shot per tap)      |
 | **Tap a cob (right half)**   | Lock the dashed target outline onto that cob                        |
-| **Swap arrow on a button**   | Swap that pocket for a waiting power type                           |
-| **Double-tap (left half)**   | Butter Roll dash (only if you picked that perk)                     |
+| **Space or Shift**           | Dash, same as the button                                            |
 | **Pause**                    | Top corner, inside the safe area                                    |
 
 - **Nothing fires on its own** (except a planted Sprout helper plant). The player always chooses which
@@ -661,12 +665,12 @@ Everything is earned by playing.
   the youngest kids and anyone who finds several buttons hard.
 - **[Decision] Alternate movement: "Follow My Finger."** The cob rolls toward wherever your left-side
   finger is. It's easier for very young kids and works well on iPad. Players can switch in Settings.
-- Keyboard (WASD/arrows to move, 1–5 for powers, Tab to change target) and gamepad (stick to move,
+- Keyboard (WASD/arrows to move, 1–5 for powers, Space to dash, Tab to change target) and gamepad (stick to move,
   face buttons and shoulders for powers) work on desktop and on iPads with a controller.
 
 ### 11.2 Layout
 
-- **Power buttons sit in an arc around the right thumb**, biggest for the first pocket. Each button is
+- **Dash is the big button in the bottom-right corner.** Power buttons sit in an arc around it, each power in a fixed place. Each button is
   at least 64 pt on iPad and 56 pt on iPhone, with clear space between them so kids don't hit the
   wrong one.
 - **iPad (landscape and portrait):** joystick on the left half, power arc bottom-right. HUD along the top.

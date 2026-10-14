@@ -19,7 +19,7 @@ export interface PerkDef {
   name: string;
   blurb: string;
   icon: string;
-  /** Binary perks can only be taken once. Pocket stacks until you have 5 buttons. */
+  /** Drops out of later offers after you take it. Every current perk stacks instead. */
   once: boolean;
 }
 
@@ -30,10 +30,10 @@ export const PERKS: readonly PerkDef[] = [
   { id: 'quick', name: 'Quick Hands', blurb: 'Buttons recharge 15% faster', icon: '👐', once: false },
   { id: 'pocket', name: 'Extra Pocket', blurb: 'Unlock the next power button', icon: '➕', once: false },
   { id: 'range', name: 'Long Shot', blurb: 'Shots fly 20% further', icon: '🏹', once: false },
-  { id: 'boomerang', name: 'Boomerang', blurb: '1 in 5 shots flies back', icon: '🔄', once: true },
-  { id: 'husk', name: 'Thick Husk', blurb: 'Every 5th hit is blocked', icon: '🛡️', once: true },
-  { id: 'butter', name: 'Butter Roll', blurb: 'Double-tap to dash', icon: '🧈', once: true },
-  { id: 'lucky', name: 'Lucky Ear', blurb: 'Rare kernels show up more', icon: '🍀', once: true },
+  { id: 'boomerang', name: 'Boomerang', blurb: '20% of shots fly back', icon: '🔄', once: false },
+  { id: 'husk', name: 'Thick Husk', blurb: 'Block 20% of hits', icon: '🛡️', once: false },
+  { id: 'butter', name: 'Butter Roll', blurb: 'Dash +25% further', icon: '🧈', once: false },
+  { id: 'lucky', name: 'Lucky Ear', blurb: 'Rare kernels +25%', icon: '🍀', once: false },
 ];
 
 const BY_ID = Object.fromEntries(PERKS.map((p) => [p.id, p])) as Record<PerkId, PerkDef>;
@@ -83,10 +83,31 @@ export function rangeMul(perks: readonly PerkId[]): number {
   return Math.pow(1.2, perkCount(perks, 'range'));
 }
 
+/** Each Butter Roll makes the dash 25% further. Zero copies is the starting dash. */
+export function butterMul(perks: readonly PerkId[]): number {
+  return Math.pow(1.25, perkCount(perks, 'butter'));
+}
+
+/** Each Lucky Ear makes rare kernels 25% more common. */
+export function luckyMul(perks: readonly PerkId[]): number {
+  return Math.pow(1.25, perkCount(perks, 'lucky'));
+}
+
 /**
- * Three distinct Ear Up cards. Once-only perks drop out after you take them.
- * Extra Pocket drops out once you already have 5 buttons. Stackable perks can
- * come back on a later tier, and fill out a hand if the pool runs low.
+ * One stack hits 1 of every 5 (the 5th). Each extra stack adds another of the
+ * five, spread out, up to all of them.
+ */
+const FIFTHS: readonly (readonly number[])[] = [[], [4], [1, 4], [0, 2, 4], [0, 1, 3, 4], [0, 1, 2, 3, 4]];
+
+export function everyFifth(index: number, stacks: number): boolean {
+  const n = Math.min(FIFTHS.length - 1, stacks);
+  if (n <= 0 || index <= 0) return false;
+  return FIFTHS[n].includes((index - 1) % 5);
+}
+
+/**
+ * Three distinct Ear Up cards. Extra Pocket drops out once you already have 5
+ * buttons. Every other perk can come back, and each copy stacks.
  */
 export function rollOffer(rng: Rng, owned: readonly PerkId[], slots: number): PerkId[] {
   const have = new Set(owned);

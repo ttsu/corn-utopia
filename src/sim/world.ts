@@ -20,8 +20,11 @@ import { mudSlow, propsForChunk, segmentHitsHay, separateFromHay, type FarmProp 
 import { armPower, layoutPockets } from './pockets';
 import {
   appetiteBonus,
-  hasPerk,
+  butterMul,
+  everyFifth,
+  luckyMul,
   magnetMul,
+  perkCount,
   pocketSlotsFor,
   rangeMul,
   rechargeMul,
@@ -34,6 +37,9 @@ import type { Tuning } from './tuning';
 
 export const TICK_RATE = 60;
 export const DT = 1 / TICK_RATE;
+/** Starting dash. Butter Roll multiplies how far this burst carries you. */
+export const DASH_COOLDOWN = 1.2;
+export const DASH_TIME = 0.18;
 
 export type EnemyType = 'baby' | 'soggy' | 'rocky';
 
@@ -76,11 +82,11 @@ export interface PlayerCob extends Body {
   rerolls: number;
   /** Shots fired, so Boomerang can send exactly every 5th one home. */
   shotSerial: number;
-  /** Seconds left before Butter Roll can dash again. */
+  /** Seconds left before you can dash again. */
   dashCd: number;
   /** Seconds left in the current dash. */
   dashTime: number;
-  /** Hits taken, for Thick Husk (every 5th is blocked). */
+  /** Hits taken, for Thick Husk. */
   huskHits: number;
 }
 
@@ -204,7 +210,7 @@ export interface InputCommand {
   /** Index into the current Ear Up offer, or null. */
   pickPerk: number | null;
   reroll: boolean;
-  /** Butter Roll double-tap. */
+  /** Dash button, or Space / Shift. */
   dash: boolean;
 }
 
@@ -497,15 +503,22 @@ export function step(w: World, cmd: InputCommand): void {
 function movePlayer(w: World, cmd: InputCommand): void {
   const p = w.player;
   const t = w.tuning;
-  if (cmd.dash && hasPerk(p.perks, 'butter') && p.dashCd <= 0 && !p.bare && p.dashTime <= 0) {
-    const burst = t.playerSpeed * Math.pow(sizeScale(p), 0.75) * speedMul(p.perks) * 3.4;
-    const fx = p.facingX || 1;
-    const fy = p.facingY;
-    const m = Math.hypot(fx, fy) || 1;
+  if (cmd.dash && p.dashCd <= 0 && p.dashTime <= 0) {
+    let fx = cmd.moveX;
+    let fy = cmd.moveY;
+    let m = Math.hypot(fx, fy);
+    if (m < 0.12) {
+      fx = p.facingX || 1;
+      fy = p.facingY;
+      m = Math.hypot(fx, fy) || 1;
+    }
+    const burst = t.playerSpeed * Math.pow(sizeScale(p), 0.75) * speedMul(p.perks) * 3.4 * butterMul(p.perks);
     p.vx = (fx / m) * burst;
     p.vy = (fy / m) * burst;
-    p.dashTime = 0.18;
-    p.dashCd = 1.2;
+    p.facingX = fx / m;
+    p.facingY = fy / m;
+    p.dashTime = DASH_TIME;
+    p.dashCd = DASH_COOLDOWN;
     w.events.push({ type: 'dash', x: p.x, y: p.y });
   }
 
@@ -703,7 +716,7 @@ function tryFire(w: World, kind: PowerKind): void {
     speed: SHOT_SPEED[kind] * scale,
     targetId: target ? target.id : null,
     lob,
-    boomerang: hasPerk(p.perks, 'boomerang') && p.shotSerial % 5 === 0,
+    boomerang: everyFifth(p.shotSerial, perkCount(p.perks, 'boomerang')),
     returning: false,
   });
 
@@ -723,9 +736,9 @@ function tryFire(w: World, kind: PowerKind): void {
 function hitPlayer(w: World, damage: DamageType, amount: number, fromX: number, fromY: number): void {
   const p = w.player;
   if (p.invuln > 0 || p.bare) return;
-  if (hasPerk(p.perks, 'husk')) {
+  if (perkCount(p.perks, 'husk') > 0) {
     p.huskHits++;
-    if (p.huskHits % 5 === 0) {
+    if (everyFifth(p.huskHits, perkCount(p.perks, 'husk'))) {
       p.invuln = w.tuning.mercySeconds;
       w.events.push({ type: 'block', x: p.x, y: p.y });
       return;
@@ -1402,7 +1415,7 @@ function spawnFieldChunks(w: World): void {
       w.visitedChunks[key] = true;
       for (const prop of propsForChunk(w.seed, cx, cy, CHUNK_SIZE)) w.props.push(prop);
       const rng = makeRng(hash2(w.seed, cx, cy));
-      const lucky = hasPerk(w.player.perks, 'lucky');
+      const lucky = luckyMul(w.player.perks);
       const clumps = int(rng, 1, 3);
       // Loose kernels are a starter snack; they thin out as you grow so they don't become passive income.
       const thinning = Math.min(1, Math.max(0.1, 30 / total(p.kernels)));
@@ -1417,12 +1430,12 @@ function spawnFieldChunks(w: World): void {
           const d = Math.sqrt(next(rng)) * 45;
           addGround(w, 'sunny', ox + Math.cos(a) * d, oy + Math.sin(a) * d, 0, 0, 0, null);
         }
-        if (chance(rng, lucky ? 0.55 : 0.35)) {
+        if (chance(rng, Math.min(0.92, 0.35 * lucky))) {
           const kind = POWER_KINDS[int(rng, 0, POWER_KINDS.length - 1)];
           const extra = int(rng, 1, 2);
           for (let i = 0; i < extra; i++) addGround(w, kind, ox + range(rng, -20, 20), oy + range(rng, -20, 20), 0, 0, 0, null);
         }
-        if (chance(rng, lucky ? 0.35 : 0.15)) {
+        if (chance(rng, Math.min(0.85, 0.15 * lucky))) {
           const kind = chance(rng, 0.5) ? 'soggy' : 'stony';
           const extra = int(rng, 1, 3);
           for (let i = 0; i < extra; i++) addGround(w, kind, ox + range(rng, -25, 25), oy + range(rng, -25, 25), 0, 0, 0, null);
@@ -1432,10 +1445,11 @@ function spawnFieldChunks(w: World): void {
   }
 }
 
-function composeEnemy(rng: Rng, type: EnemyType, count: number, lucky = false): Kernels {
+function composeEnemy(rng: Rng, type: EnemyType, count: number, rare = 1): Kernels {
   const k = emptyKernels();
   const main = type === 'soggy' ? 'soggy' : type === 'rocky' ? 'stony' : 'sunny';
-  const mainShare = type === 'baby' ? (lucky ? 0.7 : 0.9) : lucky ? 0.5 : 0.65;
+  const baseMain = type === 'baby' ? 0.9 : 0.65;
+  const mainShare = Math.max(0.2, 1 - (1 - baseMain) * rare);
   for (let i = 0; i < count; i++) {
     const roll = next(rng);
     if (roll < mainShare) k[main]++;
@@ -1460,7 +1474,7 @@ function planSpawn(w: World): NonNullable<Director['plan']> {
   if (!early && next(rng) * 100 < t.huntersAtTop * challenge(w)) {
     count = Math.max(Math.ceil(c) + 1, Math.round(c * range(rng, HUNTER_MIN_SIZE, Math.max(HUNTER_MIN_SIZE, t.hunterSize))));
     type = chance(rng, 0.5) ? 'soggy' : 'rocky';
-    return { type, kernels: composeEnemy(rng, type, count, hasPerk(w.player.perks, 'lucky')), cost: Math.min(MAX_SPAWN_COST, 1 + count / c), hunter: true };
+    return { type, kernels: composeEnemy(rng, type, count, luckyMul(w.player.perks)), cost: Math.min(MAX_SPAWN_COST, 1 + count / c), hunter: true };
   }
   if (roll >= bigShare || early) {
     // Snacks grow slower than you do, so each chomp is a smaller share of a bigger cob.
@@ -1473,7 +1487,7 @@ function planSpawn(w: World): NonNullable<Director['plan']> {
     count = Math.max(Math.ceil(c) + 1, Math.round(c * range(rng, lo, hi)));
     type = pickWeighted(rng, ['baby', 'soggy', 'rocky'] as EnemyType[], (ty) => (ty === 'baby' ? 30 : 35))!;
   }
-  const kernels = composeEnemy(rng, type, count, hasPerk(w.player.perks, 'lucky'));
+  const kernels = composeEnemy(rng, type, count, luckyMul(w.player.perks));
   // Cost is relative to your size so the spawn rate doesn't stall as you grow.
   return { type, kernels, cost: Math.min(MAX_SPAWN_COST, 1 + count / c), hunter: false };
 }
@@ -1524,7 +1538,7 @@ function spawnOpeningCobs(w: World): void {
   opening.forEach(([type, count], i) => {
     const a = (i / opening.length) * Math.PI * 2 + range(w.rng, -0.3, 0.3);
     const d = range(w.rng, 230, 420);
-    const kernels = composeEnemy(w.rng, type, count, hasPerk(w.player.perks, 'lucky'));
+    const kernels = composeEnemy(w.rng, type, count, luckyMul(w.player.perks));
     if (type === 'baby' && babyPowers[i]) kernels[babyPowers[i]] += 1;
     spawnEnemy(w, type, kernels, p.x + Math.cos(a) * d, p.y + Math.sin(a) * d);
   });

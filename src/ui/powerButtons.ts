@@ -1,5 +1,5 @@
 import { DAMAGE_ICON, KERNELS, POWER_DAMAGE, POWER_KINDS, type PowerKind } from '../sim/kernels';
-import { canFire, heartLocked, rechargeSeconds, type World } from '../sim/world';
+import { DASH_COOLDOWN, canFire, heartLocked, rechargeSeconds, type World } from '../sim/world';
 
 interface ButtonEls {
   root: HTMLButtonElement;
@@ -8,13 +8,16 @@ interface ButtonEls {
   last: string;
 }
 
-/** Fixed places, thumb outward. Index matches POWER_KINDS, so a power never changes buttons. */
+/** The big button under the right thumb. Powers arc around it and never take this spot. */
+const DASH_SPOT = { x: 0, y: 0, size: 96 };
+
+/** Fixed places around the dash, thumb outward. Index matches POWER_KINDS. */
 const ARC: { x: number; y: number; size: number }[] = [
-  { x: 0, y: 0, size: 92 },
-  { x: 104, y: 4, size: 76 },
-  { x: 8, y: 104, size: 76 },
-  { x: 96, y: 92, size: 68 },
-  { x: 168, y: 28, size: 64 },
+  { x: 108, y: 4, size: 74 },
+  { x: 8, y: 108, size: 74 },
+  { x: 100, y: 100, size: 66 },
+  { x: 176, y: 36, size: 62 },
+  { x: 16, y: 184, size: 58 },
 ];
 
 /**
@@ -25,16 +28,51 @@ const ARC: { x: number; y: number; size: number }[] = [
 export class PowerButtons {
   private buttons: ButtonEls[] = [];
   private hint: HTMLDivElement;
+  private dash: { root: HTMLButtonElement; ring: HTMLDivElement; last: string };
   private signature = '';
 
   constructor(
     private container: HTMLElement,
     private onPress: (kind: PowerKind) => void,
+    private onDash: () => void,
   ) {
     this.hint = document.createElement('div');
     this.hint.className = 'power-hint';
     this.hint.textContent = 'Chomp a snack to get a power';
-    this.container.append(this.hint);
+    this.dash = this.makeDash();
+    this.container.append(this.hint, this.dash.root);
+  }
+
+  private makeDash(): { root: HTMLButtonElement; ring: HTMLDivElement; last: string } {
+    const root = document.createElement('button');
+    root.type = 'button';
+    root.className = 'power dash';
+    root.setAttribute('aria-label', 'Dash');
+    root.style.width = `${DASH_SPOT.size}px`;
+    root.style.height = `${DASH_SPOT.size}px`;
+    root.style.right = `${DASH_SPOT.x}px`;
+    root.style.bottom = `${DASH_SPOT.y}px`;
+    const ring = document.createElement('div');
+    ring.className = 'ring';
+    const icon = document.createElement('div');
+    icon.className = 'icon';
+    icon.textContent = '💨';
+    const label = document.createElement('span');
+    label.className = 'label';
+    label.textContent = 'Dash';
+    root.append(ring, icon, label);
+    root.addEventListener('pointerdown', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      root.classList.add('pressed');
+      this.onDash();
+    });
+    const release = () => root.classList.remove('pressed');
+    root.addEventListener('pointerup', release);
+    root.addEventListener('pointercancel', release);
+    root.addEventListener('pointerleave', release);
+    root.addEventListener('contextmenu', (e) => e.preventDefault());
+    return { root, ring, last: '' };
   }
 
   update(w: World): void {
@@ -47,6 +85,13 @@ export class PowerButtons {
       this.rebuild(shown, waiting);
     }
     this.hint.hidden = shown.length > 0;
+    const dashFrac = w.player.dashCd > 0 ? w.player.dashCd / DASH_COOLDOWN : 0;
+    const dashKey = `${Math.round(dashFrac * 40)}|${w.player.dashTime > 0 ? 'go' : 'ready'}`;
+    if (dashKey !== this.dash.last) {
+      this.dash.last = dashKey;
+      this.dash.root.classList.toggle('cooling', dashFrac > 0);
+      this.dash.ring.style.background = dashFrac > 0 ? `conic-gradient(rgba(0,0,0,0.45) ${dashFrac * 360}deg, transparent 0deg)` : 'transparent';
+    }
     const locked = heartLocked(w);
     for (const b of this.buttons) {
       const kind = b.root.dataset.kind as PowerKind;

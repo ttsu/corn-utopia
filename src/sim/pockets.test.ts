@@ -49,10 +49,12 @@ describe('power pockets', () => {
     expect(pocketSlotsFor(5, ['pocket'])).toBe(5);
   });
 
-  it('stops offering a once-only perk after you take it', () => {
+  it('still offers a perk you already own, and drops Extra Pocket at 5 buttons', () => {
     const rng = makeRng(1);
-    const offer = rollOffer(rng, ['boomerang', 'husk', 'butter', 'lucky'], 5);
-    expect(offer).toHaveLength(3);
-    for (const id of offer) expect(['appetite', 'magnet', 'zoomies', 'quick', 'range']).toContain(id);
+    const seen = new Set<string>();
+    for (let i = 0; i < 40; i++) for (const id of rollOffer(rng, ['boomerang', 'husk', 'butter', 'lucky'], 5)) seen.add(id);
+    expect(seen.has('boomerang')).toBe(true);
+    expect(seen.has('butter')).toBe(true);
+    expect(seen.has('pocket')).toBe(false);
   });
 });

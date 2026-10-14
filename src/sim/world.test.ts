@@ -306,6 +306,27 @@ describe('world', () => {
     expect(w.player.kernels.sunny).toBe(8 + 3 + 2 + 2);
   });
 
+  it('dashes from the start, and Butter Roll makes that dash further', () => {
+    const run = (perks: World['player']['perks']) => {
+      const w = quietWorld();
+      w.props = [];
+      w.player.perks = perks;
+      step(w, { ...EMPTY_COMMAND, dash: true, moveX: 1 });
+      for (let i = 0; i < 20; i++) step(w, EMPTY_COMMAND);
+      return w.player.x;
+    };
+    const walked = (() => {
+      const w = quietWorld();
+      w.props = [];
+      for (let i = 0; i < 20; i++) step(w, { ...EMPTY_COMMAND, moveX: 1 });
+      return w.player.x;
+    })();
+    const plain = run([]);
+    expect(plain).toBeGreaterThan(walked);
+    expect(run(['butter'])).toBeGreaterThan(plain * 1.15);
+    expect(run(['butter', 'butter'])).toBeGreaterThan(run(['butter']) * 1.15);
+  });
+
   it('Thick Husk blocks every 5th bump', () => {
     const w = quietWorld();
     w.tuning.mercySeconds = 0;
@@ -323,6 +344,25 @@ describe('world', () => {
     }
     expect(blocks).toBe(1);
     expect(total(w.player.kernels)).toBe(2);
+  });
+
+  it('a second Thick Husk blocks another hit in every five', () => {
+    const w = quietWorld();
+    w.tuning.mercySeconds = 0;
+    w.tuning.bumpLoss = 2;
+    w.player.perks = ['husk', 'husk'];
+    w.player.kernels = kernelsOf({ sunny: 10 });
+    const e = addEnemy(w, 0, 0, kernelsOf({ sunny: 80 }));
+    let blocks = 0;
+    for (let i = 0; i < 5; i++) {
+      e.x = w.player.x;
+      e.y = w.player.y;
+      e.bumpCooldown = 0;
+      step(w, EMPTY_COMMAND);
+      if (w.events.some((ev) => ev.type === 'block')) blocks++;
+    }
+    expect(blocks).toBe(2);
+    expect(total(w.player.kernels)).toBe(4);
   });
 
   it('sends every 5th shot back home with Boomerang', () => {

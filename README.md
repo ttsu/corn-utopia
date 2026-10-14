@@ -25,11 +25,9 @@ What's new:
   Zinger, Spicy, Popper, and Frosty each keep one fixed button. With three pockets, the fourth
   power sits dimmed on its own button until you tap it or press its number. Keys 1–4 always match
   those four.
-- **Ear Up!** Growing a size tier pauses the run and offers 3 cob perks (one re-roll per run):
-  Big Appetite, Big Magnet, Zoomies, Quick Hands, Extra Pocket, Long Shot, Boomerang, Thick Husk,
-  Butter Roll (double-tap the left side, or Space), and Lucky Ear. Appetite, Magnet, Zoomies,
-  Quick Hands, Long Shot, and Extra Pocket stack. Boomerang, Thick Husk, Butter Roll, and Lucky Ear
-  are once per run.
+- **Ear Up!** Growing a size tier pauses the run and offers 3 cob perks (one re-roll per run).
+  Every perk stacks. Boomerang and Thick Husk each add 20% (another 1 of every 5). Butter Roll makes
+  the dash 25% further. Lucky Ear makes rare kernels 25% more common. Extra Pocket never passes 5 buttons.
 - **Juice and music.** Shots pop off, landings squash, chomps shake the screen, tier-ups twirl,
   and All Popped Out tucks the cob into its husk. A little synthesized tune starts when you play
   and stops for the nap jingle.
@@ -44,9 +42,10 @@ What's in it:
   carry a power kernel, so chomping them is how you arm up. **Playtest mix** starts with the
   mixed loadout set in the Tuning panel (Zinger, Spicy, Popper, and some Sunny by default).
 
-- Floating touch joystick (left half), one power button per power (right thumb arc), fires on touch-down.
-  Two thumbs work at the same time. Keyboard also works: WASD/arrows, `1` `2` `3` to fire, `Tab` to
-  switch target, `Esc` to pause.
+- Floating touch joystick (left half). **Dash** is the big button under the right thumb, and you have it
+  from the start. Power buttons arc around it and fire on touch-down. Two thumbs work at the same time:
+  steer with one, dash or shoot with the other. Keyboard: WASD/arrows, `1`–`4` to fire, Space or Shift to
+  dash, `Tab` to switch target, `Esc` to pause.
 - Auto-target outline that traces the aimed cob (nearest red cob, favoring ones in front of you) and tap-a-cob-to-lock.
 - Chomp rule with green/red outlines, a chomp meter under the target, Chomp Bonus and Chomp Streak.
 - Fired kernels fly, land as pickups with a sparkle ring, and get pulled in by your magnet.

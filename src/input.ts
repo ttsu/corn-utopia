@@ -36,7 +36,6 @@ export class Input {
   private queuedTap: { x: number; y: number } | null = null;
   private queuedCycle = false;
   private queuedDash = false;
-  private lastLeftDown = 0;
   enabled = true;
 
   constructor(
@@ -59,6 +58,10 @@ export class Input {
     if (this.enabled) this.queuedFire.push(kind);
   }
 
+  queueDash(): void {
+    if (this.enabled) this.queuedDash = true;
+  }
+
   reset(): void {
     this.joystick = null;
     this.queuedFire.length = 0;
@@ -75,9 +78,6 @@ export class Input {
     const x = e.clientX - rect.left;
     const y = e.clientY - rect.top;
     if (x < rect.width / 2) {
-      const now = performance.now();
-      if (now - this.lastLeftDown < 280) this.queuedDash = true;
-      this.lastLeftDown = now;
       if (this.joystick) return;
       this.joystick = { pointerId: e.pointerId, originX: x, originY: y, x, y };
       this.canvas.setPointerCapture(e.pointerId);
