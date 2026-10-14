@@ -448,6 +448,10 @@ export function heartLocked(w: World): boolean {
   return total(w.player.kernels) <= 1;
 }
 
+export function popperRadius(w: World): number {
+  return w.tuning.popperRadius * sizeScale(w.player);
+}
+
 export function shotRange(w: World): number {
   return w.tuning.shotRange * sizeScale(w.player);
 }
@@ -664,6 +668,11 @@ function giveKernels(w: World, kind: KernelKind, count: number): void {
   }
 }
 
+/** Debug-only shortcut for checking how big cobs look and perform. */
+export function debugGrow(w: World, count: number): void {
+  giveKernels(w, 'sunny', count);
+}
+
 function updateTier(w: World): void {
   const p = w.player;
   let grew = false;
@@ -690,7 +699,7 @@ function updateShots(w: World): void {
       s.x = s.lob.sx + (s.lob.tx - s.lob.sx) * f;
       s.y = s.lob.sy + (s.lob.ty - s.lob.sy) * f;
       if (f >= 1) {
-        const r = t.popperRadius * sizeScale(w.player);
+        const r = popperRadius(w);
         w.events.push({ type: 'explode', x: s.x, y: s.y, r });
         for (const e of [...w.enemies]) {
           if (Math.hypot(e.x - s.x, e.y - s.y) < r + e.r) hitEnemy(w, e, 'pop', damageFor(w, 'popper'), s.x, s.y, s.kind);

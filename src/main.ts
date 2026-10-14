@@ -5,7 +5,7 @@ import { Input } from './input';
 import { appendLog, clearLog, formatLog, formatTime, loadLog, summarize } from './playtestLog';
 import { Renderer } from './render';
 import { total } from './sim/cob';
-import { DT, EMPTY_COMMAND, createWorld, step, type Loadout, type SimEvent, type World } from './sim/world';
+import { DT, EMPTY_COMMAND, createWorld, debugGrow, step, type Loadout, type SimEvent, type World } from './sim/world';
 import { PowerButtons } from './ui/powerButtons';
 import { TuningPanel, loadTuning } from './ui/tuningPanel';
 
@@ -26,7 +26,7 @@ const debugInfo = $('debug-info');
 const tuning = loadTuning();
 const tuningPanel = new TuningPanel($('tuning'), tuning);
 const sfx = new Sfx();
-const renderer = new Renderer(canvas);
+const renderer = await Renderer.create(canvas);
 const input = new Input(canvas, () => togglePause());
 const powerButtons = new PowerButtons($('powers'), (kind) => {
   sfx.unlock();
@@ -269,6 +269,9 @@ $('log-clear').addEventListener('click', () => {
 document.addEventListener('visibilitychange', () => {
   if (document.hidden && mode === 'playing') setMode('paused');
   if (!document.hidden && wakeLock === null && mode === 'playing') void requestWakeLock();
+});
+window.addEventListener('keydown', (e) => {
+  if (showDebug && mode === 'playing' && e.code === 'KeyG') debugGrow(world, 100);
 });
 document.addEventListener('gesturestart', (e) => e.preventDefault());
 document.addEventListener('contextmenu', (e) => e.preventDefault());
