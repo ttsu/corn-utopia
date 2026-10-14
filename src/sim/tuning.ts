@@ -22,8 +22,8 @@ const spec = (group: string, label: string, value: number, min: number, max: num
 
 export const TUNING_SPECS = {
   playerSpeed: spec('Player', 'Move speed', 200, 80, 400, 10),
-  magnetRadius: spec('Player', 'Magnet radius (beyond body)', 70, 0, 250, 5),
-  magnetPull: spec('Player', 'Magnet pull strength', 900, 200, 3000, 50),
+  magnetRadius: spec('Player', 'Magnet radius (beyond body)', 10, 0, 250, 5),
+  magnetPull: spec('Player', 'Magnet pull strength', 3000, 200, 6000, 50),
   bumpLoss: spec('Player', 'Kernels lost per bump', 2, 1, 6, 1),
   mercySeconds: spec('Player', 'Mercy invulnerability (s)', 0.75, 0.2, 2, 0.05),
   lastChanceSeconds: spec('Player', 'Last Chance (s)', 3, 1, 8, 0.5),

@@ -151,7 +151,9 @@ Both kinds count toward your **kernel count** (for chomping), your **health**, a
 **Your fired kernels on the ground:**
 - They have a soft **sparkle ring in your color** for a few seconds so you can see which kernels you
   just shot, then they look like any other ground kernel.
-- Your **pickup magnet** pulls them in, which makes the Big Magnet perk and Goldie kernels valuable.
+- Your **pickup magnet** only reaches a short way past your cob. Kernels inside that radius get
+  pulled in hard. **Big Magnet** stretches the radius (each copy +30%). It does not change how hard
+  the pull is. Goldie kernels stretch it too.
 
 ### 4.3 Taking Damage and Resistances
 
@@ -261,7 +263,7 @@ upgrade system, so Ear Up! choices are **cob perks**, picked from big picture ca
 1–3 words):
 
 - **Big Appetite:** Chomp Bonus +2 kernels
-- **Big Magnet:** pickup radius +30%
+- **Big Magnet:** pickup radius +30% (the starting magnet is short; this is what makes it reach)
 - **Zoomies:** move speed +10%
 - **Quick Hands:** power buttons recharge 15% faster
 - **Extra Pocket:** unlock your next power button right away (never more than 5)
@@ -280,8 +282,9 @@ Ear Up! pauses the game (important for kids). Tap a card to choose. You can **re
 
 **[Decision] Stacking.** Every perk can be taken again, and each copy adds its percentage (or its
 flat bonus) on top of the last. Extra Pocket never goes past 5 buttons. Boomerang and Thick Husk
-each add another 20% (1 more out of every 5) up to all of them. Butter Roll adds another 25% of
-dash distance. Lucky Ear makes rare kernels another 25% more common.
+each add another 20% (1 more out of every 5) up to all of them. Big Magnet adds another 30% of
+pickup radius. Butter Roll adds another 25% of dash distance. Lucky Ear makes rare kernels another
+25% more common.
 
 ---
 

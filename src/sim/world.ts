@@ -1209,6 +1209,7 @@ function updateGround(w: World): void {
   const p = w.player;
   const t = w.tuning;
   const friction = Math.exp(-6 * DT);
+  // Big Magnet grows how far the magnet reaches. Pull strength stays the same.
   const magnet = p.r + t.magnetRadius * sizeScale(p) * magnetMul(p.perks);
 
   for (const g of w.ground) {
