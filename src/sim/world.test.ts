@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { kernelsOf, total } from './cob';
 import { defaultTuning } from './tuning';
-import { EMPTY_COMMAND, canFire, createWorld, step, type InputCommand, type World } from './world';
+import { EMPTY_COMMAND, canFire, createWorld, damageScale, shotRange, step, type InputCommand, type World } from './world';
 
 function quietWorld(seed = 1): World {
   const w = createWorld(seed, defaultTuning());
@@ -37,6 +37,27 @@ function addEnemy(w: World, x: number, y: number, kernels: ReturnType<typeof ker
 }
 
 describe('world', () => {
+  it('starts the real game as a plain Sunny cob, with opening snacks that carry power kernels', () => {
+    const w = createWorld(3, defaultTuning());
+    expect(w.player.kernels).toEqual(kernelsOf({ sunny: defaultTuning().gameStartSunny }));
+    const babies = w.enemies.filter((e) => e.type === 'baby');
+    expect(babies.length).toBe(4);
+    for (const b of babies) expect(b.kernels.zinger + b.kernels.spicy + b.kernels.popper).toBeGreaterThan(0);
+    for (const b of babies) expect(total(b.kernels)).toBeLessThan(total(w.player.kernels));
+
+    const mix = createWorld(3, defaultTuning(), 'playtest');
+    expect(mix.player.kernels.zinger).toBe(defaultTuning().startZinger);
+  });
+
+  it('scales damage and reach up as the cob grows', () => {
+    const w = quietWorld();
+    w.player.kernels = kernelsOf({ sunny: 1000 });
+    for (let i = 0; i < 2; i++) step(w, EMPTY_COMMAND);
+    expect(w.player.tier).toBeGreaterThan(5);
+    expect(damageScale(w)).toBeGreaterThan(2);
+    expect(shotRange(w)).toBeGreaterThan(w.tuning.shotRange * 2);
+  });
+
   it('is deterministic for the same seed and inputs', () => {
     const run = () => {
       const w = createWorld(42, defaultTuning());

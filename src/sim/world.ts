@@ -159,6 +159,7 @@ export interface InputCommand {
 
 export interface World {
   seed: number;
+  loadout: Loadout;
   tick: number;
   rng: Rng;
   tuning: Tuning;
@@ -178,15 +179,20 @@ export interface World {
 
 export const EMPTY_COMMAND: InputCommand = { moveX: 0, moveY: 0, fire: [], lockAt: null, cycleTarget: false };
 
-const TIER_SOCKETS = [12, 24, 40, 60, 90, 130];
+const TIER_SOCKETS = [12, 30, 60, 120, 200, 320, 500, 750];
+const SOCKETS_PER_EXTRA_TIER = 250;
 const CHUNK_SIZE = 700;
 const GRID_CELL = 64;
 const SHOT_SPEED: Record<PowerKind, number> = { zinger: 600, spicy: 440, popper: 0 };
 const FIRED_WINDOW_TICKS = 5 * TICK_RATE;
+const MAX_SCATTER_PIECES = 6;
+const BIG_COB_REF = 30;
+const MAX_BUDGET = 8;
+const MAX_SPAWN_COST = MAX_BUDGET - 0.5;
 
 export function socketsForTier(tier: number): number {
   if (tier <= TIER_SOCKETS.length) return TIER_SOCKETS[tier - 1];
-  return TIER_SOCKETS[TIER_SOCKETS.length - 1] + 40 * (tier - TIER_SOCKETS.length);
+  return TIER_SOCKETS[TIER_SOCKETS.length - 1] + SOCKETS_PER_EXTRA_TIER * (tier - TIER_SOCKETS.length);
 }
 
 export function radiusFor(kernelCount: number): number {
@@ -195,18 +201,37 @@ export function radiusFor(kernelCount: number): number {
 
 /** Half-size of the visible world along the screen's short side. Shared with the renderer's zoom. */
 export function viewRadius(player: PlayerCob): number {
-  return 260 * Math.pow(player.r / radiusFor(12), 0.8);
+  return 260 * sizeScale(player);
 }
 
-export function createWorld(seed: number, tuning: Tuning): World {
-  const startKernels = kernelsOf({
-    sunny: tuning.startSunny,
-    soggy: tuning.startSoggy,
-    stony: tuning.startStony,
-    zinger: tuning.startZinger,
-    spicy: tuning.startSpicy,
-    popper: tuning.startPopper,
-  });
+/**
+ * How much the world has "zoomed out" around you. Distances and speeds that should feel the
+ * same on screen at every size (move speed, shot range, magnet) are multiplied by this.
+ */
+export function sizeScale(player: PlayerCob): number {
+  return Math.pow(player.r / radiusFor(12), 0.8);
+}
+
+/** Kernels knocked off per point of damage, so wearing a cob down takes similar shots at any size. */
+export function damageScale(w: World): number {
+  return Math.max(1, Math.pow(w.player.sockets / socketsForTier(1), w.tuning.damageSizeExponent));
+}
+
+export type Loadout = 'game' | 'playtest';
+
+/** `game` starts as a plain Sunny cob; `playtest` uses the mixed loadout for testing matchups. */
+export function createWorld(seed: number, tuning: Tuning, loadout: Loadout = 'game'): World {
+  const startKernels =
+    loadout === 'game'
+      ? kernelsOf({ sunny: tuning.gameStartSunny })
+      : kernelsOf({
+          sunny: tuning.startSunny,
+          soggy: tuning.startSoggy,
+          stony: tuning.startStony,
+          zinger: tuning.startZinger,
+          spicy: tuning.startSpicy,
+          popper: tuning.startPopper,
+        });
   if (total(startKernels) === 0) startKernels.sunny = 1;
 
   const player: PlayerCob = {
@@ -238,6 +263,7 @@ export function createWorld(seed: number, tuning: Tuning): World {
 
   const world: World = {
     seed,
+    loadout,
     tick: 0,
     rng: makeRng(seed),
     tuning,
@@ -337,7 +363,7 @@ function movePlayer(w: World, cmd: InputCommand): void {
     my /= mag;
   }
   if (mag > 0.05) {
-    const speed = t.playerSpeed * (p.bare ? 1.1 : 1);
+    const speed = t.playerSpeed * Math.pow(sizeScale(p), 0.75) * (p.bare ? 1.1 : 1);
     const tx = mx * speed;
     const ty = my * speed;
     const k = 1 - Math.exp(-12 * DT);
@@ -356,14 +382,15 @@ function movePlayer(w: World, cmd: InputCommand): void {
 
 function updateTargeting(w: World, cmd: InputCommand): void {
   const p = w.player;
-  const maxRange = w.tuning.shotRange * 1.6;
+  const reach = shotRange(w);
+  const maxRange = reach * 1.6;
 
   if (cmd.lockAt) {
     let best: Enemy | null = null;
     let bestD = Infinity;
     for (const e of w.enemies) {
       const d = Math.hypot(e.x - cmd.lockAt.x, e.y - cmd.lockAt.y) - e.r;
-      if (d < 50 && d < bestD) {
+      if (d < 50 * sizeScale(p) && d < bestD) {
         best = e;
         bestD = d;
       }
@@ -398,7 +425,7 @@ function updateTargeting(w: World, cmd: InputCommand): void {
     const dx = e.x - p.x;
     const dy = e.y - p.y;
     const d = Math.hypot(dx, dy);
-    if (d > w.tuning.shotRange + e.r) continue;
+    if (d > reach + e.r) continue;
     const inFront = (dx * p.facingX + dy * p.facingY) / Math.max(d, 1e-6) > 0.3;
     let score = d * (inFront ? 0.7 : 1);
     if (e.chompable) score *= 3;
@@ -421,6 +448,10 @@ export function heartLocked(w: World): boolean {
   return total(w.player.kernels) <= 1;
 }
 
+export function shotRange(w: World): number {
+  return w.tuning.shotRange * sizeScale(w.player);
+}
+
 function rechargeFor(t: Tuning, kind: PowerKind): number {
   return kind === 'zinger' ? t.zingerRecharge : kind === 'spicy' ? t.spicyRecharge : t.popperRecharge;
 }
@@ -429,8 +460,10 @@ export function rechargeSeconds(w: World, kind: PowerKind): number {
   return rechargeFor(w.tuning, kind);
 }
 
-function damageFor(t: Tuning, kind: PowerKind): number {
-  return kind === 'zinger' ? t.zingerDamage : kind === 'spicy' ? t.spicyDamage : t.popperDamage;
+function damageFor(w: World, kind: PowerKind): number {
+  const t = w.tuning;
+  const base = kind === 'zinger' ? t.zingerDamage : kind === 'spicy' ? t.spicyDamage : t.popperDamage;
+  return Math.round(base * damageScale(w));
 }
 
 function tryFire(w: World, kind: PowerKind): void {
@@ -457,22 +490,24 @@ function tryFire(w: World, kind: PowerKind): void {
   }
   const sx = p.x + dx * (p.r + 4);
   const sy = p.y + dy * (p.r + 4);
+  const scale = sizeScale(p);
+  const reach = shotRange(w);
 
   let lob: Shot['lob'] = null;
   let vx = 0;
   let vy = 0;
   if (kind === 'popper') {
-    let tx = target ? target.x + target.vx * 0.35 : p.x + dx * Math.min(t.shotRange, 240);
-    let ty = target ? target.y + target.vy * 0.35 : p.y + dy * Math.min(t.shotRange, 240);
+    let tx = target ? target.x + target.vx * 0.35 : p.x + dx * Math.min(reach, 240 * scale);
+    let ty = target ? target.y + target.vy * 0.35 : p.y + dy * Math.min(reach, 240 * scale);
     const dist = Math.hypot(tx - p.x, ty - p.y);
-    if (dist > t.shotRange) {
-      tx = p.x + ((tx - p.x) / dist) * t.shotRange;
-      ty = p.y + ((ty - p.y) / dist) * t.shotRange;
+    if (dist > reach) {
+      tx = p.x + ((tx - p.x) / dist) * reach;
+      ty = p.y + ((ty - p.y) / dist) * reach;
     }
-    lob = { sx, sy, tx, ty, t: 0, dur: 0.4 + Math.min(dist, t.shotRange) / 900 };
+    lob = { sx, sy, tx, ty, t: 0, dur: 0.4 + Math.min(dist, reach) / (900 * scale) };
   } else {
-    vx = dx * SHOT_SPEED[kind];
-    vy = dy * SHOT_SPEED[kind];
+    vx = dx * SHOT_SPEED[kind] * scale;
+    vy = dy * SHOT_SPEED[kind] * scale;
   }
 
   w.shots.push({
@@ -483,12 +518,12 @@ function tryFire(w: World, kind: PowerKind): void {
     py: sy,
     vx,
     vy,
-    r: kind === 'spicy' ? 7 : 5,
+    r: (kind === 'spicy' ? 7 : 5) * Math.sqrt(scale),
     kind,
     ownerId: p.id,
     travelled: 0,
-    range: t.shotRange,
-    speed: SHOT_SPEED[kind],
+    range: reach,
+    speed: SHOT_SPEED[kind] * scale,
     targetId: target ? target.id : null,
     lob,
   });
@@ -560,10 +595,11 @@ function collidePlayer(w: World): void {
     p.y -= ny * overlap * 0.6;
     e.x += nx * overlap * 0.4;
     e.y += ny * overlap * 0.4;
-    p.vx = -nx * 280;
-    p.vy = -ny * 280;
-    e.vx = nx * 140;
-    e.vy = ny * 140;
+    const push = sizeScale(p);
+    p.vx = -nx * 280 * push;
+    p.vy = -ny * 280 * push;
+    e.vx = nx * 140 * push;
+    e.vy = ny * 140 * push;
     e.heading = Math.atan2(ny, nx);
     if (e.bumpCooldown <= 0) {
       e.bumpCooldown = 0.5;
@@ -571,7 +607,7 @@ function collidePlayer(w: World): void {
       w.stats.bumps++;
       w.events.push({ type: 'bump', x: p.x + nx * p.r, y: p.y + ny * p.r });
     }
-    hitPlayer(w, 'bonk', t.bumpLoss, e.x, e.y);
+    hitPlayer(w, 'bonk', Math.round(t.bumpLoss * damageScale(w)), e.x, e.y);
   }
   w.enemies = w.enemies.filter((e) => total(e.kernels) > 0);
 }
@@ -654,10 +690,10 @@ function updateShots(w: World): void {
       s.x = s.lob.sx + (s.lob.tx - s.lob.sx) * f;
       s.y = s.lob.sy + (s.lob.ty - s.lob.sy) * f;
       if (f >= 1) {
-        const r = t.popperRadius;
+        const r = t.popperRadius * sizeScale(w.player);
         w.events.push({ type: 'explode', x: s.x, y: s.y, r });
         for (const e of [...w.enemies]) {
-          if (Math.hypot(e.x - s.x, e.y - s.y) < r + e.r) hitEnemy(w, e, 'pop', t.popperDamage, s.x, s.y, s.kind);
+          if (Math.hypot(e.x - s.x, e.y - s.y) < r + e.r) hitEnemy(w, e, 'pop', damageFor(w, 'popper'), s.x, s.y, s.kind);
         }
         dropFired(w, s.kind, s.x, s.y, s.ownerId);
         continue;
@@ -690,9 +726,9 @@ function updateShots(w: World): void {
       }
     }
     if (hit) {
-      hitEnemy(w, hit, POWER_DAMAGE[s.kind], damageFor(t, s.kind), s.x, s.y, s.kind);
+      hitEnemy(w, hit, POWER_DAMAGE[s.kind], damageFor(w, s.kind), s.x, s.y, s.kind);
       if (s.kind === 'spicy' && t.burnSeconds > 0) {
-        w.patches.push({ id: w.nextId++, x: s.x, y: s.y, r: 38, ttl: t.burnSeconds, tickTimer: 0.5 });
+        w.patches.push({ id: w.nextId++, x: s.x, y: s.y, r: 38 * sizeScale(w.player), ttl: t.burnSeconds, tickTimer: 0.5 });
       }
       const back = Math.max(1, Math.hypot(s.vx, s.vy));
       dropFired(w, s.kind, s.x - (s.vx / back) * 6, s.y - (s.vy / back) * 6, s.ownerId);
@@ -716,7 +752,7 @@ function updatePatches(w: World): void {
       patch.tickTimer = 0.5;
       for (const e of [...w.enemies]) {
         if (Math.hypot(e.x - patch.x, e.y - patch.y) < patch.r + e.r * 0.5) {
-          hitEnemy(w, e, 'fire', 1, patch.x, patch.y, null);
+          hitEnemy(w, e, 'fire', Math.round(damageScale(w)), patch.x, patch.y, null);
         }
       }
     }
@@ -811,10 +847,18 @@ function scatterKernels(
   ownerId: number | null,
 ): void {
   const base = Math.atan2(dirY, dirX);
-  for (const kind of kinds) {
-    const a = base + range(w.rng, -1.4, 1.4);
-    const speed = range(w.rng, 140, 300);
-    addGround(w, kind, x, y, Math.cos(a) * speed, Math.sin(a) * speed, delay, ownerId);
+  const scale = sizeScale(w.player);
+  const counts = new Map<KernelKind, number>();
+  for (const kind of kinds) counts.set(kind, (counts.get(kind) ?? 0) + 1);
+  // Big hits drop a few bundles per kind instead of one entity per kernel.
+  for (const [kind, count] of counts) {
+    const pieces = Math.min(count, MAX_SCATTER_PIECES);
+    for (let i = 0; i < pieces; i++) {
+      const value = Math.floor(count / pieces) + (i < count % pieces ? 1 : 0);
+      const a = base + range(w.rng, -1.4, 1.4);
+      const speed = range(w.rng, 140, 300) * scale;
+      addGround(w, kind, x, y, Math.cos(a) * speed, Math.sin(a) * speed, delay, ownerId, value);
+    }
   }
 }
 
@@ -858,7 +902,7 @@ function updateGround(w: World): void {
   const p = w.player;
   const t = w.tuning;
   const friction = Math.exp(-6 * DT);
-  const magnet = p.r + t.magnetRadius;
+  const magnet = p.r + t.magnetRadius * sizeScale(p);
 
   for (const g of w.ground) {
     g.age += DT;
@@ -936,21 +980,22 @@ function updateEnemies(w: World): void {
   const t = w.tuning;
   const grid = t.enemyGrabs >= 1 ? buildGrid(w.ground) : null;
   const found: GroundKernel[] = [];
+  const scale = sizeScale(p);
 
   for (const e of w.enemies) {
     e.hitFlash = Math.max(0, e.hitFlash - DT);
     e.bumpCooldown = Math.max(0, e.bumpCooldown - DT);
     e.turnTimer -= DT;
     const n = total(e.kernels);
-    const sizeFactor = Math.min(1.15, Math.max(0.55, 1.15 - n / 150));
-    let speed = ENEMY_BASE_SPEED[e.type] * t.enemySpeed * sizeFactor;
+    const sizeFactor = Math.min(1.15, Math.max(0.55, 1.15 - (0.3 * n) / p.sockets));
+    let speed = ENEMY_BASE_SPEED[e.type] * t.enemySpeed * sizeFactor * Math.pow(scale, 0.75);
     const toPlayer = Math.atan2(p.y - e.y, p.x - e.x);
     const distPlayer = Math.hypot(p.x - e.x, p.y - e.y);
 
     let seek: GroundKernel | null = null;
     if (grid && e.type !== 'rocky') {
       let bestD = Infinity;
-      for (const g of queryGrid(grid, e.x, e.y, 160, found)) {
+      for (const g of queryGrid(grid, e.x, e.y, 160 * scale, found)) {
         const d = (g.x - e.x) ** 2 + (g.y - e.y) ** 2;
         if (d < bestD) {
           bestD = d;
@@ -962,18 +1007,18 @@ function updateEnemies(w: World): void {
     if (e.retreat > 0) {
       e.retreat -= DT;
       e.heading = toPlayer + Math.PI;
-    } else if (e.chompable && distPlayer < 220 && !p.bare) {
+    } else if (e.chompable && distPlayer < 220 * scale && !p.bare) {
       // Nervous: a cob you can chomp backs away, so snacks take a little chasing.
       e.heading = toPlayer + Math.PI + Math.sin((w.tick + e.id * 13) * 0.05) * 0.6;
       speed *= t.nervousSpeed;
     } else if (e.type === 'rocky') {
       if (e.turnTimer <= 0) {
         e.turnTimer = range(w.rng, 2.5, 4.5);
-        e.heading = distPlayer < 900 ? toPlayer + range(w.rng, -0.6, 0.6) : range(w.rng, 0, Math.PI * 2);
+        e.heading = distPlayer < 900 * scale ? toPlayer + range(w.rng, -0.6, 0.6) : range(w.rng, 0, Math.PI * 2);
       }
     } else if (seek) {
       e.heading = Math.atan2(seek.y - e.y, seek.x - e.x);
-    } else if (e.type === 'baby' && distPlayer < 650) {
+    } else if (e.type === 'baby' && distPlayer < 650 * scale) {
       // Babies take turns being interested in you, so a crowd doesn't all pile on at once.
       if (e.turnTimer <= 0) {
         e.seeking = chance(w.rng, 0.5);
@@ -984,7 +1029,7 @@ function updateEnemies(w: World): void {
     } else {
       if (e.turnTimer <= 0) {
         e.turnTimer = range(w.rng, 1, 3);
-        const drift = distPlayer < 450 ? toPlayer : range(w.rng, 0, Math.PI * 2);
+        const drift = distPlayer < 450 * scale ? toPlayer : range(w.rng, 0, Math.PI * 2);
         e.heading = drift + range(w.rng, -0.9, 0.9);
       }
       if (e.type === 'soggy') speed *= 0.9;
@@ -1040,14 +1085,17 @@ function spawnFieldChunks(w: World): void {
   const p = w.player;
   const pcx = Math.floor(p.x / CHUNK_SIZE);
   const pcy = Math.floor(p.y / CHUNK_SIZE);
-  for (let cx = pcx - 1; cx <= pcx + 1; cx++) {
-    for (let cy = pcy - 1; cy <= pcy + 1; cy++) {
+  const reach = Math.max(1, Math.ceil((viewRadius(p) * 1.6) / CHUNK_SIZE));
+  for (let cx = pcx - reach; cx <= pcx + reach; cx++) {
+    for (let cy = pcy - reach; cy <= pcy + reach; cy++) {
       const key = `${cx},${cy}`;
       if (w.visitedChunks[key]) continue;
       w.visitedChunks[key] = true;
       const rng = makeRng(hash2(w.seed, cx, cy));
       const clumps = int(rng, 1, 3);
-      const totalKernels = Math.round(w.tuning.fieldKernels * range(rng, 0.6, 1.4));
+      // Loose kernels are a starter snack; they thin out as you grow so they don't become passive income.
+      const thinning = Math.min(1, Math.max(0.1, 30 / total(p.kernels)));
+      const totalKernels = Math.round(w.tuning.fieldKernels * thinning * range(rng, 0.6, 1.4));
       for (let c = 0; c < clumps; c++) {
         const ox = (cx + range(rng, 0.1, 0.9)) * CHUNK_SIZE;
         const oy = (cy + range(rng, 0.1, 0.9)) * CHUNK_SIZE;
@@ -1091,25 +1139,27 @@ function planSpawn(w: World): NonNullable<Director['plan']> {
   const rng = w.rng;
   const c = Math.max(2, w.director.smoothedCount);
   const roll = next(rng) * 100;
-  const chompableBand = t.bandChompable;
-  const wearBand = chompableBand + t.bandWearDown;
+  // Cobs bigger than you are what let you double in size, so they get rarer as you grow.
+  const bigScale = Math.min(1, Math.pow(BIG_COB_REF / c, t.bigCobFalloff));
+  const bigShare = Math.max(0, 100 - t.bandChompable) * bigScale;
+  const wearShare = (Math.min(t.bandWearDown, 100 - t.bandChompable) / Math.max(1e-6, 100 - t.bandChompable)) * bigShare;
   let count: number;
   let type: EnemyType;
   const early = w.tick < 15 * TICK_RATE;
-  if (roll < chompableBand || early) {
+  if (roll >= bigShare || early) {
     // Snacks grow slower than you do, so each chomp is a smaller share of a bigger cob.
     const snack = Math.pow(c, t.snackExponent) * t.snackSize * range(rng, 0.6, 1.4);
     count = Math.max(1, Math.min(Math.floor(c) - 1, Math.round(snack)));
     type = pickWeighted(rng, ['baby', 'soggy', 'rocky'] as EnemyType[], (ty) => (ty === 'baby' ? 75 : 12.5))!;
   } else {
-    const lo = roll < wearBand ? 1.05 : t.wearDownMax;
-    const hi = roll < wearBand ? t.wearDownMax : Math.max(t.wearDownMax, t.projectMax);
+    const lo = roll < wearShare ? 1.05 : t.wearDownMax;
+    const hi = roll < wearShare ? t.wearDownMax : Math.max(t.wearDownMax, t.projectMax);
     count = Math.max(Math.ceil(c) + 1, Math.round(c * range(rng, lo, hi)));
     type = pickWeighted(rng, ['baby', 'soggy', 'rocky'] as EnemyType[], (ty) => (ty === 'baby' ? 30 : 35))!;
   }
   const kernels = composeEnemy(rng, type, count);
   // Cost is relative to your size so the spawn rate doesn't stall as you grow.
-  return { type, kernels, cost: 1 + count / c };
+  return { type, kernels, cost: Math.min(MAX_SPAWN_COST, 1 + count / c) };
 }
 
 function spawnEnemy(w: World, type: EnemyType, kernels: Kernels, x: number, y: number): Enemy {
@@ -1140,7 +1190,9 @@ function spawnEnemy(w: World, type: EnemyType, kernels: Kernels, x: number, y: n
 function spawnOpeningCobs(w: World): void {
   const p = w.player;
   const n = total(p.kernels);
-  // A few quick snacks, plus two big cobs that are too big to eat by snacking alone.
+  // A few quick snacks (each carrying a power kernel, so a plain Sunny start can arm up),
+  // plus two big cobs that are too big to eat by snacking alone.
+  const babyPowers: PowerKind[] = ['zinger', 'zinger', 'spicy', 'popper'];
   const opening: [EnemyType, number][] = [
     ['baby', Math.max(1, Math.round(n * 0.2))],
     ['baby', Math.max(1, Math.round(n * 0.3))],
@@ -1152,7 +1204,9 @@ function spawnOpeningCobs(w: World): void {
   opening.forEach(([type, count], i) => {
     const a = (i / opening.length) * Math.PI * 2 + range(w.rng, -0.3, 0.3);
     const d = range(w.rng, 230, 420);
-    spawnEnemy(w, type, composeEnemy(w.rng, type, count), p.x + Math.cos(a) * d, p.y + Math.sin(a) * d);
+    const kernels = composeEnemy(w.rng, type, count);
+    if (type === 'baby' && babyPowers[i]) kernels[babyPowers[i]] += 1;
+    spawnEnemy(w, type, kernels, p.x + Math.cos(a) * d, p.y + Math.sin(a) * d);
   });
 }
 
@@ -1170,7 +1224,7 @@ function runDirector(w: World): void {
   const minutes = seconds / 60;
   const wave = seconds % 65 < 45 ? 1 : 2;
   dir.budget += (t.budgetBase + t.budgetPerPower * dir.smoothedPower + t.budgetPerMinute * minutes) * wave * DT;
-  dir.budget = Math.min(dir.budget, 8);
+  dir.budget = Math.min(dir.budget, MAX_BUDGET);
 
   if (!dir.plan) dir.plan = planSpawn(w);
   const view = viewRadius(p);

@@ -2,7 +2,7 @@
  * Headless balance report: a simple bot plays several seeded runs with the default tuning
  * (plus optional overrides) and prints how fast it grows. Run with `npm run bot`.
  *
- *   BOT_TUNING='{"snackSize":0.4}' BOT_SEEDS=10 BOT_MINUTES=5 npm run bot
+ *   BOT_TUNING='{"snackSize":0.4}' BOT_SEEDS=10 BOT_MINUTES=5 BOT_LOADOUT=playtest npm run bot
  *
  * The bot chases chompable cobs and kernels, dodges big cobs, and fires a power the target
  * doesn't resist. It's far more efficient than a kid, so treat its times as a lower bound.
@@ -11,13 +11,15 @@ import { it } from 'vitest';
 import { total } from '../src/sim/cob';
 import { KERNELS, PLAIN_KINDS, POWER_DAMAGE, POWER_KINDS } from '../src/sim/kernels';
 import { defaultTuning, sanitizeTuning } from '../src/sim/tuning';
-import { DT, EMPTY_COMMAND, createWorld, step, type InputCommand, type World } from '../src/sim/world';
+import { DT, EMPTY_COMMAND, createWorld, step, type InputCommand, type Loadout, type World } from '../src/sim/world';
 
 const seeds = Number(process.env.BOT_SEEDS ?? 6);
 const minutes = Number(process.env.BOT_MINUTES ?? 8);
+const trace = process.env.BOT_TRACE === '1';
 const overrides = process.env.BOT_TUNING ? JSON.parse(process.env.BOT_TUNING) : {};
 /** `chase` plays well; `idle` drifts in slow circles and never shoots (a distracted kid). */
 const mode = process.env.BOT_MODE === 'idle' ? 'idle' : 'chase';
+const loadout: Loadout = process.env.BOT_LOADOUT === 'playtest' ? 'playtest' : 'game';
 
 function botCommand(w: World, lastShot: { tick: number }): InputCommand {
   const p = w.player;
@@ -76,13 +78,31 @@ function botCommand(w: World, lastShot: { tick: number }): InputCommand {
 it('bot balance report', () => {
   const tuning = sanitizeTuning({ ...defaultTuning(), ...overrides });
   const rows: string[] = [];
-  const milestones = [30, 60, 130];
+  const milestones = [30, 120, 500, 1250];
   for (let seed = 1; seed <= seeds; seed++) {
-    const w = createWorld(seed, { ...tuning });
+    const w = createWorld(seed, { ...tuning }, loadout);
     const reached: Record<number, number> = {};
     const lastShot = { tick: 0 };
+    const income = { chomp: 0, other: 0, last: total(w.player.kernels) };
     while (!w.over && w.tick < minutes * 60 / DT) {
       step(w, botCommand(w, lastShot));
+      if (trace && seed === 1) {
+        const now = total(w.player.kernels);
+        let chomped = 0;
+        for (const ev of w.events) if (ev.type === 'chomp') chomped += ev.gained;
+        const fired = w.events.filter((ev) => ev.type === 'fire').length;
+        income.chomp += chomped;
+        income.other += now - income.last - chomped + fired;
+        income.last = now;
+        if (w.tick % (30 / DT) === 0) {
+          const big = w.enemies.filter((e) => !e.chompable).length;
+          process.stdout.write(
+            `  t=${Math.round(w.tick * DT)}s size ${now} (tier ${w.player.tier})  +chomps ${income.chomp}  +scooped/other ${income.other}  enemies ${w.enemies.length} (${big} too big)\n`,
+          );
+          income.chomp = 0;
+          income.other = 0;
+        }
+      }
       const n = total(w.player.kernels);
       for (const m of milestones) if (reached[m] === undefined && n >= m) reached[m] = Math.round(w.tick * DT);
     }
@@ -90,9 +110,9 @@ it('bot balance report', () => {
     const fmt = (m: number) => (reached[m] === undefined ? '-' : `${reached[m]}s`);
     rows.push(
       `seed ${String(seed).padStart(2)}  ${w.over ? 'popped out' : 'survived  '} at ${Math.round(w.tick * DT)}s  ` +
-        `reach 30/60/130: ${fmt(30)}/${fmt(60)}/${fmt(130)}  max ${s.maxKernels}  chomps ${s.chomps}  ` +
+        `reach 30/120/500/1250: ${fmt(30)}/${fmt(120)}/${fmt(500)}/${fmt(1250)}  max ${s.maxKernels}  chomps ${s.chomps}  ` +
         `shots ${s.firedTotal}  scooped ${s.firedRecovered}  tinks ${s.tinks}  bumps ${s.bumps}  seeds ${s.seeds}`,
     );
   }
-  process.stdout.write(`\nBot report (${mode} bot, ${seeds} runs, ${minutes} min max, overrides ${JSON.stringify(overrides)})\n${rows.join('\n')}\n\n`);
+  process.stdout.write(`\nBot report (${mode} bot, ${loadout} start, ${seeds} runs, ${minutes} min max, overrides ${JSON.stringify(overrides)})\n${rows.join('\n')}\n\n`);
 }, 600_000);

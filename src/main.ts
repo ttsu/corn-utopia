@@ -5,7 +5,7 @@ import { Input } from './input';
 import { appendLog, clearLog, formatLog, formatTime, loadLog, summarize } from './playtestLog';
 import { Renderer } from './render';
 import { total } from './sim/cob';
-import { DT, EMPTY_COMMAND, createWorld, step, type SimEvent, type World } from './sim/world';
+import { DT, EMPTY_COMMAND, createWorld, step, type Loadout, type SimEvent, type World } from './sim/world';
 import { PowerButtons } from './ui/powerButtons';
 import { TuningPanel, loadTuning } from './ui/tuningPanel';
 
@@ -59,9 +59,11 @@ function setMode(next: Mode): void {
   else void releaseWakeLock();
 }
 
+let loadout: Loadout = 'game';
+
 function startRun(): void {
   sfx.unlock();
-  world = createWorld(newSeed(), tuning);
+  world = createWorld(newSeed(), tuning, loadout);
   accumulator = 0;
   fpsSamples = 0;
   fpsTotal = 0;
@@ -229,7 +231,14 @@ renderer.snapCamera(world);
 // Let the title screen show a living field behind it.
 for (let i = 0; i < 30; i++) step(world, EMPTY_COMMAND);
 
-$('play-btn').addEventListener('click', startRun);
+$('play-btn').addEventListener('click', () => {
+  loadout = 'game';
+  startRun();
+});
+$('playtest-btn').addEventListener('click', () => {
+  loadout = 'playtest';
+  startRun();
+});
 $('again-btn').addEventListener('click', startRun);
 $('restart-btn').addEventListener('click', startRun);
 $('resume-btn').addEventListener('click', () => setMode('playing'));

@@ -175,15 +175,27 @@ Your cob has a set number of **kernel sockets**. When the sockets fill up, the c
   are your "missing health" and show you how much there is to scoop back up.
 - This keeps the camera zoom and your hitbox steady, so the screen doesn't jump around while you fire.
 
-| Tier | Name        | Sockets | Power Pockets | Visual                        | Unlock moment             |
-|------|-------------|--------:|--------------:|-------------------------------|---------------------------|
-| 1    | Baby Cob    |      12 |             3 | Tiny, chubby, big eyes        | Start                     |
-| 2    | Snack Cob   |      24 |             3 | Longer, little leaf hair      | First Ear Up! choice      |
-| 3    | Picnic Cob  |      40 |             4 | Husk "cape" appears           | Ear Up! choice            |
-| 4    | Big Cob     |      60 |             4 | Thicker, eyebrows             | Ear Up! choice            |
-| 5    | Mega Cob    |      90 |             5 | Sparkles, tassel crown        | Ear Up! choice + mini-boss|
-| 6    | Cob-zilla   |     130 |             5 | Huge, ground shakes on move   | Ear Up! choice            |
-| 7+   | Golden Ear  | +40/tier |            5 | Gold trim, keeps scaling      | Prestige tiers            |
+| Tier | Name         | Sockets | Power Pockets | Visual                        | Unlock moment             |
+|------|--------------|--------:|--------------:|-------------------------------|---------------------------|
+| 1    | Baby Cob     |      12 |             3 | Tiny, chubby, big eyes        | Start                     |
+| 2    | Snack Cob    |      30 |             3 | Longer, little leaf hair      | First Ear Up! choice      |
+| 3    | Picnic Cob   |      60 |             4 | Husk "cape" appears           | Ear Up! choice            |
+| 4    | Big Cob      |     120 |             4 | Thicker, eyebrows             | Ear Up! choice            |
+| 5    | Mega Cob     |     200 |             5 | Sparkles, tassel crown        | Ear Up! choice + mini-boss|
+| 6    | Cob-zilla    |     320 |             5 | Huge, ground shakes on move   | Ear Up! choice            |
+| 7    | Corn Castle  |     500 |             5 | Husk banners                  | Ear Up! choice            |
+| 8    | Corn Mountain|     750 |             5 | Little clouds float by        | Ear Up! choice            |
+| 9    | Golden Ear   |   1,000 |             5 | Gold trim                     | Ear Up! choice            |
+| 10   | Corn Utopia  |   1,250 |             5 | Rainbow shimmer               | Top tier (extras → Seeds) |
+
+- **[Decision] A run starts as a plain Sunny cob** (no power kernels). The first snacks on the
+  field each carry one power kernel, so your first chomps are what arm you.
+- **Bigger cobs hit harder and reach farther.** Shot range, blast radius, move speed and magnet
+  scale with your size, and kernels knocked off per hit grow too (sub-linearly), so a
+  1,000-kernel cob still wears down a big cob in a sensible number of shots.
+- **Big cobs get rarer as you grow.** Chomping a cob about your size roughly doubles you, so
+  the director spawns fewer of them the bigger you are; most late growth comes from snacks.
+  (M0 tuning: the bot reaches the top tier in about 3–5 minutes; kids should take 2–3× longer.)
 
 - **Camera zooms out as you grow** (like agar.io), so your cob takes up about the same amount of
   screen and the world feels like it's shrinking around you. This is very important for readability
@@ -555,8 +567,8 @@ Everything is earned by playing.
 ### 10.2 The Farm (Hub Screen)
 
 - A cozy farm where you spend Seeds:
-  - **Seed Bank:** unlock new **starting loadouts** (e.g. start with 3 Spicy instead of 3 Zinger, or
-    with a few Soggy kernels for armor)
+  - **Seed Bank:** unlock new **starting loadouts** on top of the plain Sunny start (e.g. start with
+    3 Zinger or 3 Spicy, or with a few Soggy kernels for armor)
   - **Cob Closet:** hats, glasses, mustaches, husk colors (cosmetic only)
   - **Field Upgrades:** small permanent boosts (+5% magnet, +1 starting kernel, +1 re-roll), with a cap
 - **Unlock biomes** by reaching them for the first time.

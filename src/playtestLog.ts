@@ -8,6 +8,7 @@ const MAX_RUNS = 30;
 export interface RunSummary {
   at: string;
   seed: number;
+  loadout?: string;
   seconds: number;
   maxKernels: number;
   maxTier: number;
@@ -30,6 +31,7 @@ export function summarize(w: World, avgFps: number): RunSummary {
   return {
     at: new Date().toISOString(),
     seed: w.seed,
+    loadout: w.loadout,
     seconds: Math.round(seconds),
     maxKernels: s.maxKernels,
     maxTier: s.maxTier,
@@ -83,7 +85,7 @@ export function formatLog(log: RunSummary[]): string {
   return log
     .map(
       (r) =>
-        `${r.at.slice(0, 16).replace('T', ' ')}  ${formatTime(r.seconds)}  max ${r.maxKernels}  chomps ${r.chomps} ` +
+        `${r.at.slice(0, 16).replace('T', ' ')}  ${r.loadout === 'playtest' ? 'mix ' : ''}${formatTime(r.seconds)}  max ${r.maxKernels}  chomps ${r.chomps} ` +
         `(${r.chompsPerMinute}/min)  shots/chomp ${r.shotsPerChomp}  scooped ${r.firedRecoveredPct}%  ` +
         `tinks ${r.tinks}  presses-after-tink ${r.avgPressesAfterTink ?? '-'}  fps ${r.avgFps}`,
     )
