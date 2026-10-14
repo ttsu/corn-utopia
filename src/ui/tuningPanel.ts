@@ -1,6 +1,7 @@
 import { TUNING_KEYS, TUNING_SPECS, defaultTuning, sanitizeTuning, type Tuning, type TuningKey } from '../sim/tuning';
+import { storageKey } from '../storageKey';
 
-const STORAGE_KEY = 'corn-utopia.tuning.v1';
+const STORAGE_KEY = storageKey('corn-utopia.tuning.v1');
 
 export function loadTuning(): Tuning {
   try {

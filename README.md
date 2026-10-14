@@ -5,12 +5,19 @@ Web-based and installable as a PWA, built touch-first for iPad and iPhone.
 
 See the [Game Design Document](docs/game-design.md).
 
+**Play it:** https://ttsu.github.io/corn-utopia/ (every PR also gets a preview at
+`https://ttsu.github.io/corn-utopia/pr/pr-<N>/`; see [docs/deploy.md](docs/deploy.md)).
+
 ## M0 gray-box prototype
 
 The current build is the **M0 "find the fun" prototype** from the roadmap (GDD §16): circles and
 squares only, built to test whether "wear it down, then chomp" is fun on a touch screen.
 
 What's in it:
+
+- **Play!** starts the real game as a plain Sunny cob with no powers; the first little cobs each
+  carry a power kernel, so chomping them is how you arm up. **Playtest mix** starts with the
+  mixed loadout set in the Tuning panel (Zinger, Spicy, Popper, and some Sunny by default).
 
 - Floating touch joystick (left half), one power button per power (right thumb arc), fires on touch-down.
   Two thumbs work at the same time. Keyboard also works: WASD/arrows, `1` `2` `3` to fire, `Tab` to
@@ -23,14 +30,16 @@ What's in it:
   (Zinger = Bonk, Spicy = Fire + burn patch, Popper = lobbed Pop blast). Resisted hits go *tink!*.
 - 3 enemy types (Baby Cob, Soggy Cob, Rocky Cob), a spawn director with chomp bands and calm/rush
   waves, and an endless field. Chompable cobs get nervous and back away.
-- Size tiers that only go up, camera zoom-out as you grow, a top tier where extra kernels become
-  Seeds, Last Chance, and the All Popped Out results screen.
+- 10 size tiers from 12 up to 1,250 kernels (they only go up), camera zoom-out as you grow, and a
+  top tier where extra kernels become Seeds. Shot range, blast radius, speed, magnet, and kernels
+  knocked off per hit all scale with your size. Last Chance and the All Popped Out results screen.
 - **Tuning panel** (Title, Pause, or Results screen → *Tuning*) with live sliders for every number
   M0 is meant to tune: recharge times, damage, range, magnet, Chomp Bonus, director bands, and more.
   Settings are saved on the device and can be copied/pasted between devices.
 - **Playtest log**: every run's metrics from GDD §17 (chomps/min, shots per chomp, % of shots
   scooped back, tinks, presses-after-tink before switching powers, fps) are saved locally and
-  shown in the Tuning panel. Add `?debug` to the URL for an fps/entity overlay.
+  shown in the Tuning panel. Add `?debug` to the URL for an fps/entity overlay (press `G` during
+  a run to add 100 Sunny kernels and check how big cobs look).
 - PWA shell: manifest, icons, offline service worker, iOS home-screen meta tags, safe areas,
   wake lock, pause on app switch, and a "New corn is ready!" update prompt that never interrupts a run.
 
@@ -50,14 +59,17 @@ npm run icons      # regenerate the placeholder PWA icons
 ```
 
 `npm run bot` accepts overrides, e.g. `BOT_TUNING='{"snackSize":0.4}' BOT_SEEDS=10 npm run bot`.
-The bot is much better at chasing than a kid, so treat its times as a lower bound.
+`BOT_LOADOUT=playtest` uses the Playtest mix, `BOT_MODE=idle` never shoots, and `BOT_TRACE=1` shows
+where the kernels came from. The bot is much better at chasing than a kid, so treat its times as a
+lower bound.
 
 ### Testing on a real iPad / iPhone
 
 Service workers and install need HTTPS (or `localhost`). Options:
 
-- **GitHub Pages:** enable Pages with *Source: GitHub Actions*, then run the
-  *Deploy to GitHub Pages* workflow. Open the URL in Safari → Share → Add to Home Screen.
+- **GitHub Pages:** `main` deploys to https://ttsu.github.io/corn-utopia/ and each PR gets a
+  preview link (one-time Pages setup in [docs/deploy.md](docs/deploy.md)). Open the production
+  URL in Safari → Share → Add to Home Screen.
 - **Local network:** `npm run dev` and open the printed LAN URL. The game is playable, but iOS
   won't install it as an app or run it offline without HTTPS.
 
@@ -70,7 +82,7 @@ Service workers and install need HTTPS (or `localhost`). Options:
   - `cob.ts` the shared "cob = kernel counts" model: hits, resistances, chomp rule
   - `tuning.ts` every tunable number with its slider range
   - `world.ts` player, shots, enemies, ground kernels, director, events
-- `src/render.ts` Canvas 2D gray-box renderer (interpolated between sim ticks)
+- `src/render.ts` PixiJS (WebGL) gray-box renderer, interpolated between sim ticks
 - `src/input.ts` multi-touch joystick + taps + keyboard → one command per tick
 - `src/audio.ts` synthesized sound effects (no audio files)
 - `src/ui/` power buttons and the tuning panel

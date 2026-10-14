@@ -3,7 +3,8 @@ import { defineConfig } from 'vite';
 import { VitePWA } from 'vite-plugin-pwa';
 
 export default defineConfig({
-  base: process.env.BASE_PATH ?? '/',
+  // Relative base so the same build works at the Pages root and under pr/pr-<N>/ previews.
+  base: './',
   plugins: [
     VitePWA({
       registerType: 'prompt',
@@ -25,6 +26,8 @@ export default defineConfig({
       },
       workbox: {
         globPatterns: ['**/*.{js,css,html,png,svg,webmanifest}'],
+        // PR previews live under the production scope; let them load their own pages.
+        navigateFallbackDenylist: [/\/pr\//],
       },
     }),
   ],

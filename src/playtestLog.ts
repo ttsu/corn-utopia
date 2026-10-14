@@ -1,7 +1,8 @@
 import type { World } from './sim/world';
 import { DT } from './sim/world';
+import { storageKey } from './storageKey';
 
-const STORAGE_KEY = 'corn-utopia.playtest.v1';
+const STORAGE_KEY = storageKey('corn-utopia.playtest.v1');
 const MAX_RUNS = 30;
 
 /** One finished run, matching the metrics in the playtest plan (GDD §17). */
