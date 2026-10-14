@@ -113,19 +113,29 @@ Both kinds count toward your **kernel count** (for chomping), your **health**, a
 - When you run out of a power type, its button goes gray and empty until you pick up more.
 
 **Power Pockets (how many buttons):**
-- You start with **3 Power Pockets** (3 buttons). You get +1 at size tier 3 and +1 at tier 5,
+- You start with **3 Power Pockets** (3 buttons you can fire). You get +1 at size tier 3 and +1 at tier 5,
   up to a maximum of **5** on both iPad and iPhone.
+- **[Decision] A power's button never moves.** Each power type has one fixed place on the arc, from the
+  thumb outward: Zinger, Spicy, Popper, Frosty, then later powers. Keys 1–5 match that order. Running
+  out of a power turns its button gray. It does not get replaced by another power.
 - If you pick up a new power type while your pockets are full, it goes onto your cob (it still counts
-  as health) and waits in line. Its icon shows up small next to the buttons.
-- When a pocket empties, the next waiting power moves into it automatically. A small **swap arrow**
-  on each button lets you trade it for a waiting power at any time.
-- Fewer buttons keeps the screen simple, especially on iPhone, and makes choosing your loadout part of
-  the strategy.
+  as health) and its own button shows up **dimmed**. It does not fire until you arm it. A new pocket
+  (from a size tier or Extra Pocket) arms the next dimmed power in button order.
+- **[Playtest] How you swap which powers are armed.** For now, tap a dimmed button (or press its number
+  key) to arm it. If every pocket is full, it trades with an empty armed power if you have one,
+  otherwise with the armed power latest in button order. That gesture is provisional. The buttons
+  stay put either way.
+- Fewer buttons you can fire keeps the screen simple, especially on iPhone, and makes choosing your
+  loadout part of the strategy.
 
 **Aiming:**
-- **Auto-target:** a bouncy **target ring** sits on the cob you're most likely trying to wear down
+- **Auto-target:** a bouncy **dashed white circle** sits on the cob you're most likely trying to wear down
   (by default, the nearest cob with a red outline, favoring ones in front of you). Shots go there.
-- **Tap a cob** on the right side of the screen to lock the target ring onto it.
+- **Tap a cob** on the right side of the screen to lock that circle onto it.
+- **[Decision] Status outlines follow the cob. The aim marker stays a circle.** Green and red
+  outlines trace the husk and the body, drawn tight behind the cob with a thin glow. The dashed
+  aim marker is a circle, because a dashed cob shape reads as clutter. The player cob has no
+  status outline of its own.
 - **[Decision] Auto-target plus tap-to-lock is the default.** No manual aiming is needed.
 - **Drag-to-aim (optional, off by default, in Settings):** drag from a power button like a slingshot
   to aim by hand, for players who want more control.
@@ -239,8 +249,9 @@ Your cob has a set number of **kernel sockets**. When the sockets fill up, the c
   - Firing also lowers *your* count, so a cob you could chomp a second ago might not be chompable
     anymore. Scoop up your kernels, then go for the chomp.
 - **Readability:** cobs you can chomp get a **green wiggle outline and a "yum" mouth**. Dangerous
-  cobs get a **red outline and angry eyebrows**. The outlines update live as counts change. Never
-  make players compare kernel counts by eye.
+  cobs get a **red outline and angry eyebrows**. Both outlines trace the cob (body and husk), not a
+  circle around it. They update live as counts change. Never make players compare kernel counts by eye.
+  The player cob does not get a colored outline.
 
 ### 4.7 Ear Up! (Level-Up Choice)
 
@@ -254,12 +265,20 @@ upgrade system, so Ear Up! choices are **cob perks**, picked from big picture ca
 - **Quick Hands:** power buttons recharge 15% faster
 - **Extra Pocket:** unlock your next power button right away (never more than 5)
 - **Long Shot:** fired kernels fly 20% further
-- **Boomerang:** 1 in 5 fired kernels flies back to your cob by itself
-- **Thick Husk:** every 5th hit is blocked
-- **Butter Roll:** a short dash on double-tap
-- **Lucky Ear:** rare kernels show up more often
+- **Boomerang:** 20% of fired kernels fly back to your cob by themselves
+- **Thick Husk:** 20% of hits are blocked
+- **Butter Roll:** your dash goes 25% further
+- **Lucky Ear:** rare kernels show up 25% more often
+
+You **start with a dash**. It is the big button under your right thumb, so one finger can steer
+while the other dashes. Butter Roll does not unlock it. Each copy just makes that dash longer.
 
 Ear Up! pauses the game (important for kids). Tap a card to choose. You can **re-roll** once per run.
+
+**[Decision] Stacking.** Every perk can be taken again, and each copy adds its percentage (or its
+flat bonus) on top of the last. Extra Pocket never goes past 5 buttons. Boomerang and Thick Husk
+each add another 20% (1 more out of every 5) up to all of them. Butter Roll adds another 25% of
+dash distance. Lucky Ear makes rare kernels another 25% more common.
 
 ---
 
@@ -533,13 +552,17 @@ types, which changes which powers are useful there:
 
 | Biome              | Vibe                          | Unique feature                                      | Common kernels       |
 |--------------------|-------------------------------|-----------------------------------------------------|----------------------|
-| **Sunny Farm**     | Starting field, tractors, hay | Hay bales block shots; mud puddles slow you down    | Sunny, Zinger        |
+| **Sunny Farm**     | Starting field, tractors, hay | Hay stacks block shots; mud puddles slow you down   | Sunny, Zinger        |
 | **Picnic Park**    | Checkered blankets, ants      | Ants carry kernels away (like Crows)                | Sweetie, Boing       |
 | **Kitchen Counter**| Giant cutting board, pots     | Butter puddles = speed boost; sink splashes         | Soggy, Toasty, Frosty|
 | **Movie Theater**  | Dark carpet, popcorn buckets  | Popcorn rain event                                  | Leafy, Popper        |
 | **County Fair**    | Rides, balloons, lights       | Bumper cars bounce everything; prize booths         | Rubbery, Zappy       |
 | **Taco Night**     | Tortillas, salsa rivers       | Salsa river slows                                   | Toasty, Spicy        |
 | **Rock Garden**    | Pebbles, little fountains     | Rolling boulders                                    | Stony, Tough Nut     |
+
+**[Decision] Sunny Farm obstacles are gameplay.** Hay blocks shots. Mud slows movement. Hay bales are
+a similar, slightly large size and sit in stacks of three, one stack per chunk and sometimes two,
+with a little jitter. They are not scattered singles. The opening around spawn stays clear of both.
 
 ### 8.3 Points of Interest
 
@@ -627,10 +650,10 @@ Everything is earned by playing.
 |------------------------------|---------------------------------------------------------------------|
 | **Drag on the left half**    | **Floating joystick** shows up where your thumb lands; drag to steer |
 | **Lift finger**              | Cob slowly coasts to a stop (doesn't stop instantly; feels smoother) |
+| **Tap the dash button**      | Dash the way you are steering (or the way you last moved). You start with it |
 | **Tap a power button**       | Fire one of that power kernel at the target (one shot per tap)      |
-| **Tap a cob (right half)**   | Lock the target ring onto that cob                                  |
-| **Swap arrow on a button**   | Swap that pocket for a waiting power type                           |
-| **Double-tap (left half)**   | Butter Roll dash (only if you picked that perk)                     |
+| **Tap a cob (right half)**   | Lock the dashed target circle onto that cob                        |
+| **Space or Shift**           | Dash, same as the button                                            |
 | **Pause**                    | Top corner, inside the safe area                                    |
 
 - **Nothing fires on its own** (except a planted Sprout helper plant). The player always chooses which
@@ -643,12 +666,12 @@ Everything is earned by playing.
   the youngest kids and anyone who finds several buttons hard.
 - **[Decision] Alternate movement: "Follow My Finger."** The cob rolls toward wherever your left-side
   finger is. It's easier for very young kids and works well on iPad. Players can switch in Settings.
-- Keyboard (WASD/arrows to move, 1–5 for powers, Tab to change target) and gamepad (stick to move,
+- Keyboard (WASD/arrows to move, 1–5 for powers, Space to dash, Tab to change target) and gamepad (stick to move,
   face buttons and shoulders for powers) work on desktop and on iPads with a controller.
 
 ### 11.2 Layout
 
-- **Power buttons sit in an arc around the right thumb**, biggest for the first pocket. Each button is
+- **Dash is the big button in the bottom-right corner.** Power buttons sit in an arc around it, each power in a fixed place. Each button is
   at least 64 pt on iPad and 56 pt on iPhone, with clear space between them so kids don't hit the
   wrong one.
 - **iPad (landscape and portrait):** joystick on the left half, power arc bottom-right. HUD along the top.
@@ -670,7 +693,7 @@ Everything is earned by playing.
 ### 11.4 Readability (Bullet Heaven Clutter)
 
 - **Layer order (bottom → top):** ground → ground kernels → player shots → enemies → enemy shots →
-  player cob → target ring → HUD.
+  player cob → target circle → HUD.
 - Player effects **fade as more stack up** (auto-dim when there are a lot of particles).
 - Settings: **Reduce Flashing** and **Reduce Screen Shake** toggles.
 - Ground kernels get a **gentle pulsing glow** so they read even in busy moments.
@@ -778,6 +801,9 @@ top, scaled by how many you have:
 |--------------|------------------------------------------------|
 | Zinger       | Orange tassel "hair" that sticks straight up   |
 | Spicy        | Little flames flicker from the tassel          |
+
+**[Decision] The pointed stand-in tassel is not drawn.** A triangle on top of a Zinger or Spicy cob
+read as an arrow, so this slice leaves it off. Frost on the husk and the occasional popcorn bit still show.
 | Frosty       | Frosty breath puffs, icicles on the husk       |
 | Boing        | Spring-shaped tassel that boings when you move |
 | Popper       | Popcorn bits pop off now and then              |
@@ -1042,6 +1068,10 @@ Each milestone has a clear "done when" check. Scope grows only after the previou
 - Full juice on fire/pop/scoop/chomp. Size tiers + camera zoom. Power Pockets. Ear Up! choices.
   All Popped Out + Last Chance.
 - Audio unlock, music, core SFX. Offline play works.
+- **[Decision] Frosty is in this slice** (icy shot, slows, third hit freezes) so four powers exist
+  and a full set of starting pockets can leave one dimmed. Sprout, the helper plant, stays with the
+  rest of the roster in M2. Toasty (freeze-immune) is still a later plain kernel, so Frosty's job
+  for now is stopping a chaser, not winning a resist matchup.
 - **Done when:** a 3-minute run on an iPhone 12 holds 60 fps and *feels* finished.
 
 ### M2 — Content Alpha

@@ -7,6 +7,9 @@ import type { PowerKind } from './sim/kernels';
 export class Sfx {
   private ctx: AudioContext | null = null;
   private master: GainNode | null = null;
+  private musicOn = false;
+  private musicTimer: ReturnType<typeof setTimeout> | null = null;
+  private nextBeat = 0;
   muted = false;
 
   unlock(): void {
@@ -23,7 +26,11 @@ export class Sfx {
 
   private tone(freq: number, dur: number, type: OscillatorType, vol: number, slideTo?: number, delay = 0): void {
     if (!this.ctx || !this.master || this.muted) return;
-    const t = this.ctx.currentTime + delay;
+    this.toneAt(this.ctx.currentTime + delay, freq, dur, type, vol, slideTo);
+  }
+
+  private toneAt(t: number, freq: number, dur: number, type: OscillatorType, vol: number, slideTo?: number): void {
+    if (!this.ctx || !this.master || this.muted) return;
     const osc = this.ctx.createOscillator();
     const gain = this.ctx.createGain();
     osc.type = type;
@@ -60,7 +67,15 @@ export class Sfx {
     else if (kind === 'spicy') {
       this.tone(300, 0.18, 'sawtooth', 0.08, 120);
       this.noise(0.18, 0.25, 900);
+    } else if (kind === 'frosty') {
+      this.tone(1480, 0.09, 'sine', 0.08, 900);
+      this.tone(1960, 0.12, 'sine', 0.05);
     } else this.tone(260, 0.2, 'triangle', 0.15, 520);
+  }
+
+  chill(): void {
+    this.tone(1760, 0.14, 'sine', 0.08, 700);
+    this.tone(1320, 0.18, 'triangle', 0.05);
   }
 
   /** The "that didn't work, switch powers" sound. Must be distinct from everything else. */
@@ -127,5 +142,49 @@ export class Sfx {
 
   poof(): void {
     this.noise(0.2, 0.3, 1500);
+  }
+
+  perk(): void {
+    [659, 880, 1174].forEach((f, i) => this.tone(f, 0.12, 'triangle', 0.1, undefined, i * 0.07));
+  }
+
+  whoosh(): void {
+    this.tone(420, 0.12, 'sine', 0.08, 180);
+    this.noise(0.1, 0.2, 1200);
+  }
+
+  /**
+   * A short cheerful loop (pluck, bass, clap). Scheduled a little ahead so it
+   * stays in time, and it follows the mute switch.
+   */
+  startMusic(): void {
+    this.unlock();
+    if (!this.ctx || this.musicOn) return;
+    this.musicOn = true;
+    this.nextBeat = this.ctx.currentTime + 0.05;
+    this.pumpMusic();
+  }
+
+  stopMusic(): void {
+    this.musicOn = false;
+    if (this.musicTimer) clearTimeout(this.musicTimer);
+    this.musicTimer = null;
+  }
+
+  private pumpMusic(): void {
+    if (!this.ctx || !this.master || !this.musicOn) return;
+    const beat = 0.42;
+    const melody = [523, 659, 784, 659, 880, 784, 659, 587];
+    const bass = [196, 196, 247, 196, 220, 220, 196, 175];
+    while (this.nextBeat < this.ctx.currentTime + 0.55) {
+      const i = Math.round(this.nextBeat / beat) % melody.length;
+      if (!this.muted) {
+        this.toneAt(this.nextBeat, melody[i], 0.16, 'triangle', 0.045);
+        if (i % 2 === 0) this.toneAt(this.nextBeat, bass[i], 0.2, 'sine', 0.05);
+        if (i % 4 === 2) this.noise(0.04, 0.06, 1800, Math.max(0, this.nextBeat - this.ctx.currentTime));
+      }
+      this.nextBeat += beat;
+    }
+    this.musicTimer = setTimeout(() => this.pumpMusic(), 180);
   }
 }

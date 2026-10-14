@@ -8,10 +8,33 @@ See the [Game Design Document](docs/game-design.md).
 **Play it:** https://cornutopia.timtsu.com/ (every PR also gets a preview at
 `https://cornutopia.timtsu.com/pr/pr-<N>/`; see [docs/deploy.md](docs/deploy.md)).
 
+## M1 vertical slice
+
+The current build is the **M1 vertical slice** from the roadmap (GDD §16). It keeps the M0 rules
+and adds the first art pass, Sunny Farm, Power Pockets, Ear Up perks, and music.
+
+What's new:
+
+- **Cutout cobs.** Player and enemies are hand-drawn-style corn cobs (thick ink, flat color, bob
+  and tilt). Kernel faces, Soggy drips, Stony cracks, and power flair (frost, popcorn)
+  so a cob's look tells you which power to use. Green cobs look nervous. A resisted hit looks smug.
+  Frosty adds an icy crystal and little icicles.
+- **Sunny Farm.** Grass, dirt, and flowers are scenery. Hay is stacked in clumps of similar-sized
+  bales that block shots. Mud slows you down.
+- **Power Pockets.** Three buttons to start, a fourth at size tier 3, a fifth at tier 5 (max 5).
+  Zinger, Spicy, Popper, and Frosty each keep one fixed button. With three pockets, the fourth
+  power sits dimmed on its own button until you tap it or press its number. Keys 1–4 always match
+  those four.
+- **Ear Up!** Growing a size tier pauses the run and offers 3 cob perks (one re-roll per run).
+  Every perk stacks. Boomerang and Thick Husk each add 20% (another 1 of every 5). Butter Roll makes
+  the dash 25% further. Lucky Ear makes rare kernels 25% more common. Extra Pocket never passes 5 buttons.
+- **Juice and music.** Shots pop off, landings squash, chomps shake the screen, tier-ups twirl,
+  and All Popped Out tucks the cob into its husk. A little synthesized tune starts when you play
+  and stops for the nap jingle.
+
 ## M0 gray-box prototype
 
-The current build is the **M0 "find the fun" prototype** from the roadmap (GDD §16): circles and
-squares only, built to test whether "wear it down, then chomp" is fun on a touch screen.
+M0 was the "find the fun" prototype: the rules below, originally drawn as circles and squares.
 
 What's in it:
 
@@ -19,10 +42,11 @@ What's in it:
   carry a power kernel, so chomping them is how you arm up. **Playtest mix** starts with the
   mixed loadout set in the Tuning panel (Zinger, Spicy, Popper, and some Sunny by default).
 
-- Floating touch joystick (left half), one power button per power (right thumb arc), fires on touch-down.
-  Two thumbs work at the same time. Keyboard also works: WASD/arrows, `1` `2` `3` to fire, `Tab` to
-  switch target, `Esc` to pause.
-- Auto-target ring (nearest red cob, favoring ones in front of you) and tap-a-cob-to-lock.
+- Floating touch joystick (left half). **Dash** is the big button under the right thumb, and you have it
+  from the start. Power buttons arc around it and fire on touch-down. Two thumbs work at the same time:
+  steer with one, dash or shoot with the other. Keyboard: WASD/arrows, `1`–`4` to fire, Space or Shift to
+  dash, `Tab` to switch target, `Esc` to pause.
+- Auto-target is a dashed circle on the aimed cob (nearest red cob, favoring ones in front of you) and tap-a-cob-to-lock. Green and red outlines follow the cob.
 - Chomp rule with green/red outlines, a chomp meter under the target, Chomp Bonus and Chomp Streak.
 - Fired kernels fly, land as pickups with a sparkle ring, and get pulled in by your magnet.
   Enemies grab ground kernels too, except kernels you just knocked off a cob: those are yours

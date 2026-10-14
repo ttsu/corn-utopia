@@ -1,19 +1,18 @@
 import { Application, BitmapText, Container, Graphics, Sprite, Text, type Texture } from 'pixi.js';
+import { KERNEL_COLOR, TEX_R, drawCobShell, drawFace, drawFarm, drawFlair, fillCobBody, makeArtTextures, strokeCobOutline, type ArtTextures, type Mood } from './art';
 import type { Camera, Input } from './input';
-import { dominantPlain, shieldBadges, total, type Kernels } from './sim/cob';
-import { DAMAGE_ICON, KERNELS, PLAIN_KINDS, POWER_KINDS, isPower, type KernelKind, type PowerKind } from './sim/kernels';
+import { perkDef } from './sim/perks';
+import { shieldBadges, total, type Kernels } from './sim/cob';
+import { DAMAGE_ICON, PLAIN_KINDS, POWER_KINDS, type KernelKind } from './sim/kernels';
 import { popperRadius, viewRadius, type Enemy, type SimEvent, type World } from './sim/world';
 
-const FIELD = 0x9fd36b;
-const PLAYER_COLOR = 0x3a86ff;
+const FIELD = 0x8fce6a;
+const PLAYER_COLOR = 0xf4a300;
 const GREEN = 0x22b24c;
 const RED = 0xe5383b;
 const INK = 0x2b2b2b;
 const WHITE = 0xffffff;
-const BODY_TINT: Record<string, number> = { sunny: 0xfff1b8, soggy: 0xb6efe8, stony: 0xd3d8e0 };
 const BARE_TINT = 0xf4efe1;
-/** Kernel textures are drawn at this radius and scaled to fit. */
-const TEX_R = 32;
 /** Kernel dots smaller than this many screen pixels aren't drawn (the body tint carries the look). */
 const MIN_DOT_PX = 1.2;
 /** Big cobs show at most this many sockets; each dot then stands for several kernels, in proportion. */
@@ -52,17 +51,13 @@ interface Ring {
   color: number;
 }
 
-interface KernelTextures {
-  dot: Texture;
-  square: Texture;
-  groundPlain: Texture;
-  groundPower: Texture;
-  cobPower: Record<PowerKind, Texture>;
+interface SmugMark {
+  x: number;
+  y: number;
+  ttl: number;
 }
 
 const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
-const hex = (css: string) => parseInt(css.slice(1), 16);
-const KERNEL_COLOR = Object.fromEntries(Object.entries(KERNELS).map(([k, d]) => [k, hex(d.color)])) as Record<KernelKind, number>;
 
 /** Unit-circle kernel slots for a cob with n slots, ordered top-to-bottom. */
 const slotCache = new Map<number, Float32Array>();
@@ -129,11 +124,12 @@ class SpritePool extends Pool<Sprite> {
       return s;
     });
   }
-  place(tex: Texture, x: number, y: number, rx: number, ry: number, tint: number, alpha = 1): Sprite {
+  place(tex: Texture, x: number, y: number, rx: number, ry: number, tint: number, alpha = 1, rotation = 0): Sprite {
     const s = this.next();
     if (s.texture !== tex) s.texture = tex;
     s.position.set(x, y);
     s.scale.set(rx / TEX_R, ry / TEX_R);
+    s.rotation = rotation;
     s.tint = tint;
     s.alpha = alpha;
     return s;
@@ -182,6 +178,8 @@ class LabelPool extends Pool<BitmapText> {
 
 /** A cob's draw layers, so each cob's kernels sit above its body and below its outline and eyes. */
 interface CobLayers {
+  /** Status color, drawn behind the cob so leaf strokes don't cross the body. */
+  outline: Graphics;
   body: Graphics;
   kernels: SpritePool;
   overlay: Graphics;
@@ -194,6 +192,9 @@ export class Renderer {
   private particles: Particle[] = [];
   private rings: Ring[] = [];
   private shake = 0;
+  private twirl = 0;
+  private smug: SmugMark[] = [];
+  private lastZ = -1;
 
   private readonly world = new Container();
   private readonly field = new Graphics();
@@ -209,7 +210,7 @@ export class Renderer {
   private readonly screenGfx = new Graphics();
   private readonly screenText: TextPool;
   private readonly screenLabels: LabelPool;
-  private readonly tex: KernelTextures;
+  private readonly tex: ArtTextures;
 
   static async create(canvas: HTMLCanvasElement): Promise<Renderer> {
     const app = new Application();
@@ -234,9 +235,10 @@ export class Renderer {
     private app: Application,
     private canvas: HTMLCanvasElement,
   ) {
-    this.tex = makeTextures(app);
+    this.tex = makeArtTextures(app);
     const stage = app.stage;
-    stage.addChild(this.field, this.world);
+    stage.addChild(this.world);
+    this.world.addChild(this.field);
 
     const groundSpriteLayer = new Container();
     const groundLabelLayer = new Container();
@@ -246,7 +248,7 @@ export class Renderer {
     this.shotSprites = new SpritePool(shotLayer);
     this.enemies = makeCobLayers();
     this.player = makeCobLayers();
-    this.playerLayer.addChild(this.player.body, this.player.kernels.layer, this.player.overlay);
+    this.playerLayer.addChild(this.player.outline, this.player.body, this.player.kernels.layer, this.player.overlay);
     const fxSpriteLayer = new Container();
     this.fxSprites = new SpritePool(fxSpriteLayer);
     this.world.addChild(
@@ -254,6 +256,7 @@ export class Renderer {
       groundSpriteLayer,
       groundLabelLayer,
       shotLayer,
+      this.enemies.outline,
       this.enemies.body,
       this.enemies.kernels.layer,
       this.enemies.overlay,
@@ -311,8 +314,13 @@ export class Renderer {
   handleEvents(events: SimEvent[]): void {
     for (const e of events) {
       switch (e.type) {
+        case 'fire':
+          this.burst(e.x, e.y, KERNEL_COLOR[e.kind], 5, 140);
+          this.shake = Math.max(this.shake, 2);
+          break;
         case 'tink':
           this.floater(e.x, e.y, `🛡 tink!`, WHITE, 20, 0.9);
+          this.smug.push({ x: e.x, y: e.y, ttl: 0.8 });
           break;
         case 'hit':
           if (e.onPlayer) {
@@ -321,8 +329,27 @@ export class Renderer {
           } else {
             this.floater(e.x, e.y, e.weak ? `${DAMAGE_ICON[e.damage]} x2!` : `${DAMAGE_ICON[e.damage]} pop!`, e.weak ? 0xffe066 : WHITE, e.weak ? 24 : 17);
           }
-          this.burst(e.x, e.y, 0xfff3b0, 6, 160);
+          this.burst(e.x, e.y, 0xfff3b0, e.weak ? 10 : 6, e.weak ? 220 : 160);
           break;
+        case 'pickup':
+          this.rings.push({ x: e.x, y: e.y, r: 16, ttl: 0.25, max: 0.25, color: KERNEL_COLOR[e.kind] });
+          break;
+        case 'block':
+          this.floater(e.x, e.y - 10, 'blocked!', WHITE, 18, 0.7);
+          break;
+        case 'dash':
+          this.burst(e.x, e.y, 0xffe08a, 8, 180);
+          break;
+        case 'freeze':
+          this.floater(e.x, e.y - 8, 'frozen!', 0xd7f3ff, 22, 1.4);
+          this.burst(e.x, e.y, 0xd7f3ff, 8, 120);
+          break;
+        case 'perk': {
+          const def = perkDef(e.id);
+          this.floater(this.cam.x, this.cam.y - 40 / Math.max(0.2, this.cam.zoom), `${def.icon} ${def.name}!`, WHITE, 26, 1.3);
+          this.twirl = Math.PI * 2;
+          break;
+        }
         case 'explode':
           this.rings.push({ x: e.x, y: e.y, r: e.r, ttl: 0.35, max: 0.35, color: 0xfff8e1 });
           this.burst(e.x, e.y, 0xfff8e1, 14, 260, true);
@@ -334,14 +361,15 @@ export class Renderer {
           break;
         case 'chomp':
           this.floater(e.x, e.y, e.streak > 1 ? `NOM x${e.streak}!` : 'NOM!', GREEN, 26 + Math.min(e.streak, 6) * 2, 0.9);
-          this.burst(e.x, e.y, 0xffd23f, 18, 240);
-          this.shake = Math.max(this.shake, 5);
+          this.burst(e.x, e.y, 0xffd23f, 22, 280, true);
+          this.shake = Math.max(this.shake, 9);
           break;
         case 'turnGreen':
           this.floater(e.x, e.y, 'yum!', GREEN, 16, 0.7);
           break;
         case 'tierUp':
           this.floater(this.cam.x, this.cam.y - 60 / this.cam.zoom, `Size ${e.tier}!`, WHITE, 30, 1.4);
+          this.twirl = Math.PI * 2;
           break;
         case 'bare':
           this.floater(this.cam.x, this.cam.y - 50 / this.cam.zoom, 'Uh-oh! Grab a kernel!', WHITE, 24, 1.6);
@@ -367,6 +395,9 @@ export class Renderer {
     cam.zoom = lerp(cam.zoom, this.targetZoom(w), 1 - Math.exp(-2.5 * dt));
 
     this.shake = Math.max(0, this.shake - dt * 30);
+    this.twirl = Math.max(0, this.twirl - dt * 9);
+    for (const mark of this.smug) mark.ttl -= dt;
+    this.smug = this.smug.filter((mark) => mark.ttl > 0);
     const sh = this.reduceShake ? 0 : this.shake;
     const shx = (Math.random() - 0.5) * sh;
     const shy = (Math.random() - 0.5) * sh;
@@ -381,7 +412,7 @@ export class Renderer {
     const halfH = cam.height / 2 / cam.zoom + 60;
     const visible = (x: number, y: number, r: number) => Math.abs(x - cam.x) < halfW + r && Math.abs(y - cam.y) < halfH + r;
 
-    this.drawField();
+    this.drawFarm(w);
     this.screenGfx.clear();
     this.screenText.begin();
     this.screenLabels.begin();
@@ -405,12 +436,15 @@ export class Renderer {
       if (!visible(gx, gy, 20)) continue;
       const size = Math.max(minGround, 5 + Math.min(g.value - 1, 9) * 0.9);
       const land = g.age < 0.25 ? 1 + Math.sin((g.age / 0.25) * Math.PI) * 0.5 : 1;
-      if (g.delay <= 0) this.groundSprites.place(this.tex.dot, gx, gy, size * 2, size * 2, WHITE, 0.25 + 0.15 * Math.sin(time * 5 + g.id));
+      if (g.delay <= 0) {
+        const glow = 0.22 + 0.12 * Math.sin(time * 5 + g.id);
+        this.groundSprites.place(this.tex.dot, gx, gy, size * 2.1, size * 2.1, KERNEL_COLOR[g.kind], glow);
+      }
       if (g.sparkle > 0) {
         g0.circle(gx, gy, size * 2.4 + Math.sin(time * 10) * 1.5).stroke({ width: 2 / Math.sqrt(cam.zoom), color: PLAYER_COLOR, alpha: Math.min(1, g.sparkle) });
       }
-      const tex = isPower(g.kind) ? this.tex.groundPower : this.tex.groundPlain;
-      this.groundSprites.place(tex, gx, gy, size * land, size / land, KERNEL_COLOR[g.kind]);
+      const landed = g.delay <= 0;
+      this.groundSprites.place(this.tex.kernels[g.kind], gx, gy, size * land, size / land, WHITE, landed ? 1 : 0.95);
       if (g.value > 1) this.groundLabels.show(String(g.value), gx, gy + size + 10 * labelScale, labelScale);
     }
     const shotScale = Math.sqrt(p.r / 18);
@@ -418,12 +452,12 @@ export class Renderer {
       const sx = lerp(s.px, s.x, alpha);
       const sy = lerp(s.py, s.y, alpha);
       const color = KERNEL_COLOR[s.kind];
-      const tex = isPower(s.kind) ? this.tex.groundPower : this.tex.groundPlain;
+      const tex = this.tex.kernels[s.kind];
       if (s.lob) {
         const f = Math.min(1, s.lob.t / s.lob.dur);
         const h = Math.sin(Math.PI * f) * 70 * shotScale;
         g0.ellipse(sx, sy, 7 * shotScale, 4 * shotScale).fill({ color: 0x000000, alpha: 0.2 });
-        this.shotSprites.place(tex, sx, sy - h, 8 * shotScale, 8 * shotScale, color, 0.85);
+        this.shotSprites.place(tex, sx, sy - h, 8 * shotScale, 8 * shotScale, WHITE, 0.95);
         dashedCircle(this.enemies.overlay, s.lob.tx, s.lob.ty, popperRadius(w), 2 / cam.zoom, WHITE, 0.6, cam.zoom);
         continue;
       }
@@ -432,13 +466,14 @@ export class Renderer {
       g0.moveTo(sx, sy)
         .lineTo(sx - (s.vx / sp) * trail, sy - (s.vy / sp) * trail)
         .stroke({ width: s.r * 1.4, color, alpha: 0.4, cap: 'round' });
-      this.shotSprites.place(tex, sx, sy, s.r, s.r, color, 0.8);
+      this.shotSprites.place(tex, sx, sy, s.r, s.r, WHITE, 0.92);
     }
     this.groundSprites.end();
     this.groundLabels.end();
     this.shotSprites.end();
 
     // Enemies. (Their overlay was already started above for popper landing circles.)
+    this.enemies.outline.clear();
     this.enemies.body.clear();
     this.enemies.kernels.begin();
     for (const e of w.enemies) {
@@ -451,20 +486,20 @@ export class Renderer {
 
     this.drawPlayer(w, px, py, time);
 
-    // Target ring.
+    // Dashed aim marker. A circle, so it stays readable on top of the cob-shaped outline.
     const target = p.targetId !== null ? w.enemies.find((e) => e.id === p.targetId) : undefined;
     const fx = this.fxGfx.clear();
     if (target) {
       const tx = lerp(target.px, target.x, alpha);
       const ty = lerp(target.py, target.y, alpha);
+      const pose = enemyPose(target, ty, time, cam.zoom);
       const locked = p.lockedTargetId === target.id;
-      const pad = 9 / Math.sqrt(cam.zoom);
-      const rr = Math.max(target.r, MIN_ENEMY_PX / cam.zoom) + pad + Math.sin(time * 8) * 2.5 / Math.sqrt(cam.zoom);
-      dashedCircle(fx, tx, ty, rr, (locked ? 4 : 3) / Math.sqrt(cam.zoom), WHITE, locked ? 1 : 0.85, cam.zoom, time * 1.5);
-      if (locked) this.screenText.show('🔒', toScreenX(tx + rr * 0.75), toScreenY(ty - rr * 0.75), 14, WHITE);
+      const rr = pose.r * 1.12 + 6 / Math.sqrt(cam.zoom) + (Math.sin(time * 8) * 2) / Math.sqrt(cam.zoom);
+      dashedCircle(fx, tx, pose.cy, rr, (locked ? 3 : 2.4) / Math.sqrt(cam.zoom), WHITE, locked ? 1 : 0.85, cam.zoom, time * 1.5);
+      if (locked) this.screenText.show('🔒', toScreenX(tx + rr * 0.7), toScreenY(pose.cy - rr * 0.7), 14, WHITE);
       if (!target.chompable && !p.bare) {
         const need = total(target.kernels) - total(p.kernels) + 1;
-        this.drawChompMeter(toScreenX(tx), toScreenY(ty + rr) + 14, need);
+        this.drawChompMeter(toScreenX(tx), toScreenY(pose.cy + rr) + 14, need);
       }
     }
 
@@ -504,94 +539,103 @@ export class Renderer {
     this.app.render();
   }
 
-  private drawField(): void {
+  private drawFarm(w: World): void {
     const cam = this.cam;
+    const halfW = cam.width / 2 / cam.zoom + 40;
+    const halfH = cam.height / 2 / cam.zoom + 40;
     const g = this.field.clear();
-    const step = 120;
-    const halfW = cam.width / 2 / cam.zoom;
-    const halfH = cam.height / 2 / cam.zoom;
-    const toX = (x: number) => (x - cam.x) * cam.zoom + cam.width / 2;
-    const toY = (y: number) => (y - cam.y) * cam.zoom + cam.height / 2;
-    for (let x = Math.floor((cam.x - halfW) / step) * step; x <= cam.x + halfW; x += step) g.moveTo(toX(x), 0).lineTo(toX(x), cam.height);
-    for (let y = Math.floor((cam.y - halfH) / step) * step; y <= cam.y + halfH; y += step) g.moveTo(0, toY(y)).lineTo(cam.width, toY(y));
-    g.stroke({ width: 2, color: 0x3c6e28, alpha: 0.18 });
+    drawFarm(g, w.seed, w.props, cam.x - halfW, cam.y - halfH, cam.x + halfW, cam.y + halfH);
+  }
+
+  /** Crisp status line plus a soft halo, both behind the cob art. */
+  private strokeStatus(
+    g: Graphics,
+    x: number,
+    y: number,
+    r: number,
+    angle: number,
+    time: number,
+    id: number,
+    color: number,
+    width: number,
+    alpha: number,
+    pad: number,
+  ): void {
+    strokeCobOutline(g, x, y, r, angle, time, id, color, width * 1.65, alpha * 0.22, pad + width * 0.22);
+    strokeCobOutline(g, x, y, r, angle, time, id, color, width, alpha, pad);
   }
 
   /** Draws a cob body with its kernels in sockets. `sockets` > kernel count shows empty holes. */
-  private drawCobBody(layers: CobLayers, x: number, y: number, r: number, k: Kernels, sockets: number, tint: number): void {
-    layers.body.circle(x, y, r).fill(tint);
+  private drawCobBody(layers: CobLayers, x: number, y: number, r: number, k: Kernels, sockets: number, angle: number, time: number, id: number, flash: boolean): void {
+    const spec = { x, y, r, kernels: k, sockets, angle, time, id, flash };
+    drawCobShell(layers.body, spec);
+    drawFlair(layers.overlay, spec);
     const count = total(k);
     const real = Math.max(sockets, count);
     if (real === 0) return;
-    const n = Math.min(real, MAX_DRAWN_SLOTS);
-    const slots = slotsFor(n);
-    const inner = r * 0.9;
-    const dot = slots[2] * inner;
+    // Keep kernels chunky. A full-size cob has hundreds of sockets; drawing all of
+    // them turns the ear into gray noise, so big cobs show a proportional sample.
+    const minDot = 5 / this.cam.zoom;
+    const inner = r * 0.5;
+    let n = Math.min(real, MAX_DRAWN_SLOTS);
+    let slots = slotsFor(n);
+    let dot = slots[2] * inner;
+    while (n > 14 && dot < minDot) {
+      n = Math.max(14, Math.floor(n * 0.72));
+      slots = slotsFor(n);
+      dot = slots[2] * inner;
+    }
     if (dot * this.cam.zoom < MIN_DOT_PX) return;
     const shown = drawnCounts(k, real, n);
     const pool = layers.kernels;
+    const co = Math.cos(angle);
+    const si = Math.sin(angle);
     let i = 0;
+    const put = (kind: KernelKind | null, scale: number, alpha = 1) => {
+      const lx = slots[i * 3] * inner;
+      const ly = slots[i * 3 + 1] * inner;
+      const wx = x + lx * co - ly * si;
+      const wy = y + lx * si + ly * co;
+      const tex = kind ? this.tex.kernels[kind] : this.tex.dot;
+      pool.place(tex, wx, wy, dot * scale, dot * scale, kind ? WHITE : 0x6b4a1b, alpha, angle);
+      i++;
+    };
     // Power kernels sit in the top band, then plain kernels, then empty sockets.
-    for (const kind of POWER_KINDS) {
-      const tex = this.tex.cobPower[kind];
-      for (let c = 0; c < shown[kind]; c++, i++) pool.place(tex, x + slots[i * 3] * inner, y + slots[i * 3 + 1] * inner, dot * 0.85, dot * 0.85, WHITE);
-    }
-    for (const kind of PLAIN_KINDS) {
-      const color = KERNEL_COLOR[kind];
-      for (let c = 0; c < shown[kind]; c++, i++) pool.place(this.tex.dot, x + slots[i * 3] * inner, y + slots[i * 3 + 1] * inner, dot, dot, color);
-    }
-    for (; i < n; i++) pool.place(this.tex.dot, x + slots[i * 3] * inner, y + slots[i * 3 + 1] * inner, dot * 0.6, dot * 0.6, 0x503c14, 0.35);
-  }
-
-  private drawEyes(g: Graphics, x: number, y: number, r: number, lookX: number, lookY: number, mood: 'happy' | 'angry' | 'worried' | 'surprised'): void {
-    const er = Math.max(2.5, r * 0.22);
-    const ey = y - r * 0.15;
-    const m = Math.hypot(lookX, lookY) || 1;
-    const lx = (lookX / m) * er * 0.35;
-    const ly = (lookY / m) * er * 0.35;
-    const line = Math.max(1.5, er * 0.18);
-    for (const side of [-1, 1]) {
-      const ex = x + side * r * 0.32;
-      g.circle(ex, ey, er).fill(WHITE).stroke({ width: line, color: INK });
-      g.circle(ex + lx, ey + ly, er * (mood === 'surprised' ? 0.3 : 0.5)).fill(INK);
-      if (mood === 'angry' || mood === 'worried') {
-        const tilt = mood === 'angry' ? 1 : -1;
-        g.moveTo(ex - side * er, ey - er * 1.3 - tilt * er * 0.4)
-          .lineTo(ex + side * er, ey - er * 1.3 + tilt * er * 0.4)
-          .stroke({ width: Math.max(1.5, er * 0.35), color: INK });
-      }
-    }
+    for (const kind of POWER_KINDS) for (let c = shown[kind]; c > 0; c--) put(kind, 0.92);
+    for (const kind of PLAIN_KINDS) for (let c = shown[kind]; c > 0; c--) put(kind, 1);
+    while (i < n) put(null, 0.55, 0.4);
   }
 
   private drawEnemy(e: Enemy, x: number, y: number, time: number, toScreenX: (x: number) => number, toScreenY: (y: number) => number): void {
     const layers = this.enemies;
-    const r = Math.max(e.r, MIN_ENEMY_PX / this.cam.zoom);
-    const bob = Math.sin(time * 6 + e.id) * r * 0.04;
-    const cy = y + bob;
-    const outline = Math.max(4, 2.2 / this.cam.zoom);
+    const { r, cy, angle } = enemyPose(e, y, time, this.cam.zoom);
+    const outline = Math.max(1.7, 1.15 / this.cam.zoom);
+    const smug = this.smug.some((mark) => (mark.x - x) ** 2 + (mark.y - y) ** 2 < (r + 30) ** 2);
 
-    layers.body.ellipse(x, y + r * 0.85, r * 0.9, r * 0.3).fill({ color: 0x000000, alpha: 0.15 });
-    this.drawCobBody(layers, x, cy, r, e.kernels, 0, e.hitFlash > 0 ? WHITE : BODY_TINT[dominantPlain(e.kernels)]);
-
-    const g = layers.overlay;
+    const edge = layers.outline;
     if (e.chompable) {
-      const amp = Math.max(1.6, r * 0.03);
-      const pts: number[] = [];
-      for (let i = 0; i < 32; i++) {
-        const a = (i / 32) * Math.PI * 2;
-        const rr = r + outline / 2 + Math.sin(a * 6 + time * 10) * amp;
-        pts.push(x + Math.cos(a) * rr, cy + Math.sin(a) * rr);
-      }
-      g.poly(pts, true).stroke({ width: outline, color: GREEN });
+      const wobble = Math.sin(time * 8 + e.id) * 0.08;
+      this.strokeStatus(edge, x, cy, r, angle, time, e.id, GREEN, outline * 0.95, 1, outline * (0.48 + wobble));
     } else {
-      g.circle(x, cy, r + outline / 2).stroke({ width: outline * 1.1, color: RED });
+      this.strokeStatus(edge, x, cy, r, angle, time, e.id, RED, outline, 1, outline * 0.5);
       if (e.hunter) {
-        // Hunters pulse a second red ring so kids can tell "this one is coming for me".
+        // Hunters pulse a second red edge so kids can tell "this one is coming for me".
         const pulse = 0.5 + 0.5 * Math.sin(time * 7 + e.id);
-        g.circle(x, cy, r + outline * (2 + pulse)).stroke({ width: outline * 0.8, color: RED, alpha: 0.25 + 0.35 * pulse });
+        this.strokeStatus(edge, x, cy, r, angle, time, e.id, RED, outline * 0.55, 0.22 + 0.28 * pulse, outline * (1.05 + pulse * 0.25));
       }
     }
-    this.drawEyes(g, x, cy, r, e.vx, e.vy, e.chompable ? 'worried' : 'angry');
+    if (e.frozenLeft > 0) {
+      this.strokeStatus(edge, x, cy, r, angle, time, e.id, 0x9ad7ff, outline * 0.75, 1, outline * 0.4);
+    } else if (e.slowLeft > 0) {
+      this.strokeStatus(edge, x, cy, r, angle, time, e.id, 0x7ec8e3, outline * 0.55, 0.85, outline * 0.32);
+    }
+
+    this.drawCobBody(layers, x, cy, r, e.kernels, 0, angle, time, e.id, e.hitFlash > 0);
+
+    const g = layers.overlay;
+    if (e.frozenLeft > 0) fillCobBody(g, x, cy, r, angle, time, e.id, 0xd7f3ff, 0.45);
+    const mood: Mood = e.frozenLeft > 0 ? 'surprised' : smug ? 'smug' : e.chompable ? 'worried' : 'angry';
+    drawFace(g, x, cy, r, angle, e.vx, e.vy, mood);
 
     const badges = shieldBadges(e.kernels);
     if (badges.length > 0) {
@@ -613,23 +657,36 @@ export class Renderer {
     const body = layers.body.clear();
     const g = layers.overlay.clear();
     layers.kernels.begin();
+    const px = x + wobble;
+    const lean = Math.max(-0.4, Math.min(0.4, p.vx / 110));
+    const rock = Math.sin(time * 6) * 0.07;
+    const angle = lean * 0.4 + rock + this.twirl;
+    const bob = Math.sin(time * 6) * p.r * 0.04;
 
-    body.ellipse(x, y + p.r * 0.85, p.r, p.r * 0.32).fill({ color: 0x000000, alpha: 0.18 });
     if (n <= 1 || p.bare) {
       const pulse = 0.5 + 0.5 * Math.sin(time * 8);
-      body.circle(x, y, p.r + 10 + pulse * 6).fill({ color: 0xff5050, alpha: 0.25 + pulse * 0.3 });
+      body.circle(px, y, p.r + 10 + pulse * 6).fill({ color: 0xff5050, alpha: 0.18 + pulse * 0.2 });
     }
 
-    this.playerLayer.alpha = flashing ? 0.5 : 1;
-    const tint = p.bare ? BARE_TINT : BODY_TINT[dominantPlain(p.kernels)];
-    this.drawCobBody(layers, x + wobble, y, p.r, p.kernels, p.sockets, tint);
+    this.playerLayer.alpha = flashing ? 0.55 : 1;
+    if (p.bare) {
+      body.ellipse(px, y + bob, p.r * 0.85, p.r * 0.7).fill(BARE_TINT).stroke({ width: Math.max(3, p.r * 0.06), color: INK });
+      body.ellipse(px, y + bob + p.r * 0.15, p.r * 1.05, p.r * 0.55).fill(0x6aa84f).stroke({ width: Math.max(2, p.r * 0.05), color: INK });
+    } else {
+      this.drawCobBody(layers, px, y + bob, p.r, p.kernels, p.sockets, angle, time, 1, flashing);
+    }
     layers.kernels.end();
 
-    const ring = Math.max(5, 2.5 / this.cam.zoom);
-    g.circle(x + wobble, y, p.r + ring * 0.4).stroke({ width: ring, color: WHITE }).stroke({ width: ring * 0.5, color: PLAYER_COLOR });
-
-    const mood = p.bare ? 'surprised' : n <= 1 ? 'worried' : 'happy';
-    this.drawEyes(g, x + wobble, y, p.r, p.facingX, p.facingY, mood);
+    const fill = p.sockets > 0 ? n / p.sockets : 1;
+    const mood: Mood = p.bare ? 'asleep' : n <= 1 ? 'worried' : p.streakTimer > 0 ? 'chewing' : fill < 0.45 ? 'determined' : 'happy';
+    drawFace(g, px, y + bob, p.r, p.bare ? 0 : angle, p.facingX, p.facingY, mood);
+    if (p.bare) {
+      const zBucket = Math.floor(time * 1.4);
+      if (zBucket !== this.lastZ) {
+        this.lastZ = zBucket;
+        this.floater(px + p.r * 0.4, y - p.r, 'Zzz', WHITE, 18, 1.1);
+      }
+    }
 
     if (p.bare) {
       const f = Math.max(0, p.lastChance / w.tuning.lastChanceSeconds);
@@ -717,7 +774,17 @@ function drawnCounts(k: Kernels, real: number, n: number): Kernels {
 
 function makeCobLayers(): CobLayers {
   const kernelLayer = new Container();
-  return { body: new Graphics(), kernels: new SpritePool(kernelLayer), overlay: new Graphics() };
+  return { outline: new Graphics(), body: new Graphics(), kernels: new SpritePool(kernelLayer), overlay: new Graphics() };
+}
+
+/** Bob, lean, and on-screen size shared by the cob drawing and its aim marker. */
+function enemyPose(e: Enemy, y: number, time: number, zoom: number): { r: number; cy: number; angle: number } {
+  const r = Math.max(e.r, MIN_ENEMY_PX / zoom);
+  const jiggly = e.type === 'soggy' ? 1.4 : e.type === 'rocky' ? 0.45 : 1;
+  const bob = Math.sin(time * 6 * jiggly + e.id) * r * 0.055 * jiggly;
+  const lean = Math.max(-0.45, Math.min(0.45, e.vx / 90));
+  const rock = Math.sin(time * 5 * jiggly + e.id) * (e.chompable ? 0.14 : 0.08) * jiggly;
+  return { r, cy: y + bob, angle: lean * 0.35 + rock };
 }
 
 /** A dashed ring, in screen-length dashes so it reads the same at any zoom. */
@@ -732,37 +799,4 @@ function dashedCircle(g: Graphics, x: number, y: number, r: number, width: numbe
     g.moveTo(x + Math.cos(a0) * r, y + Math.sin(a0) * r).arc(x, y, r, a0, a0 + on);
   }
   g.stroke({ width, color, alpha });
-}
-
-function makeTextures(app: Application): KernelTextures {
-  const R = TEX_R;
-  const bake = (draw: (g: Graphics) => void): Texture => {
-    const g = new Graphics();
-    draw(g);
-    const tex = app.renderer.generateTexture({ target: g, resolution: 2, antialias: true });
-    g.destroy();
-    return tex;
-  };
-  const outline = R * 0.2;
-  const cobPower = {} as Record<PowerKind, Texture>;
-  for (const kind of POWER_KINDS) {
-    cobPower[kind] = bake((g) =>
-      g
-        .rect(-R + outline / 2, -R + outline / 2, R * 2 - outline, R * 2 - outline)
-        .fill(KERNEL_COLOR[kind])
-        .stroke({ width: outline, color: WHITE }),
-    );
-  }
-  return {
-    dot: bake((g) => g.circle(0, 0, R).fill(WHITE)),
-    square: bake((g) => g.rect(-R, -R, R * 2, R * 2).fill(WHITE)),
-    groundPlain: bake((g) => g.circle(0, 0, R - outline / 2).fill(WHITE).stroke({ width: outline, color: INK })),
-    groundPower: bake((g) =>
-      g
-        .rect(-R + outline / 2, -R + outline / 2, R * 2 - outline, R * 2 - outline)
-        .fill(WHITE)
-        .stroke({ width: outline, color: INK }),
-    ),
-    cobPower,
-  };
 }

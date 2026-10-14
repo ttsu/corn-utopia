@@ -5,7 +5,7 @@ import { pickWeighted, type Rng } from './rng';
 export type Kernels = Record<KernelKind, number>;
 
 export function emptyKernels(): Kernels {
-  return { sunny: 0, soggy: 0, stony: 0, zinger: 0, spicy: 0, popper: 0 };
+  return { sunny: 0, soggy: 0, stony: 0, zinger: 0, spicy: 0, popper: 0, frosty: 0 };
 }
 
 export function kernelsOf(partial: Partial<Kernels>): Kernels {

@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { kernelsOf, total } from './cob';
+import { POWER_KINDS } from './kernels';
 import { defaultTuning } from './tuning';
 import { EMPTY_COMMAND, bumpLossFor, canFire, challenge, createWorld, damageScale, shotRange, step, type InputCommand, type World } from './world';
 
@@ -33,6 +34,9 @@ function addEnemy(w: World, x: number, y: number, kernels: ReturnType<typeof ker
     retreat: 0,
     seeking: true,
     hunter: false,
+    frostHits: 0,
+    slowLeft: 0,
+    frozenLeft: 0,
   });
   return w.enemies[w.enemies.length - 1];
 }
@@ -43,7 +47,7 @@ describe('world', () => {
     expect(w.player.kernels).toEqual(kernelsOf({ sunny: defaultTuning().gameStartSunny }));
     const babies = w.enemies.filter((e) => e.type === 'baby');
     expect(babies.length).toBe(4);
-    for (const b of babies) expect(b.kernels.zinger + b.kernels.spicy + b.kernels.popper).toBeGreaterThan(0);
+    for (const kind of POWER_KINDS) expect(babies.some((b) => b.kernels[kind] > 0)).toBe(true);
     for (const b of babies) expect(total(b.kernels)).toBeLessThan(total(w.player.kernels));
 
     const mix = createWorld(3, defaultTuning(), 'playtest');
@@ -250,5 +254,186 @@ describe('world', () => {
     w.player.kernels = kernelsOf({ sunny: 2 });
     step(w, EMPTY_COMMAND);
     expect(w.player.tier).toBe(2);
+  });
+
+  it('offers an Ear Up choice on a new tier and applies the one you pick', () => {
+    const w = quietWorld();
+    w.player.kernels = kernelsOf({ sunny: 12 });
+    step(w, EMPTY_COMMAND);
+    expect(w.earUps).toHaveLength(1);
+    expect(w.earUps[0].choices).toHaveLength(3);
+    const picked = w.earUps[0].choices[1];
+    const x = w.player.x;
+    step(w, { ...EMPTY_COMMAND, moveX: 1 });
+    expect(w.player.perks).toEqual([]);
+    expect(w.player.x).toBeGreaterThan(x);
+    step(w, { ...EMPTY_COMMAND, pickPerk: 1 });
+    expect(w.player.perks).toEqual([picked]);
+    expect(w.earUps).toHaveLength(0);
+    expect(w.player.rerolls).toBe(1);
+  });
+
+  it('re-rolls an Ear Up offer once per run', () => {
+    const w = quietWorld();
+    w.player.kernels = kernelsOf({ sunny: 12 });
+    step(w, EMPTY_COMMAND);
+    step(w, { ...EMPTY_COMMAND, reroll: true });
+    expect(w.player.rerolls).toBe(0);
+    const after = w.earUps[0].choices.join(',');
+    expect(w.earUps[0].choices).toHaveLength(3);
+    step(w, { ...EMPTY_COMMAND, reroll: true });
+    expect(w.earUps[0].choices.join(',')).toBe(after);
+    expect(w.player.rerolls).toBe(0);
+  });
+
+  it('puts a chomped power kernel into a pocket you can fire', () => {
+    const w = quietWorld();
+    expect(w.player.pockets).toEqual([]);
+    addEnemy(w, 10, 0, kernelsOf({ sunny: 2, spicy: 1 }));
+    step(w, EMPTY_COMMAND);
+    expect(w.player.pockets).toEqual(['spicy']);
+    expect(w.player.kernels.spicy).toBe(1);
+  });
+
+  it('Big Appetite adds 2 kernels to the Chomp Bonus', () => {
+    const w = quietWorld();
+    w.tuning.chompBonusMin = 2;
+    w.tuning.chompBonusMax = 2;
+    w.player.perks = ['appetite'];
+    w.player.kernels = kernelsOf({ sunny: 8 });
+    addEnemy(w, 10, 0, kernelsOf({ sunny: 3 }));
+    step(w, EMPTY_COMMAND);
+    expect(w.player.kernels.sunny).toBe(8 + 3 + 2 + 2);
+  });
+
+  it('dashes from the start, and Butter Roll makes that dash further', () => {
+    const run = (perks: World['player']['perks']) => {
+      const w = quietWorld();
+      w.props = [];
+      w.player.perks = perks;
+      step(w, { ...EMPTY_COMMAND, dash: true, moveX: 1 });
+      for (let i = 0; i < 20; i++) step(w, EMPTY_COMMAND);
+      return w.player.x;
+    };
+    const walked = (() => {
+      const w = quietWorld();
+      w.props = [];
+      for (let i = 0; i < 20; i++) step(w, { ...EMPTY_COMMAND, moveX: 1 });
+      return w.player.x;
+    })();
+    const plain = run([]);
+    expect(plain).toBeGreaterThan(walked);
+    expect(run(['butter'])).toBeGreaterThan(plain * 1.15);
+    expect(run(['butter', 'butter'])).toBeGreaterThan(run(['butter']) * 1.15);
+  });
+
+  it('Thick Husk blocks every 5th bump', () => {
+    const w = quietWorld();
+    w.tuning.mercySeconds = 0;
+    w.tuning.bumpLoss = 2;
+    w.player.perks = ['husk'];
+    w.player.kernels = kernelsOf({ sunny: 10 });
+    const e = addEnemy(w, 0, 0, kernelsOf({ sunny: 80 }));
+    let blocks = 0;
+    for (let i = 0; i < 5; i++) {
+      e.x = w.player.x;
+      e.y = w.player.y;
+      e.bumpCooldown = 0;
+      step(w, EMPTY_COMMAND);
+      if (w.events.some((ev) => ev.type === 'block')) blocks++;
+    }
+    expect(blocks).toBe(1);
+    expect(total(w.player.kernels)).toBe(2);
+  });
+
+  it('a second Thick Husk blocks another hit in every five', () => {
+    const w = quietWorld();
+    w.tuning.mercySeconds = 0;
+    w.tuning.bumpLoss = 2;
+    w.player.perks = ['husk', 'husk'];
+    w.player.kernels = kernelsOf({ sunny: 10 });
+    const e = addEnemy(w, 0, 0, kernelsOf({ sunny: 80 }));
+    let blocks = 0;
+    for (let i = 0; i < 5; i++) {
+      e.x = w.player.x;
+      e.y = w.player.y;
+      e.bumpCooldown = 0;
+      step(w, EMPTY_COMMAND);
+      if (w.events.some((ev) => ev.type === 'block')) blocks++;
+    }
+    expect(blocks).toBe(2);
+    expect(total(w.player.kernels)).toBe(4);
+  });
+
+  it('sends every 5th shot back home with Boomerang', () => {
+    const w = quietWorld();
+    w.props = [];
+    w.player.perks = ['boomerang'];
+    w.player.kernels = kernelsOf({ sunny: 10, zinger: 6 });
+    w.tuning.zingerRecharge = 0;
+    for (let i = 0; i < 5; i++) step(w, fire('zinger'));
+    expect(w.player.kernels.zinger).toBe(1);
+    for (let i = 0; i < 180; i++) step(w, EMPTY_COMMAND);
+    expect(w.shots).toHaveLength(0);
+    expect(w.player.kernels.zinger).toBe(2);
+    expect(w.ground.filter((g) => g.kind === 'zinger')).toHaveLength(4);
+  });
+
+  it('hay bales stop a shot, and mud slows you down', () => {
+    const blocked = quietWorld();
+    blocked.props = [{ kind: 'hay', x: 90, y: 0, r: 28 }];
+    blocked.player.kernels = kernelsOf({ sunny: 4, zinger: 2 });
+    const rock = addEnemy(blocked, 220, 0, kernelsOf({ sunny: 30 }));
+    step(blocked, fire('zinger'));
+    for (let i = 0; i < 90 && blocked.shots.length > 0; i++) step(blocked, EMPTY_COMMAND);
+    expect(blocked.shots).toHaveLength(0);
+    expect(rock.kernels.sunny).toBe(30);
+    expect(blocked.ground.some((g) => g.kind === 'zinger' && g.x < 130)).toBe(true);
+
+    const slosh = (mud: boolean) => {
+      const w = quietWorld();
+      w.props = mud ? [{ kind: 'mud', x: 0, y: 0, r: 400 }] : [];
+      for (let i = 0; i < 40; i++) step(w, { ...EMPTY_COMMAND, moveX: 1 });
+      return w.player.x;
+    };
+    expect(slosh(true)).toBeLessThan(slosh(false) * 0.7);
+  });
+
+  it('keeps each power on its own button and arms a waiting one without firing it', () => {
+    const w = quietWorld();
+    w.player.kernels = kernelsOf({ sunny: 8, zinger: 1, spicy: 1, popper: 1, frosty: 1 });
+    step(w, EMPTY_COMMAND);
+    expect(w.player.pockets).toEqual(['zinger', 'spicy', 'popper']);
+    expect(w.player.waiting).toEqual(['frosty']);
+    step(w, fire('frosty'));
+    expect(w.player.pockets).toEqual(['zinger', 'spicy', 'frosty']);
+    expect(w.player.waiting).toEqual(['popper']);
+    expect(w.shots).toHaveLength(0);
+  });
+
+  it('Frosty slows a cob and the third hit freezes it', () => {
+    const w = quietWorld();
+    w.props = [];
+    w.tuning.frostyRecharge = 0;
+    w.tuning.frostyShake = 0;
+    w.player.kernels = kernelsOf({ sunny: 20, frosty: 5 });
+    const e = addEnemy(w, 90, 0, kernelsOf({ sunny: 40 }));
+    const land = () => {
+      const before = e.kernels.sunny;
+      step(w, fire('frosty'));
+      for (let i = 0; i < 40 && e.kernels.sunny === before; i++) step(w, EMPTY_COMMAND);
+    };
+    land();
+    expect(e.slowLeft).toBeGreaterThan(0);
+    expect(e.frozenLeft).toBe(0);
+    const x = e.x;
+    for (let i = 0; i < 20; i++) step(w, EMPTY_COMMAND);
+    expect(Math.abs(e.x - x)).toBeLessThan(8);
+    land();
+    land();
+    expect(e.frozenLeft).toBeGreaterThan(0);
+    const frozenX = e.x;
+    for (let i = 0; i < 20; i++) step(w, EMPTY_COMMAND);
+    expect(e.x).toBe(frozenX);
   });
 });
