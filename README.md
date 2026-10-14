@@ -5,8 +5,8 @@ Web-based and installable as a PWA, built touch-first for iPad and iPhone.
 
 See the [Game Design Document](docs/game-design.md).
 
-**Play it:** https://ttsu.github.io/corn-utopia/ (every PR also gets a preview at
-`https://ttsu.github.io/corn-utopia/pr/pr-<N>/`; see [docs/deploy.md](docs/deploy.md)).
+**Play it:** https://cornutopia.timtsu.com/ (every PR also gets a preview at
+`https://cornutopia.timtsu.com/pr/pr-<N>/`; see [docs/deploy.md](docs/deploy.md)).
 
 ## M0 gray-box prototype
 
@@ -25,7 +25,9 @@ What's in it:
 - Auto-target ring (nearest red cob, favoring ones in front of you) and tap-a-cob-to-lock.
 - Chomp rule with green/red outlines, a chomp meter under the target, Chomp Bonus and Chomp Streak.
 - Fired kernels fly, land as pickups with a sparkle ring, and get pulled in by your magnet.
-  Enemies grab ground kernels too. Heart Kernel minimum: the last kernel can never be fired.
+  Enemies grab ground kernels too, except kernels you just knocked off a cob: those are yours
+  alone for 10 s, so a pack can't instantly re-grab them. Heart Kernel minimum: the last kernel
+  can never be fired.
 - 3 plain kernels (Sunny, Soggy = fireproof, Stony = bonk-proof / weak to Pop) and 3 power kernels
   (Zinger = Bonk, Spicy = Fire + burn patch, Popper = lobbed Pop blast). Resisted hits go *tink!*.
 - 3 enemy types (Baby Cob, Soggy Cob, Rocky Cob), a spawn director with chomp bands and calm/rush
@@ -70,7 +72,7 @@ lower bound.
 
 Service workers and install need HTTPS (or `localhost`). Options:
 
-- **GitHub Pages:** `main` deploys to https://ttsu.github.io/corn-utopia/ and each PR gets a
+- **GitHub Pages:** `main` deploys to https://cornutopia.timtsu.com/ and each PR gets a
   preview link (one-time Pages setup in [docs/deploy.md](docs/deploy.md)). Open the production
   URL in Safari → Share → Add to Home Screen.
 - **Local network:** `npm run dev` and open the printed LAN URL. The game is playable, but iOS

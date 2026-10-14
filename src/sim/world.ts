@@ -92,6 +92,8 @@ export interface GroundKernel {
   vy: number;
   /** Seconds before anyone can pick it up (lets knocked-off kernels visibly scatter). */
   delay: number;
+  /** Seconds before enemies can grab it; only the player can pick it up until then. */
+  enemyLock: number;
   age: number;
   /** Seconds left on the "you just fired this" sparkle ring. */
   sparkle: number;
@@ -815,7 +817,7 @@ function hitEnemy(
     return;
   }
   e.hitFlash = 0.15;
-  scatterKernels(w, res.removed, e.x, e.y, e.x - fromX, e.y - fromY, 0.5, null);
+  scatterKernels(w, res.removed, e.x, e.y, e.x - fromX, e.y - fromY, 0.5, null, w.tuning.enemyGrabLock);
   w.events.push({
     type: 'hit',
     x: e.x,
@@ -846,6 +848,7 @@ function addGround(
   delay: number,
   ownerId: number | null,
   value = 1,
+  enemyLock = 0,
 ): void {
   w.ground.push({
     id: w.nextId++,
@@ -858,6 +861,7 @@ function addGround(
     vx,
     vy,
     delay,
+    enemyLock,
     age: 0,
     sparkle: ownerId !== null ? 3 : 0,
     ownerId,
@@ -878,6 +882,7 @@ function scatterKernels(
   dirY: number,
   delay: number,
   ownerId: number | null,
+  enemyLock = 0,
 ): void {
   const base = Math.atan2(dirY, dirX);
   const scale = sizeScale(w.player);
@@ -890,7 +895,7 @@ function scatterKernels(
       const value = Math.floor(count / pieces) + (i < count % pieces ? 1 : 0);
       const a = base + range(w.rng, -1.4, 1.4);
       const speed = range(w.rng, 140, 300) * scale;
-      addGround(w, kind, x, y, Math.cos(a) * speed, Math.sin(a) * speed, delay, ownerId, value);
+      addGround(w, kind, x, y, Math.cos(a) * speed, Math.sin(a) * speed, delay, ownerId, value, enemyLock);
     }
   }
 }
@@ -940,6 +945,7 @@ function updateGround(w: World): void {
   for (const g of w.ground) {
     g.age += DT;
     g.delay = Math.max(0, g.delay - DT);
+    g.enemyLock = Math.max(0, g.enemyLock - DT);
     g.sparkle = Math.max(0, g.sparkle - DT);
 
     if (g.delay <= 0) {
@@ -969,7 +975,7 @@ function updateGround(w: World): void {
     const found: GroundKernel[] = [];
     for (const e of w.enemies) {
       for (const g of queryGrid(grid, e.x, e.y, e.r + 3, found)) {
-        if (g.delay > 0) continue;
+        if (g.delay > 0 || g.enemyLock > 0) continue;
         e.kernels[g.kind] += g.value;
         g.dead = true;
       }
@@ -998,6 +1004,7 @@ function mergeGround(w: World): void {
     for (const o of queryGrid(grid, g.x, g.y, 26, found)) {
       if (o === g || o.dead || o.kind !== g.kind || o.delay > 0 || g.value + o.value > 10) continue;
       g.value += o.value;
+      g.enemyLock = Math.max(g.enemyLock, o.enemyLock);
       o.dead = true;
     }
   }
@@ -1031,6 +1038,7 @@ function updateEnemies(w: World): void {
     if (grid && e.type !== 'rocky' && !e.hunter) {
       let bestD = Infinity;
       for (const g of queryGrid(grid, e.x, e.y, 160 * scale, found)) {
+        if (g.enemyLock > 0) continue;
         const d = (g.x - e.x) ** 2 + (g.y - e.y) ** 2;
         if (d < bestD) {
           bestD = d;

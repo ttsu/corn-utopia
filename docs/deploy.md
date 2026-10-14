@@ -5,8 +5,8 @@ branch, and GitHub Pages serves that branch.
 
 | What | Workflow | Where it lands | URL |
 |------|----------|----------------|-----|
-| Production | `.github/workflows/deploy-github-pages.yml` (every push to `main`, or run by hand) | `gh-pages` root | https://ttsu.github.io/corn-utopia/ |
-| PR previews | `.github/workflows/pr-preview.yml` (PR opened / updated / closed) | `gh-pages` under `pr/pr-<N>/` | https://ttsu.github.io/corn-utopia/pr/pr-N/ |
+| Production | `.github/workflows/deploy-github-pages.yml` (every push to `main`, or run by hand) | `gh-pages` root | https://cornutopia.timtsu.com/ |
+| PR previews | `.github/workflows/pr-preview.yml` (PR opened / updated / closed) | `gh-pages` under `pr/pr-<N>/` | https://cornutopia.timtsu.com/pr/pr-N/ |
 
 The preview action posts a sticky comment with the preview link on each PR and removes the
 preview folder when the PR closes. Production deploys keep the `pr/` folder (`clean-exclude: pr`).
@@ -19,7 +19,10 @@ These touch repo settings outside this checkout, so a person has to do them.
    GitHub Pages** from the Actions tab, or open/update a PR). Don't create it by hand.
 2. In **Settings → Pages**, set **Source: Deploy from a branch**, branch **`gh-pages`**,
    folder **`/ (root)`**.
-3. In **Settings → Actions → General → Workflow permissions**, make sure workflows can
+3. Still in **Settings → Pages**, set **Custom domain** to `cornutopia.timtsu.com` and turn on
+   **Enforce HTTPS**. The DNS for `cornutopia.timtsu.com` needs a `CNAME` record pointing to
+   `ttsu.github.io`. `public/CNAME` ships with every build, so deploys don't wipe the domain.
+4. In **Settings → Actions → General → Workflow permissions**, make sure workflows can
    **read and write** (the workflows ask for `contents: write` and `pull-requests: write`).
 
 ## 2. Branch protection (optional)
@@ -28,7 +31,7 @@ In **Settings → Branches**, add a rule for `main` requiring the `CI / ci` chec
 
 ## 3. Home Screen install (iPad / iPhone)
 
-1. Open https://ttsu.github.io/corn-utopia/ in Safari.
+1. Open https://cornutopia.timtsu.com/ in Safari.
 2. Tap **Share → Add to Home Screen**, then **Add**.
 3. Launch from the Home Screen icon for playtests (fullscreen, and Safari won't evict saved
    tuning or playtest logs).

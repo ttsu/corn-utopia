@@ -149,6 +149,33 @@ describe('world', () => {
     expect(nearby.length).toBe(w.tuning.bumpLoss);
   });
 
+  it('kernels knocked off a cob are only the player’s to grab for a while', () => {
+    const w = quietWorld();
+    const lock = w.tuning.enemyGrabLock;
+    w.tuning.enemySpeed = 0;
+    const x = w.player.x + 800;
+    const y = w.player.y;
+    const cob = addEnemy(w, x, y, kernelsOf({ sunny: 30 }));
+    w.patches.push({ id: w.nextId++, x, y, r: 40, ttl: 0.1, tickTimer: 0 });
+    step(w, EMPTY_COMMAND);
+    const left = total(cob.kernels);
+    expect(left).toBeLessThan(30);
+    expect(w.ground.every((g) => g.enemyLock > lock - 0.1)).toBe(true);
+
+    const sitOnCob = () => {
+      for (const g of w.ground) Object.assign(g, { x: cob.x, y: cob.y, vx: 0, vy: 0 });
+    };
+    for (let i = 0; i < 60 * (lock - 1); i++) step(w, EMPTY_COMMAND);
+    sitOnCob();
+    for (let i = 0; i < 30; i++) step(w, EMPTY_COMMAND);
+    expect(total(cob.kernels)).toBe(left);
+
+    sitOnCob();
+    for (let i = 0; i < 60 * 2; i++) step(w, EMPTY_COMMAND);
+    expect(w.enemies).toContain(cob);
+    expect(total(cob.kernels)).toBe(30);
+  });
+
   it('getting hit on the Heart Kernel leads to Last Chance, then All Popped Out', () => {
     const w = quietWorld();
     w.player.kernels = kernelsOf({ stony: 1 });
