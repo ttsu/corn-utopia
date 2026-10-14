@@ -44,63 +44,81 @@ export function makeArtTextures(app: Application): ArtTextures {
   };
 }
 
-function eyes(g: Graphics, y: number, r: number, spread: number, pupil = 0.42): void {
-  const er = r * 0.16;
-  for (const side of [-1, 1]) {
-    const ex = side * r * spread;
-    g.circle(ex, y, er).fill(WHITE).stroke({ width: r * 0.045, color: INK });
-    g.circle(ex, y + er * 0.05, er * pupil).fill(INK);
+/**
+ * Half-width of the kernel drawing, as a fraction of TEX_R.
+ * The crown is the wide rounded end; the flat base is narrower.
+ */
+export const KERNEL_HALF_W = 0.56;
+/** How much longer a kernel is than it is wide (crown to flat base). */
+export const KERNEL_ASPECT = 1.48;
+
+/**
+ * A corn kernel: rounded crown, a longer body, and a flatter base
+ * that's smaller than the crown. No face — kernels are just kernels.
+ */
+function kernelPts(R: number): number[] {
+  const wide = R * KERNEL_HALF_W;
+  const narrow = wide * 0.58;
+  const crownY = -R * 0.2;
+  const bot = R * 0.82;
+  const pts: number[] = [];
+  const samples = 14;
+  for (let i = 0; i <= samples; i++) {
+    const theta = Math.PI + (i / samples) * Math.PI;
+    pts.push(Math.cos(theta) * wide, crownY + Math.sin(theta) * wide);
   }
+  pts.push(wide * 0.82, crownY + R * 0.42);
+  pts.push(narrow, bot);
+  pts.push(-narrow, bot);
+  pts.push(-wide * 0.82, crownY + R * 0.42);
+  return pts;
 }
 
-function smile(g: Graphics, y: number, r: number, frown = false): void {
-  const w = r * 0.55;
-  const h = r * 0.22 * (frown ? -1 : 1);
-  g.moveTo(-w / 2, y);
-  for (let i = 1; i <= 6; i++) {
-    const t = i / 6;
-    g.lineTo(-w / 2 + t * w, y + Math.sin(t * Math.PI) * h);
-  }
-  g.stroke({ width: r * 0.07, color: INK, cap: 'round' });
-}
-
-/** A kernel you can tell apart by color, shape, and a tiny face. */
+/** A kernel you can tell apart by color and a small mark. No smiley. */
 function drawKernel(g: Graphics, kind: KernelKind): void {
   const R = TEX_R;
   const color = KERNEL_COLOR[kind];
-  const ink = Math.max(2, R * 0.08);
+  const ink = Math.max(2.4, R * 0.12);
+  const wide = R * KERNEL_HALF_W;
+  const narrow = wide * 0.58;
+  const shoulderY = -R * 0.2;
+  const bot = R * 0.82;
+  g.poly(kernelPts(R), true).fill(color).stroke({ width: ink, color: INK, join: 'round' });
+  // Darker flat base so the small end still reads when the kernel is tiny.
+  g.poly([narrow * 0.2, bot - R * 0.16, narrow, bot, -narrow, bot, -narrow * 0.2, bot - R * 0.16], true).fill({ color: 0x000000, alpha: 0.22 });
+  const shiny = KERNELS[kind].power;
+  g.ellipse(0, shoulderY - wide * 0.28, wide * 0.36, wide * 0.16).fill({ color: WHITE, alpha: shiny ? 0.5 : 0.24 });
+  if (kind === 'soggy') g.ellipse(-wide * 0.12, shoulderY + R * 0.08, wide * 0.22, wide * 0.14).fill({ color: WHITE, alpha: 0.5 });
   if (kind === 'stony') {
-    const pts: number[] = [];
-    for (let i = 0; i < 6; i++) {
-      const a = -Math.PI / 2 + (i / 6) * Math.PI * 2;
-      pts.push(Math.cos(a) * R * 0.86, Math.sin(a) * R * 0.9);
-    }
-    g.poly(pts, true).fill(color).stroke({ width: ink, color: INK, join: 'round' });
-    g.moveTo(-R * 0.15, -R * 0.35).lineTo(R * 0.05, R * 0.05).lineTo(-R * 0.02, R * 0.4).stroke({ width: ink * 0.7, color: 0x6d7580 });
-  } else if (kind === 'popper') {
-    g.circle(-R * 0.28, R * 0.08, R * 0.48).fill(color);
-    g.circle(R * 0.3, R * 0.1, R * 0.46).fill(color);
-    g.circle(0, -R * 0.22, R * 0.5).fill(color).stroke({ width: ink, color: INK });
-    g.circle(-R * 0.28, R * 0.08, R * 0.48).stroke({ width: ink * 0.6, color: INK });
-    g.circle(R * 0.3, R * 0.1, R * 0.46).stroke({ width: ink * 0.6, color: INK });
-  } else {
-    g.circle(0, 0, R * 0.9).fill(color).stroke({ width: ink, color: INK });
+    g.moveTo(-wide * 0.2, shoulderY + R * 0.05)
+      .lineTo(wide * 0.05, R * 0.12)
+      .lineTo(-wide * 0.02, R * 0.48)
+      .stroke({ width: ink * 0.7, color: 0x5c6570 });
   }
-  if (kind === 'soggy') g.ellipse(0, -R * 0.35, R * 0.28, R * 0.18).fill({ color: WHITE, alpha: 0.55 });
   if (kind === 'zinger') {
-    g.poly([0, -R * 0.95, R * 0.28, -R * 0.35, -R * 0.28, -R * 0.35], true).fill(0xfff3b0).stroke({ width: ink * 0.6, color: INK });
+    g.poly([0, shoulderY - wide * 0.15, wide * 0.22, shoulderY + wide * 0.28, -wide * 0.22, shoulderY + wide * 0.28], true)
+      .fill(0xfff3b0)
+      .stroke({ width: ink * 0.55, color: INK });
   }
   if (kind === 'spicy') {
-    g.poly([0, -R * 1.02, R * 0.22, -R * 0.45, 0, -R * 0.62, -R * 0.22, -R * 0.45], true).fill(0xffb703).stroke({ width: ink * 0.55, color: 0xc4450a });
+    g.poly(
+      [0, shoulderY - wide * 0.22, wide * 0.16, shoulderY + wide * 0.18, 0, shoulderY + wide * 0.02, -wide * 0.16, shoulderY + wide * 0.18],
+      true,
+    )
+      .fill(0xffb703)
+      .stroke({ width: ink * 0.5, color: 0xc4450a });
   }
   if (kind === 'frosty') {
-    g.poly([0, -R * 1.05, R * 0.2, -R * 0.58, 0, -R * 0.72, -R * 0.2, -R * 0.58], true)
+    const y = shoulderY + R * 0.18;
+    g.poly([0, y - R * 0.22, R * 0.07, y, 0, y + R * 0.22, -R * 0.07, y], true).fill(0xf4fbff);
+    g.poly([0, y - R * 0.07, R * 0.2, y, 0, y + R * 0.07, -R * 0.2, y], true)
       .fill(0xf4fbff)
-      .stroke({ width: ink * 0.5, color: 0x2f6f99 });
+      .stroke({ width: ink * 0.45, color: 0x2f6f99 });
   }
-  const excited = kind === 'zinger' || kind === 'spicy' || kind === 'popper' || kind === 'frosty';
-  eyes(g, excited ? -R * 0.02 : -R * 0.08, R, 0.34, excited ? 0.34 : 0.46);
-  smile(g, R * 0.32, R, kind === 'stony');
+  if (kind === 'popper') {
+    g.circle(-wide * 0.22, R * 0.18, wide * 0.22).fill({ color: WHITE, alpha: 0.45 });
+    g.circle(wide * 0.2, R * 0.28, wide * 0.18).fill({ color: WHITE, alpha: 0.35 });
+  }
 }
 
 export interface CobDraw {
@@ -268,12 +286,14 @@ export function drawFace(g: Graphics, x: number, y: number, r: number, angle: nu
   const co = Math.cos(angle);
   const si = Math.sin(angle);
   const rot = (lx: number, ly: number): [number, number] => [x + lx * co - ly * si, y + lx * si + ly * co];
-  const er = Math.max(2.4, r * (mood === 'surprised' ? 0.26 : 0.22));
+  const er = Math.max(2.2, r * (mood === 'surprised' ? 0.2 : 0.17));
+  const eyeY = -r * 0.46;
+  const mouthY = -r * 0.16;
   const m = Math.hypot(lookX, lookY) || 1;
   const px = (lookX / m) * er * 0.38;
   const py = (lookY / m) * er * 0.38;
   for (const side of [-1, 1]) {
-    const [ex, ey] = rot(side * r * 0.3, -r * 0.18);
+    const [ex, ey] = rot(side * r * 0.26, eyeY);
     if (mood === 'asleep') {
       g.moveTo(ex - er, ey).quadraticCurveTo(ex, ey + er * 0.9, ex + er, ey).stroke({ width: Math.max(1.5, er * 0.28), color: INK, cap: 'round' });
       continue;
@@ -283,12 +303,12 @@ export function drawFace(g: Graphics, x: number, y: number, r: number, angle: nu
     g.circle(ex + px, ey + py + (mood === 'smug' ? ry * 0.2 : 0), er * (mood === 'surprised' ? 0.32 : 0.48)).fill(INK);
     if (mood === 'angry' || mood === 'worried' || mood === 'determined') {
       const tilt = mood === 'worried' ? -1 : 1;
-      const [x1, y1] = rot(side * r * 0.3 - side * er, -r * 0.18 - er * 1.35 - tilt * er * 0.35);
-      const [x2, y2] = rot(side * r * 0.3 + side * er, -r * 0.18 - er * 1.35 + tilt * er * 0.45);
+      const [x1, y1] = rot(side * r * 0.26 - side * er, eyeY - er * 1.35 - tilt * er * 0.35);
+      const [x2, y2] = rot(side * r * 0.26 + side * er, eyeY - er * 1.35 + tilt * er * 0.45);
       g.moveTo(x1, y1).lineTo(x2, y2).stroke({ width: Math.max(1.5, er * 0.28), color: INK, cap: 'round' });
     }
   }
-  const [mx, my] = rot(0, r * 0.22);
+  const [mx, my] = rot(0, mouthY);
   const mw = r * 0.42;
   const frown = mood === 'angry';
   const open = mood === 'surprised' || mood === 'chewing';
@@ -298,11 +318,11 @@ export function drawFace(g: Graphics, x: number, y: number, r: number, angle: nu
     return;
   }
   const h = (mood === 'worried' ? 0.5 : 1) * r * 0.16 * (frown ? -1 : 1);
-  const [ax, ay] = rot(-mw / 2, r * 0.22);
+  const [ax, ay] = rot(-mw / 2, mouthY);
   g.moveTo(ax, ay);
   for (let i = 1; i <= 7; i++) {
     const t = i / 7;
-    const [qx, qy] = rot(-mw / 2 + mw * t, r * 0.22 + Math.sin(t * Math.PI) * h);
+    const [qx, qy] = rot(-mw / 2 + mw * t, mouthY + Math.sin(t * Math.PI) * h);
     g.lineTo(qx, qy);
   }
   g.stroke({ width: Math.max(1.5, r * 0.055), color: INK, cap: 'round' });

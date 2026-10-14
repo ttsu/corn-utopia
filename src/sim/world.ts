@@ -37,9 +37,14 @@ import type { Tuning } from './tuning';
 
 export const TICK_RATE = 60;
 export const DT = 1 / TICK_RATE;
-/** Starting dash. Butter Roll multiplies how far this burst carries you. */
+/**
+ * Starting dash. Short and only a bit faster than walking, on purpose:
+ * Butter Roll is what turns it into a real burst.
+ */
 export const DASH_COOLDOWN = 1.2;
-export const DASH_TIME = 0.18;
+export const DASH_TIME = 0.12;
+/** Burst speed as a multiple of move speed, before Butter Roll. */
+export const DASH_BURST = 1.7;
 
 export type EnemyType = 'baby' | 'soggy' | 'rocky';
 
@@ -512,7 +517,7 @@ function movePlayer(w: World, cmd: InputCommand): void {
       fy = p.facingY;
       m = Math.hypot(fx, fy) || 1;
     }
-    const burst = t.playerSpeed * Math.pow(sizeScale(p), 0.75) * speedMul(p.perks) * 3.4 * butterMul(p.perks);
+    const burst = t.playerSpeed * Math.pow(sizeScale(p), 0.75) * speedMul(p.perks) * DASH_BURST * butterMul(p.perks);
     p.vx = (fx / m) * burst;
     p.vy = (fy / m) * burst;
     p.facingX = fx / m;

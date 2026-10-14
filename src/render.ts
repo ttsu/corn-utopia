@@ -1,5 +1,19 @@
 import { Application, BitmapText, Container, Graphics, Sprite, Text, type Texture } from 'pixi.js';
-import { KERNEL_COLOR, TEX_R, drawCobShell, drawFace, drawFarm, drawFlair, fillCobBody, makeArtTextures, strokeCobOutline, type ArtTextures, type Mood } from './art';
+import {
+  KERNEL_ASPECT,
+  KERNEL_COLOR,
+  KERNEL_HALF_W,
+  TEX_R,
+  drawCobShell,
+  drawFace,
+  drawFarm,
+  drawFlair,
+  fillCobBody,
+  makeArtTextures,
+  strokeCobOutline,
+  type ArtTextures,
+  type Mood,
+} from './art';
 import type { Camera, Input } from './input';
 import { perkDef } from './sim/perks';
 import { shieldBadges, total, type Kernels } from './sim/cob';
@@ -59,31 +73,61 @@ interface SmugMark {
 
 const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
 
-/** Unit-circle kernel slots for a cob with n slots, ordered top-to-bottom. */
+/**
+ * Kernel slots in cob-local units of r, ordered tip-to-base.
+ * Straight columns down the ear; odd columns nest half a kernel lower,
+ * the way kernels line up on a real cob.
+ */
 const slotCache = new Map<number, Float32Array>();
 function slotsFor(n: number): Float32Array {
   const cached = slotCache.get(n);
   if (cached) return cached;
-  let s = Math.sqrt(Math.PI / (Math.max(n, 1) * 0.866)) * 0.9;
-  let pts: [number, number][] = [];
-  for (let attempt = 0; attempt < 40; attempt++) {
-    pts = [];
-    const lim = 1 - s * 0.55;
-    for (let row = 0, y = -1; y <= 1; row++, y += s * 0.866) {
-      const off = row % 2 ? s / 2 : 0;
-      for (let x = -1 + off; x <= 1; x += s) if (x * x + y * y <= lim * lim) pts.push([x, y]);
+  const count = Math.max(1, n);
+  // Fill the cob body (half-size about 0.62 by 0.98) so the rows read as an ear.
+  const rx = 0.56;
+  const ry = 0.84;
+  const inset = 1;
+  let cols = 1;
+  let rows = count;
+  let best = Infinity;
+  const maxCols = Math.min(count, 10);
+  for (let c = 1; c <= maxCols; c++) {
+    const rowsNeeded = Math.ceil(count / c);
+    const cellW = (2 * rx * inset) / c;
+    const cellH = (2 * ry * inset) / rowsNeeded;
+    const score = Math.abs(Math.log(cellH / cellW / KERNEL_ASPECT)) + (c === 1 && count > 3 ? 0.45 : 0);
+    if (score < best) {
+      best = score;
+      cols = c;
+      rows = rowsNeeded;
     }
-    if (pts.length >= n) break;
-    s *= 0.96;
   }
-  pts.sort((a, b) => a[0] ** 2 + a[1] ** 2 - (b[0] ** 2 + b[1] ** 2));
-  pts = pts.slice(0, n).sort((a, b) => a[1] - b[1] || a[0] - b[0]);
-  const out = new Float32Array(n * 3);
-  pts.forEach(([x, y], i) => {
-    out[i * 3] = x;
-    out[i * 3 + 1] = y;
-    out[i * 3 + 2] = s * 0.42;
-  });
+  const cellW = (2 * rx * inset) / cols;
+  const cellH = (2 * ry * inset) / rows;
+  const halfW = Math.min(cellW * 0.52, (cellH * 0.52) / KERNEL_ASPECT);
+  const pts: [number, number][] = [];
+  for (let row = 0; row < rows; row++) {
+    for (let col = 0; col < cols; col++) {
+      const x = -((cols - 1) * cellW) / 2 + col * cellW;
+      const y = -((rows - 1) * cellH) / 2 + row * cellH + (col % 2) * cellH * 0.5;
+      pts.push([x, y]);
+    }
+  }
+  let minY = Infinity;
+  let maxY = -Infinity;
+  for (const p of pts) {
+    minY = Math.min(minY, p[1]);
+    maxY = Math.max(maxY, p[1]);
+  }
+  const shift = (minY + maxY) / 2;
+  for (const p of pts) p[1] -= shift;
+  pts.sort((a, b) => a[1] - b[1] || a[0] - b[0]);
+  const out = new Float32Array(count * 3);
+  for (let i = 0; i < count; i++) {
+    out[i * 3] = pts[i][0];
+    out[i * 3 + 1] = pts[i][1];
+    out[i * 3 + 2] = halfW;
+  }
   if (slotCache.size > 400) slotCache.clear();
   slotCache.set(n, out);
   return out;
@@ -576,28 +620,28 @@ export class Renderer {
     // Keep kernels chunky. A full-size cob has hundreds of sockets; drawing all of
     // them turns the ear into gray noise, so big cobs show a proportional sample.
     const minDot = 5 / this.cam.zoom;
-    const inner = r * 0.5;
     let n = Math.min(real, MAX_DRAWN_SLOTS);
     let slots = slotsFor(n);
-    let dot = slots[2] * inner;
-    while (n > 14 && dot < minDot) {
+    let dot = (slots[2] * r) / KERNEL_HALF_W;
+    while (n > 14 && slots[2] * r * 2 < minDot) {
       n = Math.max(14, Math.floor(n * 0.72));
       slots = slotsFor(n);
-      dot = slots[2] * inner;
+      dot = (slots[2] * r) / KERNEL_HALF_W;
     }
-    if (dot * this.cam.zoom < MIN_DOT_PX) return;
+    if (slots[2] * r * this.cam.zoom < MIN_DOT_PX) return;
     const shown = drawnCounts(k, real, n);
     const pool = layers.kernels;
     const co = Math.cos(angle);
     const si = Math.sin(angle);
     let i = 0;
     const put = (kind: KernelKind | null, scale: number, alpha = 1) => {
-      const lx = slots[i * 3] * inner;
-      const ly = slots[i * 3 + 1] * inner;
+      const lx = slots[i * 3] * r;
+      const ly = slots[i * 3 + 1] * r;
       const wx = x + lx * co - ly * si;
       const wy = y + lx * si + ly * co;
-      const tex = kind ? this.tex.kernels[kind] : this.tex.dot;
-      pool.place(tex, wx, wy, dot * scale, dot * scale, kind ? WHITE : 0x6b4a1b, alpha, angle);
+      const tex = kind ? this.tex.kernels[kind] : this.tex.kernels.sunny;
+      const rx = dot * scale;
+      pool.place(tex, wx, wy, rx, rx, kind ? WHITE : 0x6b4a1b, alpha, angle);
       i++;
     };
     // Power kernels sit in the top band, then plain kernels, then empty sockets.
@@ -609,7 +653,8 @@ export class Renderer {
   private drawEnemy(e: Enemy, x: number, y: number, time: number, toScreenX: (x: number) => number, toScreenY: (y: number) => number): void {
     const layers = this.enemies;
     const { r, cy, angle } = enemyPose(e, y, time, this.cam.zoom);
-    const outline = Math.max(1.7, 1.15 / this.cam.zoom);
+    // Half again as thick as the first pass, so red and green read on a phone.
+    const outline = Math.max(1.7, 1.15 / this.cam.zoom) * 1.5;
     const smug = this.smug.some((mark) => (mark.x - x) ** 2 + (mark.y - y) ** 2 < (r + 30) ** 2);
 
     const edge = layers.outline;
