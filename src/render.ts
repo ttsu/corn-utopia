@@ -1,5 +1,5 @@
 import { Application, BitmapText, Container, Graphics, Sprite, Text, type Texture } from 'pixi.js';
-import { KERNEL_COLOR, TEX_R, dashCobOutline, drawCobShell, drawFace, drawFarm, drawFlair, fillCobBody, makeArtTextures, strokeCobOutline, type ArtTextures, type Mood } from './art';
+import { KERNEL_COLOR, TEX_R, drawCobShell, drawFace, drawFarm, drawFlair, fillCobBody, makeArtTextures, strokeCobOutline, type ArtTextures, type Mood } from './art';
 import type { Camera, Input } from './input';
 import { perkDef } from './sim/perks';
 import { shieldBadges, total, type Kernels } from './sim/cob';
@@ -486,7 +486,7 @@ export class Renderer {
 
     this.drawPlayer(w, px, py, time);
 
-    // Dashed aim marker. It traces the cob, using the same bob and lean as the body.
+    // Dashed aim marker. A circle, so it stays readable on top of the cob-shaped outline.
     const target = p.targetId !== null ? w.enemies.find((e) => e.id === p.targetId) : undefined;
     const fx = this.fxGfx.clear();
     if (target) {
@@ -494,28 +494,12 @@ export class Renderer {
       const ty = lerp(target.py, target.y, alpha);
       const pose = enemyPose(target, ty, time, cam.zoom);
       const locked = p.lockedTargetId === target.id;
-      const pulse = Math.sin(time * 8) * (2.5 / Math.sqrt(cam.zoom));
-      const pad = 12 / Math.sqrt(cam.zoom) + pulse;
-      dashCobOutline(
-        fx,
-        tx,
-        pose.cy,
-        pose.r,
-        pose.angle,
-        time,
-        target.id,
-        WHITE,
-        (locked ? 4 : 3) / Math.sqrt(cam.zoom),
-        locked ? 1 : 0.85,
-        pad,
-        11 / cam.zoom,
-        8 / cam.zoom,
-        time * 36,
-      );
-      if (locked) this.screenText.show('🔒', toScreenX(tx + pose.r * 0.9), toScreenY(pose.cy - pose.r), 14, WHITE);
+      const rr = pose.r * 1.12 + 6 / Math.sqrt(cam.zoom) + (Math.sin(time * 8) * 2) / Math.sqrt(cam.zoom);
+      dashedCircle(fx, tx, pose.cy, rr, (locked ? 3 : 2.4) / Math.sqrt(cam.zoom), WHITE, locked ? 1 : 0.85, cam.zoom, time * 1.5);
+      if (locked) this.screenText.show('🔒', toScreenX(tx + rr * 0.7), toScreenY(pose.cy - rr * 0.7), 14, WHITE);
       if (!target.chompable && !p.bare) {
         const need = total(target.kernels) - total(p.kernels) + 1;
-        this.drawChompMeter(toScreenX(tx), toScreenY(pose.cy + pose.r + pad) + 14, need);
+        this.drawChompMeter(toScreenX(tx), toScreenY(pose.cy + rr) + 14, need);
       }
     }
 
@@ -577,7 +561,7 @@ export class Renderer {
     alpha: number,
     pad: number,
   ): void {
-    strokeCobOutline(g, x, y, r, angle, time, id, color, width * 2.8, alpha * 0.28, pad + width * 0.55);
+    strokeCobOutline(g, x, y, r, angle, time, id, color, width * 1.65, alpha * 0.22, pad + width * 0.22);
     strokeCobOutline(g, x, y, r, angle, time, id, color, width, alpha, pad);
   }
 
@@ -625,25 +609,25 @@ export class Renderer {
   private drawEnemy(e: Enemy, x: number, y: number, time: number, toScreenX: (x: number) => number, toScreenY: (y: number) => number): void {
     const layers = this.enemies;
     const { r, cy, angle } = enemyPose(e, y, time, this.cam.zoom);
-    const outline = Math.max(4, 2.2 / this.cam.zoom);
+    const outline = Math.max(1.7, 1.15 / this.cam.zoom);
     const smug = this.smug.some((mark) => (mark.x - x) ** 2 + (mark.y - y) ** 2 < (r + 30) ** 2);
 
     const edge = layers.outline;
     if (e.chompable) {
-      const pulse = 1 + Math.sin(time * 8 + e.id) * 0.06;
-      this.strokeStatus(edge, x, cy, r, angle, time, e.id, GREEN, outline * 1.15, 1, outline * (0.85 + pulse));
+      const wobble = Math.sin(time * 8 + e.id) * 0.08;
+      this.strokeStatus(edge, x, cy, r, angle, time, e.id, GREEN, outline * 0.95, 1, outline * (0.48 + wobble));
     } else {
-      this.strokeStatus(edge, x, cy, r, angle, time, e.id, RED, outline * 1.25, 1, outline * 0.9);
+      this.strokeStatus(edge, x, cy, r, angle, time, e.id, RED, outline, 1, outline * 0.5);
       if (e.hunter) {
         // Hunters pulse a second red edge so kids can tell "this one is coming for me".
         const pulse = 0.5 + 0.5 * Math.sin(time * 7 + e.id);
-        this.strokeStatus(edge, x, cy, r, angle, time, e.id, RED, outline * 0.85, 0.28 + 0.4 * pulse, outline * (1.8 + pulse));
+        this.strokeStatus(edge, x, cy, r, angle, time, e.id, RED, outline * 0.55, 0.22 + 0.28 * pulse, outline * (1.05 + pulse * 0.25));
       }
     }
     if (e.frozenLeft > 0) {
-      this.strokeStatus(edge, x, cy, r, angle, time, e.id, 0x9ad7ff, outline * 1.1, 1, outline * 0.7);
+      this.strokeStatus(edge, x, cy, r, angle, time, e.id, 0x9ad7ff, outline * 0.75, 1, outline * 0.4);
     } else if (e.slowLeft > 0) {
-      this.strokeStatus(edge, x, cy, r, angle, time, e.id, 0x7ec8e3, outline * 0.75, 0.9, outline * 0.55);
+      this.strokeStatus(edge, x, cy, r, angle, time, e.id, 0x7ec8e3, outline * 0.55, 0.85, outline * 0.32);
     }
 
     this.drawCobBody(layers, x, cy, r, e.kernels, 0, angle, time, e.id, e.hitFlash > 0);

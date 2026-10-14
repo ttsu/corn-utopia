@@ -46,7 +46,7 @@ What's in it:
   from the start. Power buttons arc around it and fire on touch-down. Two thumbs work at the same time:
   steer with one, dash or shoot with the other. Keyboard: WASD/arrows, `1`–`4` to fire, Space or Shift to
   dash, `Tab` to switch target, `Esc` to pause.
-- Auto-target outline that traces the aimed cob (nearest red cob, favoring ones in front of you) and tap-a-cob-to-lock.
+- Auto-target is a dashed circle on the aimed cob (nearest red cob, favoring ones in front of you) and tap-a-cob-to-lock. Green and red outlines follow the cob.
 - Chomp rule with green/red outlines, a chomp meter under the target, Chomp Bonus and Chomp Streak.
 - Fired kernels fly, land as pickups with a sparkle ring, and get pulled in by your magnet.
   Enemies grab ground kernels too, except kernels you just knocked off a cob: those are yours

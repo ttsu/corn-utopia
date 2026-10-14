@@ -204,7 +204,7 @@ export interface InputCommand {
   moveX: number;
   moveY: number;
   fire: PowerKind[];
-  /** World position of a tap on the right side, to lock the target outline. */
+  /** World position of a tap on the right side, to lock the target circle. */
   lockAt: { x: number; y: number } | null;
   cycleTarget: boolean;
   /** Index into the current Ear Up offer, or null. */

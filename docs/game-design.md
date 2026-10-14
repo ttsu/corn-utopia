@@ -129,12 +129,13 @@ Both kinds count toward your **kernel count** (for chomping), your **health**, a
   loadout part of the strategy.
 
 **Aiming:**
-- **Auto-target:** a bouncy **dashed white outline** traces the cob you're most likely trying to wear down
+- **Auto-target:** a bouncy **dashed white circle** sits on the cob you're most likely trying to wear down
   (by default, the nearest cob with a red outline, favoring ones in front of you). Shots go there.
-  It follows the husk and the body, the same silhouette as the green and red status outlines.
-- **Tap a cob** on the right side of the screen to lock that outline onto it.
-- **[Decision] Aim and status marks follow the cob.** They are not circles left over from the
-  prototype. The player cob has no status outline of its own.
+- **Tap a cob** on the right side of the screen to lock that circle onto it.
+- **[Decision] Status outlines follow the cob. The aim marker stays a circle.** Green and red
+  outlines trace the husk and the body, drawn tight behind the cob with a thin glow. The dashed
+  aim marker is a circle, because a dashed cob shape reads as clutter. The player cob has no
+  status outline of its own.
 - **[Decision] Auto-target plus tap-to-lock is the default.** No manual aiming is needed.
 - **Drag-to-aim (optional, off by default, in Settings):** drag from a power button like a slingshot
   to aim by hand, for players who want more control.
@@ -651,7 +652,7 @@ Everything is earned by playing.
 | **Lift finger**              | Cob slowly coasts to a stop (doesn't stop instantly; feels smoother) |
 | **Tap the dash button**      | Dash the way you are steering (or the way you last moved). You start with it |
 | **Tap a power button**       | Fire one of that power kernel at the target (one shot per tap)      |
-| **Tap a cob (right half)**   | Lock the dashed target outline onto that cob                        |
+| **Tap a cob (right half)**   | Lock the dashed target circle onto that cob                        |
 | **Space or Shift**           | Dash, same as the button                                            |
 | **Pause**                    | Top corner, inside the safe area                                    |
 
@@ -692,7 +693,7 @@ Everything is earned by playing.
 ### 11.4 Readability (Bullet Heaven Clutter)
 
 - **Layer order (bottom → top):** ground → ground kernels → player shots → enemies → enemy shots →
-  player cob → target outline → HUD.
+  player cob → target circle → HUD.
 - Player effects **fade as more stack up** (auto-dim when there are a lot of particles).
 - Settings: **Reduce Flashing** and **Reduce Screen Shake** toggles.
 - Ground kernels get a **gentle pulsing glow** so they read even in busy moments.
