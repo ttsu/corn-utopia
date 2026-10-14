@@ -16,9 +16,15 @@ import { DT, EMPTY_COMMAND, createWorld, step, type InputCommand, type World } f
 const seeds = Number(process.env.BOT_SEEDS ?? 6);
 const minutes = Number(process.env.BOT_MINUTES ?? 8);
 const overrides = process.env.BOT_TUNING ? JSON.parse(process.env.BOT_TUNING) : {};
+/** `chase` plays well; `idle` drifts in slow circles and never shoots (a distracted kid). */
+const mode = process.env.BOT_MODE === 'idle' ? 'idle' : 'chase';
 
 function botCommand(w: World, lastShot: { tick: number }): InputCommand {
   const p = w.player;
+  if (mode === 'idle') {
+    const a = w.tick * DT * 0.4;
+    return { ...EMPTY_COMMAND, moveX: Math.cos(a) * 0.3, moveY: Math.sin(a) * 0.3 };
+  }
   let tx = p.x;
   let ty = p.y;
   let best = Infinity;
@@ -88,5 +94,5 @@ it('bot balance report', () => {
         `shots ${s.firedTotal}  scooped ${s.firedRecovered}  tinks ${s.tinks}  bumps ${s.bumps}  seeds ${s.seeds}`,
     );
   }
-  process.stdout.write(`\nBot report (${seeds} runs, ${minutes} min max, overrides ${JSON.stringify(overrides)})\n${rows.join('\n')}\n\n`);
+  process.stdout.write(`\nBot report (${mode} bot, ${seeds} runs, ${minutes} min max, overrides ${JSON.stringify(overrides)})\n${rows.join('\n')}\n\n`);
 }, 600_000);

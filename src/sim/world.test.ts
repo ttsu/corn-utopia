@@ -30,6 +30,8 @@ function addEnemy(w: World, x: number, y: number, kernels: ReturnType<typeof ker
     chompable: false,
     hitFlash: 0,
     bumpCooldown: 0,
+    retreat: 0,
+    seeking: true,
   });
   return w.enemies[w.enemies.length - 1];
 }

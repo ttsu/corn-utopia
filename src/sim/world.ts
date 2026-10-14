@@ -63,6 +63,9 @@ export interface Enemy extends Body {
   chompable: boolean;
   hitFlash: number;
   bumpCooldown: number;
+  /** Seconds left backing away after bumping the player. */
+  retreat: number;
+  seeking: boolean;
 }
 
 export interface Shot extends Body {
@@ -564,6 +567,7 @@ function collidePlayer(w: World): void {
     e.heading = Math.atan2(ny, nx);
     if (e.bumpCooldown <= 0) {
       e.bumpCooldown = 0.5;
+      e.retreat = 1.2;
       w.stats.bumps++;
       w.events.push({ type: 'bump', x: p.x + nx * p.r, y: p.y + ny * p.r });
     }
@@ -955,7 +959,10 @@ function updateEnemies(w: World): void {
       }
     }
 
-    if (e.chompable && distPlayer < 220 && !p.bare) {
+    if (e.retreat > 0) {
+      e.retreat -= DT;
+      e.heading = toPlayer + Math.PI;
+    } else if (e.chompable && distPlayer < 220 && !p.bare) {
       // Nervous: a cob you can chomp backs away, so snacks take a little chasing.
       e.heading = toPlayer + Math.PI + Math.sin((w.tick + e.id * 13) * 0.05) * 0.6;
       speed *= t.nervousSpeed;
@@ -967,8 +974,13 @@ function updateEnemies(w: World): void {
     } else if (seek) {
       e.heading = Math.atan2(seek.y - e.y, seek.x - e.x);
     } else if (e.type === 'baby' && distPlayer < 650) {
-      if (e.turnTimer <= 0) e.turnTimer = range(w.rng, 0.4, 1.2);
-      e.heading = toPlayer + Math.sin((w.tick + e.id * 37) * 0.03) * 0.7;
+      // Babies take turns being interested in you, so a crowd doesn't all pile on at once.
+      if (e.turnTimer <= 0) {
+        e.seeking = chance(w.rng, 0.5);
+        e.turnTimer = e.seeking ? range(w.rng, 2, 4) : range(w.rng, 1.5, 3);
+        if (!e.seeking) e.heading = range(w.rng, 0, Math.PI * 2);
+      }
+      if (e.seeking) e.heading = toPlayer + Math.sin((w.tick + e.id * 37) * 0.03) * 0.7;
     } else {
       if (e.turnTimer <= 0) {
         e.turnTimer = range(w.rng, 1, 3);
@@ -1118,6 +1130,8 @@ function spawnEnemy(w: World, type: EnemyType, kernels: Kernels, x: number, y: n
     chompable: canChomp(p.kernels, kernels),
     hitFlash: 0,
     bumpCooldown: 0,
+    retreat: 0,
+    seeking: true,
   };
   w.enemies.push(e);
   return e;
@@ -1160,7 +1174,8 @@ function runDirector(w: World): void {
 
   if (!dir.plan) dir.plan = planSpawn(w);
   const view = viewRadius(p);
-  if (w.enemies.length < t.maxEnemies && dir.budget >= dir.plan.cost) {
+  const enemyCap = Math.min(t.maxEnemies, Math.round(10 + minutes * 8));
+  if (w.enemies.length < enemyCap && dir.budget >= dir.plan.cost) {
     dir.budget -= dir.plan.cost;
     const speed = Math.hypot(p.vx, p.vy);
     const ahead = speed > 30 && chance(w.rng, 0.7);
