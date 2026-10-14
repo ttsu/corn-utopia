@@ -1,7 +1,7 @@
 /**
  * How kernels sit on a cob, in units of the cob's radius.
  * The ear is an oval, narrower at the tip. Kernels on it are horizontal
- * rounded rectangles, packed in rows that follow that curve.
+ * ovals, packed in rows that follow that curve.
  */
 
 /** Half-width and half-height of the oval ear. Negative y is the tip. */
@@ -9,13 +9,13 @@ export const BODY_RX = 0.62;
 export const BODY_RY = 0.98;
 
 /** Height / width of a kernel while it is attached. Below 1 means horizontal. */
-export const COB_KERNEL_ASPECT = 0.56;
+export const COB_KERNEL_ASPECT = 0.64;
 
 /**
- * Sprites are drawn a little bigger than their slots so the rounded corners
+ * Sprites are drawn a little bigger than their slots so neighboring ovals
  * overlap and the cob color doesn't show between kernels.
  */
-export const COB_KERNEL_DRAW_SCALE = 1.12;
+export const COB_KERNEL_DRAW_SCALE = 1.2;
 
 const slotCache = new Map<number, Float32Array>();
 

@@ -294,7 +294,7 @@ Kernels are the heart of the game. Every kernel type needs:
 
 - A **unique color AND a unique mark or icon** (for colorblind players and readability)
 - The **same loose corn-kernel shape**: rounded crown, longer body, flatter smaller base. No face.
-  On a cob, that kernel is drawn as a horizontal rounded rectangle instead (§5.6)
+  On a cob, that kernel is drawn as a horizontal oval instead (§5.6)
 - A distinct **pickup sound** (and a **firing sound** for power kernels)
 - A behavior that kids can recognize just by watching it
 - A **look trait** (plain kernels) or **flair** (power kernels) that changes a cob's whole appearance
@@ -423,8 +423,8 @@ replay. The first time a combo happens, it gets a big name pop-up and a fanfare.
   (the wide end), a body that's a bit longer than it is wide, and a flatter base that's smaller than
   the crown. Color and a small mark tell the types apart. Plain kernels are matte. Power kernels are
   a little shinier and carry their icon inside the kernel.
-- **[Decision] On a cob, each kernel is a rounded rectangle oriented horizontally** (wider than it
-  is tall), packed so neighbors touch. The cob itself stays an oval ear, narrower at the tip, with
+- **[Decision] On a cob, each kernel is an oval oriented horizontally** (wider than it
+  is tall, round on every side), packed so neighbors touch. The cob itself stays an oval ear, narrower at the tip, with
   husk leaves at the base. Kernel rows run across that oval and get shorter toward the tip, the way
   kernels line up on corn on the cob (including a multicolor ear). Neighboring rows are offset by
   about half a kernel so they nest. The cob's face sits on the upper kernels. The game shows that
@@ -844,7 +844,7 @@ to the Heart Kernel: worried, sweaty eyebrows. Just chomped: chewing, happy chee
 
 - **Base cob body:** a few hand-drawn shapes per size tier, tinted by the main look trait.
 - **Kernel sprites:** loose kernels use one small corn-kernel sprite per type (rounded crown, longer
-  body, smaller flat base, no face). On a cob, the same kernel is a horizontal rounded rectangle,
+  body, smaller flat base, no face). On a cob, the same kernel is a horizontal oval,
   packed into tight staggered rows by the auto-arranger (§5.6).
 - **Trait overlays and flair:** separate small sprites layered on top (drips, cracks, flames, sparks).
 - **Performance:** for enemy cobs, draw the body, kernels, and overlays into **one cached texture**

@@ -12,7 +12,7 @@ function read(n: number): { x: number; y: number; halfW: number; halfH: number }
 }
 
 describe('cob kernel layout', () => {
-  it('draws attached kernels as horizontal rounded-rectangle slots', () => {
+  it('draws attached kernels as horizontal ovals', () => {
     for (const n of [1, 4, 12, 30, 80]) {
       for (const slot of read(n)) {
         expect(slot.halfW).toBeGreaterThan(slot.halfH * 1.5);

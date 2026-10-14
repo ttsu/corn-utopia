@@ -23,7 +23,7 @@ const HUSK_DARK = 0x2f6b1c;
 export interface ArtTextures {
   /** Loose kernels (on the ground, in flight): crown-up corn shape. */
   kernels: Record<KernelKind, Texture>;
-  /** Kernels still on a cob: horizontal rounded rectangles. */
+  /** Kernels still on a cob: horizontal ovals. */
   cobKernels: Record<KernelKind, Texture>;
   dot: Texture;
   square: Texture;
@@ -59,7 +59,7 @@ export const KERNEL_HALF_W = 0.56;
 
 /**
  * Half-width of an on-cob kernel, as a fraction of TEX_R.
- * The sprite is a rounded rectangle, wider than it is tall (see COB_KERNEL_ASPECT).
+ * The sprite is an oval, wider than it is tall (see COB_KERNEL_ASPECT).
  */
 export const COB_KERNEL_HALF_W = 0.9;
 
@@ -132,19 +132,17 @@ function drawKernel(g: Graphics, kind: KernelKind): void {
   }
 }
 
-/** A kernel attached to a cob: a rounded rectangle lying on its side. */
+/** A kernel attached to a cob: a horizontal oval, round on every side. */
 function drawCobKernel(g: Graphics, kind: KernelKind): void {
   const R = TEX_R;
   const hw = R * COB_KERNEL_HALF_W;
   const hh = hw * COB_KERNEL_ASPECT;
-  const rad = hh * 0.42;
   const color = KERNEL_COLOR[kind];
-  const ink = Math.max(1.35, R * 0.05);
+  const ink = Math.max(1.6, R * 0.07);
   const shiny = KERNELS[kind].power;
-  g.roundRect(-hw, -hh, hw * 2, hh * 2, rad).fill(color).stroke({ width: ink, color: INK, join: 'round' });
-  // A light crown and a darker base so packed rows still read as separate kernels.
-  g.roundRect(-hw * 0.62, -hh * 0.58, hw * 1.05, hh * 0.36, rad * 0.35).fill({ color: WHITE, alpha: shiny ? 0.5 : 0.26 });
-  g.roundRect(-hw * 0.7, hh * 0.18, hw * 1.4, hh * 0.55, rad * 0.4).fill({ color: 0x000000, alpha: 0.14 });
+  g.ellipse(0, 0, hw, hh).fill(color).stroke({ width: ink, color: INK });
+  g.ellipse(-hw * 0.08, -hh * 0.22, hw * 0.36, hh * 0.32).fill({ color: WHITE, alpha: shiny ? 0.5 : 0.28 });
+  g.ellipse(hw * 0.04, hh * 0.28, hw * 0.34, hh * 0.24).fill({ color: 0x000000, alpha: 0.12 });
   drawCobMark(g, kind, hw, hh, ink);
 }
 
