@@ -306,6 +306,42 @@ describe('world', () => {
     expect(w.player.kernels.sunny).toBe(8 + 3 + 2 + 2);
   });
 
+  it('starts with a short magnet, and Big Magnet stretches the radius', () => {
+    expect(defaultTuning().magnetRadius).toBe(10);
+    expect(defaultTuning().magnetPull).toBe(3000);
+    const dropped = (perks: World['player']['perks'], pastBody: number) => {
+      const w = quietWorld();
+      w.props = [];
+      w.player.perks = perks;
+      const x = w.player.r + pastBody;
+      w.ground = [
+        {
+          id: 50,
+          kind: 'sunny',
+          value: 1,
+          x,
+          y: 0,
+          px: x,
+          py: 0,
+          vx: 0,
+          vy: 0,
+          delay: 0,
+          enemyLock: 0,
+          age: 1,
+          sparkle: 0,
+          ownerId: null,
+          dead: false,
+        },
+      ];
+      step(w, EMPTY_COMMAND);
+      return w.ground[0].x;
+    };
+    expect(dropped([], 6)).toBeLessThan(quietWorld().player.r + 6);
+    expect(dropped([], 14)).toBe(quietWorld().player.r + 14);
+    expect(dropped(['magnet'], 12)).toBeLessThan(quietWorld().player.r + 12);
+    expect(dropped(['magnet', 'magnet'], 16)).toBeLessThan(quietWorld().player.r + 16);
+  });
+
   it('dashes from the start, and Butter Roll makes that dash further', () => {
     const run = (perks: World['player']['perks']) => {
       const w = quietWorld();
