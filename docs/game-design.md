@@ -191,8 +191,9 @@ Your cob has a set number of **kernel sockets**. When the sockets fill up, the c
 - **[Decision] A run starts as a plain Sunny cob** (no power kernels). The first snacks on the
   field each carry one power kernel, so your first chomps are what arm you.
 - **Bigger cobs hit harder and reach farther.** Shot range, blast radius, move speed and magnet
-  scale with your size, and kernels knocked off per hit grow too (sub-linearly), so a
-  1,000-kernel cob still wears down a big cob in a sensible number of shots.
+  scale with your size, and the flat kernels knocked off per hit grow too (sub-linearly). On top
+  of that, every hit **shakes loose** a share of the target (§5.3), so a 1,000-kernel cob still
+  wears down a big cob in a sensible number of shots.
 - **Big cobs get rarer as you grow.** Chomping a cob about your size roughly doubles you, so
   the director spawns fewer easy "wear it down" cobs the bigger you are.
 - **[Decision] It gets harder as you get bigger.** A challenge level rises from 0 at tier 1 to 1
@@ -206,8 +207,9 @@ Your cob has a set number of **kernel sockets**. When the sockets fill up, the c
   - **Harder bumps:** a bump costs a few kernels when you're small, and up to 3% of your cob at
     the top tier.
 - M0 tuning, measured with the bot: time per tier rises (about 15 s at tier 4, 30 s at tier 5,
-  40 s at tier 6, about 3 minutes at tier 7). Half of the bot runs reach the top tier in 8 minutes;
-  the rest plateau around 400–550 kernels. A cob that stops playing at size 1,200 loses about a
+  then 15–50 s per tier from tier 6 to 9). With Shake Loose (§5.3), 9 of 10 bot runs reach the top
+  tier, most in 1.5–3 minutes (before it, half did within 8 minutes and the rest stalled at tier 7).
+  Growth pacing now needs retuning outside damage (big-cob spawn rate, hunters, snack sizes). A cob that stops playing at size 1,200 loses about a
   third of itself in 4 minutes, versus nothing before.
 
 - **Camera zooms out as you grow** (like agar.io), so your cob takes up about the same amount of
@@ -344,6 +346,20 @@ Power kernels have no resistances; a hit of any type can knock them off.
   Soggy kernels makes you safer against fire-shooting cobs.
 - **Readability:** cobs show **small shield badges** above them for any resistance that covers most
   of their kernels. The Kernelpedia teaches matchups with pictures.
+
+**Shake Loose (how power hits scale):** big cobs are packed with kernels, so a good hit rattles a
+whole handful loose. Every power hit knocks off its flat amount **plus a share of the target's
+kernels that don't resist it** (Zinger 2%, Spicy 3%, Popper 1.5% of each cob caught in the blast,
+burn patches 0.5% per tick; all tunable). That keeps "shots until it turns green" about the same
+at every size, without kids needing bigger numbers:
+- A flat amount alone grows slower than the cobs do, so a late-run project cob would take
+  hundreds of taps. The share means a 2,000-kernel cob loses about 40 to a Zinger, a 20-kernel cob
+  loses its usual 1.
+- **It sharpens the matchup game.** Only kernels that can be knocked off count, so a Zinger on a
+  95%-Stony cob only shakes loose from the 5% that's left. As a mixed cob's soft layer runs out,
+  each hit shrinks and then *tinks*: the cue to switch powers.
+- **Enemies already play by this rule:** bumps cost a share of your cob at the top tier (§4.5).
+- Hunter armor still halves the whole hit.
 
 ### 5.4 Power Milestones
 

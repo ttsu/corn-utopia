@@ -86,6 +86,28 @@ describe('world', () => {
     expect(shotRange(w)).toBeGreaterThan(w.tuning.shotRange * 2);
   });
 
+  it('shakes loose a share of the target, so big cobs lose more per hit but resistant kernels stay put', () => {
+    const knockedBy = (target: ReturnType<typeof kernelsOf>) => {
+      const w = quietWorld();
+      w.player.kernels = kernelsOf({ sunny: 3, zinger: 3 });
+      const e = addEnemy(w, 120, 0, target);
+      const before = total(e.kernels);
+      step(w, EMPTY_COMMAND);
+      step(w, fire('zinger'));
+      for (let i = 0; i < 60 && total(e.kernels) === before; i++) step(w, EMPTY_COMMAND);
+      return { knocked: before - total(e.kernels), left: e.kernels };
+    };
+    const t = defaultTuning();
+    const small = knockedBy(kernelsOf({ sunny: 20 }));
+    const big = knockedBy(kernelsOf({ sunny: 2000 }));
+    expect(small.knocked).toBe(t.zingerDamage + Math.round((t.zingerShake / 100) * 20));
+    expect(big.knocked).toBe(t.zingerDamage + Math.round((t.zingerShake / 100) * 2000));
+
+    const mixed = knockedBy(kernelsOf({ sunny: 100, stony: 1900 }));
+    expect(mixed.knocked).toBe(t.zingerDamage + Math.round((t.zingerShake / 100) * 100));
+    expect(mixed.left.stony).toBe(1900);
+  });
+
   it('is deterministic for the same seed and inputs', () => {
     const run = () => {
       const w = createWorld(42, defaultTuning());
