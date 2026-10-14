@@ -93,7 +93,12 @@ function drawKernel(g: Graphics, kind: KernelKind): void {
   if (kind === 'spicy') {
     g.poly([0, -R * 1.02, R * 0.22, -R * 0.45, 0, -R * 0.62, -R * 0.22, -R * 0.45], true).fill(0xffb703).stroke({ width: ink * 0.55, color: 0xc4450a });
   }
-  const excited = kind === 'zinger' || kind === 'spicy' || kind === 'popper';
+  if (kind === 'frosty') {
+    g.poly([0, -R * 1.05, R * 0.2, -R * 0.58, 0, -R * 0.72, -R * 0.2, -R * 0.58], true)
+      .fill(0xf4fbff)
+      .stroke({ width: ink * 0.5, color: 0x2f6f99 });
+  }
+  const excited = kind === 'zinger' || kind === 'spicy' || kind === 'popper' || kind === 'frosty';
   eyes(g, excited ? -R * 0.02 : -R * 0.08, R, 0.34, excited ? 0.34 : 0.46);
   smile(g, R * 0.32, R, kind === 'stony');
 }
@@ -197,6 +202,14 @@ export function drawFlair(g: Graphics, c: CobDraw): void {
       g.poly(inner.flat(), true).fill(0xffe066);
     }
   }
+  if (kernels.frosty > 0) {
+    for (const side of [-1, 1]) {
+      const [ix, iy] = rot(side * r * 0.48, r * 0.05);
+      g.poly([ix, iy - r * 0.28, ix + side * r * 0.1, iy + r * 0.02, ix - side * r * 0.02, iy + r * 0.02], true)
+        .fill(0xd7f3ff)
+        .stroke({ width: ink, color: 0x2f6f99 });
+    }
+  }
   if (kernels.popper > 0 && Math.sin(time * 6 + c.id) > 0.35) {
     const [px, py] = rot(r * 0.55, -r * 0.2);
     g.circle(px, py, r * 0.1).fill(0xfff8e7).stroke({ width: ink, color: INK });
@@ -285,7 +298,8 @@ export function drawFarm(
       }
     }
   }
-  for (const p of props) {
+  const piled = [...props].sort((a, b) => b.y - a.y);
+  for (const p of piled) {
     if (p.x < left - p.r || p.x > right + p.r || p.y < top - p.r || p.y > bottom + p.r) continue;
     if (p.kind === 'mud') {
       g.ellipse(p.x, p.y, p.r, p.r * 0.72).fill(0x8d6b4a).stroke({ width: 3, color: 0x6b4f34 });

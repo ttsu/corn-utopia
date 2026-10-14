@@ -1,15 +1,14 @@
-import { DAMAGE_ICON, KERNELS, POWER_DAMAGE, type PowerKind } from '../sim/kernels';
+import { DAMAGE_ICON, KERNELS, POWER_DAMAGE, POWER_KINDS, type PowerKind } from '../sim/kernels';
 import { canFire, heartLocked, rechargeSeconds, type World } from '../sim/world';
 
 interface ButtonEls {
   root: HTMLButtonElement;
   ring: HTMLDivElement;
   count: HTMLSpanElement;
-  swap: HTMLDivElement;
   last: string;
 }
 
-/** Bigger buttons sit closer to the thumb. Up to five, which is the pocket cap. */
+/** Fixed places, thumb outward. Index matches POWER_KINDS, so a power never changes buttons. */
 const ARC: { x: number; y: number; size: number }[] = [
   { x: 0, y: 0, size: 92 },
   { x: 104, y: 4, size: 76 },
@@ -19,68 +18,67 @@ const ARC: { x: number; y: number; size: number }[] = [
 ];
 
 /**
- * One button per power in a pocket. Fires on pointerdown so it feels instant,
- * and each button tracks its own pointer so it works while the other thumb steers.
- * A swap arrow trades that pocket for the power waiting in line.
+ * One button per power you've picked up, always in that power's place.
+ * An armed button fires. A dimmed one is waiting; tapping it arms that power
+ * (the sim trades it in) without moving any button.
  */
 export class PowerButtons {
   private buttons: ButtonEls[] = [];
-  private waitingRow: HTMLDivElement;
   private hint: HTMLDivElement;
   private signature = '';
 
   constructor(
     private container: HTMLElement,
     private onPress: (kind: PowerKind) => void,
-    private onSwap: (pocket: PowerKind, withKind: PowerKind) => void,
   ) {
     this.hint = document.createElement('div');
     this.hint.className = 'power-hint';
     this.hint.textContent = 'Chomp a snack to get a power';
-    this.waitingRow = document.createElement('div');
-    this.waitingRow.className = 'waiting';
-    this.container.append(this.hint, this.waitingRow);
+    this.container.append(this.hint);
   }
 
   update(w: World): void {
     const pockets = w.player.pockets;
     const waiting = w.player.waiting;
-    const signature = `${pockets.join(',')}|${waiting.join(',')}`;
+    const shown = POWER_KINDS.filter((k) => pockets.includes(k) || waiting.includes(k));
+    const signature = shown.map((k) => `${k}:${waiting.includes(k) ? 'wait' : 'on'}`).join(',');
     if (signature !== this.signature) {
       this.signature = signature;
-      this.rebuild(pockets, waiting);
+      this.rebuild(shown, waiting);
     }
-    this.hint.hidden = pockets.length > 0;
+    this.hint.hidden = shown.length > 0;
     const locked = heartLocked(w);
-    pockets.forEach((kind, i) => {
-      const b = this.buttons[i];
-      if (!b) return;
+    for (const b of this.buttons) {
+      const kind = b.root.dataset.kind as PowerKind;
+      const benched = waiting.includes(kind);
       const n = w.player.kernels[kind];
       const cd = w.player.cooldowns[kind];
       const frac = cd > 0 ? cd / rechargeSeconds(w, kind) : 0;
-      const state = n === 0 ? 'empty' : locked ? 'locked' : canFire(w, kind) ? 'ready' : 'charging';
-      const key = `${n}|${state}|${Math.round(frac * 40)}|${waiting.length}`;
-      if (key === b.last) return;
+      const state = benched ? 'benched' : n === 0 ? 'empty' : locked ? 'locked' : canFire(w, kind) ? 'ready' : 'charging';
+      const key = `${n}|${state}|${Math.round(frac * 40)}`;
+      if (key === b.last) continue;
       b.last = key;
       b.count.textContent = String(n);
+      b.root.setAttribute('aria-label', benched ? `${KERNELS[kind].name}, tap to arm` : KERNELS[kind].name);
+      b.root.classList.toggle('benched', state === 'benched');
       b.root.classList.toggle('empty', state === 'empty');
       b.root.classList.toggle('locked', state === 'locked');
-      b.swap.hidden = waiting.length === 0;
-      b.ring.style.background = frac > 0 ? `conic-gradient(rgba(0,0,0,0.45) ${frac * 360}deg, transparent 0deg)` : 'transparent';
-    });
+      b.ring.style.background = !benched && frac > 0 ? `conic-gradient(rgba(0,0,0,0.45) ${frac * 360}deg, transparent 0deg)` : 'transparent';
+    }
   }
 
-  private rebuild(pockets: readonly PowerKind[], waiting: readonly PowerKind[]): void {
+  private rebuild(shown: readonly PowerKind[], waiting: readonly PowerKind[]): void {
     for (const b of this.buttons) b.root.remove();
     this.buttons = [];
-    this.waitingRow.replaceChildren();
-    pockets.forEach((kind, i) => {
-      const spot = ARC[Math.min(i, ARC.length - 1)];
+    for (const kind of shown) {
+      const spot = ARC[Math.min(POWER_KINDS.indexOf(kind), ARC.length - 1)];
       const def = KERNELS[kind];
+      const benched = waiting.includes(kind);
       const root = document.createElement('button');
       root.type = 'button';
       root.className = 'power';
-      root.setAttribute('aria-label', def.name);
+      root.dataset.kind = kind;
+      root.setAttribute('aria-label', benched ? `${def.name}, tap to arm` : def.name);
       root.style.width = `${spot.size}px`;
       root.style.height = `${spot.size}px`;
       root.style.right = `${spot.x}px`;
@@ -96,21 +94,8 @@ export class PowerButtons {
       const label = document.createElement('span');
       label.className = 'label';
       label.textContent = def.name;
-      const swap = document.createElement('div');
-      swap.className = 'swap';
-      swap.textContent = '⇄';
-      swap.setAttribute('role', 'button');
-      swap.setAttribute('aria-label', `Swap ${def.name}`);
-      swap.hidden = waiting.length === 0;
-      swap.addEventListener('pointerdown', (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        const next = waiting[0];
-        if (next) this.onSwap(kind, next);
-      });
-      root.append(ring, icon, count, label, swap);
+      root.append(ring, icon, count, label);
       root.addEventListener('pointerdown', (e) => {
-        if (e.target === swap) return;
         e.preventDefault();
         e.stopPropagation();
         root.classList.add('pressed');
@@ -122,24 +107,7 @@ export class PowerButtons {
       root.addEventListener('pointerleave', release);
       root.addEventListener('contextmenu', (e) => e.preventDefault());
       this.container.append(root);
-      this.buttons.push({ root, ring, count, swap, last: '' });
-    });
-
-    for (const kind of waiting) {
-      const def = KERNELS[kind];
-      const chip = document.createElement('button');
-      chip.type = 'button';
-      chip.className = 'wait-chip';
-      chip.style.background = def.color;
-      chip.textContent = DAMAGE_ICON[POWER_DAMAGE[kind]];
-      chip.setAttribute('aria-label', `Waiting: ${def.name}`);
-      chip.addEventListener('pointerdown', (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        const pocket = pockets[0];
-        if (pocket) this.onSwap(pocket, kind);
-      });
-      this.waitingRow.append(chip);
+      this.buttons.push({ root, ring, count, last: '' });
     }
   }
 }

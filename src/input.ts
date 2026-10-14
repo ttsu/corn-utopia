@@ -1,4 +1,4 @@
-import type { PowerKind } from './sim/kernels';
+import { POWER_KINDS, type PowerKind } from './sim/kernels';
 import { EMPTY_COMMAND, type InputCommand } from './sim/world';
 
 export interface Camera {
@@ -36,7 +36,6 @@ export class Input {
   private queuedTap: { x: number; y: number } | null = null;
   private queuedCycle = false;
   private queuedDash = false;
-  private queuedSwap: InputCommand['swap'] = null;
   private lastLeftDown = 0;
   enabled = true;
 
@@ -60,10 +59,6 @@ export class Input {
     if (this.enabled) this.queuedFire.push(kind);
   }
 
-  queueSwap(pocket: PowerKind, withKind: PowerKind): void {
-    if (this.enabled) this.queuedSwap = { pocket, with: withKind };
-  }
-
   reset(): void {
     this.joystick = null;
     this.queuedFire.length = 0;
@@ -71,7 +66,6 @@ export class Input {
     this.queuedTap = null;
     this.queuedCycle = false;
     this.queuedDash = false;
-    this.queuedSwap = null;
   }
 
   private onDown = (e: PointerEvent): void => {
@@ -142,7 +136,7 @@ export class Input {
     return JOYSTICK_RADIUS;
   }
 
-  sample(cam: Camera, pockets: readonly PowerKind[] = []): InputCommand {
+  sample(cam: Camera): InputCommand {
     let mx = 0;
     let my = 0;
     if (this.keys.has('KeyA') || this.keys.has('ArrowLeft')) mx -= 1;
@@ -159,7 +153,7 @@ export class Input {
     }
     const fire = this.queuedFire.splice(0);
     for (const slot of this.queuedSlots.splice(0)) {
-      const kind = pockets[slot];
+      const kind = POWER_KINDS[slot];
       if (kind) fire.push(kind);
     }
     const cmd: InputCommand = {
@@ -170,12 +164,10 @@ export class Input {
       lockAt: this.queuedTap ? screenToWorld(cam, this.queuedTap.x, this.queuedTap.y) : null,
       cycleTarget: this.queuedCycle,
       dash: this.queuedDash,
-      swap: this.queuedSwap,
     };
     this.queuedTap = null;
     this.queuedCycle = false;
     this.queuedDash = false;
-    this.queuedSwap = null;
     return cmd;
   }
 }

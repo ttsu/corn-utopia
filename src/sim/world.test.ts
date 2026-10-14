@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { kernelsOf, total } from './cob';
+import { POWER_KINDS } from './kernels';
 import { defaultTuning } from './tuning';
 import { EMPTY_COMMAND, bumpLossFor, canFire, challenge, createWorld, damageScale, shotRange, step, type InputCommand, type World } from './world';
 
@@ -33,6 +34,9 @@ function addEnemy(w: World, x: number, y: number, kernels: ReturnType<typeof ker
     retreat: 0,
     seeking: true,
     hunter: false,
+    frostHits: 0,
+    slowLeft: 0,
+    frozenLeft: 0,
   });
   return w.enemies[w.enemies.length - 1];
 }
@@ -43,7 +47,7 @@ describe('world', () => {
     expect(w.player.kernels).toEqual(kernelsOf({ sunny: defaultTuning().gameStartSunny }));
     const babies = w.enemies.filter((e) => e.type === 'baby');
     expect(babies.length).toBe(4);
-    for (const b of babies) expect(b.kernels.zinger + b.kernels.spicy + b.kernels.popper).toBeGreaterThan(0);
+    for (const kind of POWER_KINDS) expect(babies.some((b) => b.kernels[kind] > 0)).toBe(true);
     for (const b of babies) expect(total(b.kernels)).toBeLessThan(total(w.player.kernels));
 
     const mix = createWorld(3, defaultTuning(), 'playtest');
@@ -353,5 +357,43 @@ describe('world', () => {
       return w.player.x;
     };
     expect(slosh(true)).toBeLessThan(slosh(false) * 0.7);
+  });
+
+  it('keeps each power on its own button and arms a waiting one without firing it', () => {
+    const w = quietWorld();
+    w.player.kernels = kernelsOf({ sunny: 8, zinger: 1, spicy: 1, popper: 1, frosty: 1 });
+    step(w, EMPTY_COMMAND);
+    expect(w.player.pockets).toEqual(['zinger', 'spicy', 'popper']);
+    expect(w.player.waiting).toEqual(['frosty']);
+    step(w, fire('frosty'));
+    expect(w.player.pockets).toEqual(['zinger', 'spicy', 'frosty']);
+    expect(w.player.waiting).toEqual(['popper']);
+    expect(w.shots).toHaveLength(0);
+  });
+
+  it('Frosty slows a cob and the third hit freezes it', () => {
+    const w = quietWorld();
+    w.props = [];
+    w.tuning.frostyRecharge = 0;
+    w.tuning.frostyShake = 0;
+    w.player.kernels = kernelsOf({ sunny: 20, frosty: 5 });
+    const e = addEnemy(w, 90, 0, kernelsOf({ sunny: 40 }));
+    const land = () => {
+      const before = e.kernels.sunny;
+      step(w, fire('frosty'));
+      for (let i = 0; i < 40 && e.kernels.sunny === before; i++) step(w, EMPTY_COMMAND);
+    };
+    land();
+    expect(e.slowLeft).toBeGreaterThan(0);
+    expect(e.frozenLeft).toBe(0);
+    const x = e.x;
+    for (let i = 0; i < 20; i++) step(w, EMPTY_COMMAND);
+    expect(Math.abs(e.x - x)).toBeLessThan(8);
+    land();
+    land();
+    expect(e.frozenLeft).toBeGreaterThan(0);
+    const frozenX = e.x;
+    for (let i = 0; i < 20; i++) step(w, EMPTY_COMMAND);
+    expect(e.x).toBe(frozenX);
   });
 });

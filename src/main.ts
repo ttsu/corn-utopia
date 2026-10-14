@@ -29,14 +29,10 @@ const tuningPanel = new TuningPanel($('tuning'), tuning);
 const sfx = new Sfx();
 const renderer = await Renderer.create(canvas);
 const input = new Input(canvas, () => togglePause());
-const powerButtons = new PowerButtons(
-  $('powers'),
-  (kind) => {
-    sfx.unlock();
-    input.queueFire(kind);
-  },
-  (pocket, withKind) => input.queueSwap(pocket, withKind),
-);
+const powerButtons = new PowerButtons($('powers'), (kind) => {
+  sfx.unlock();
+  input.queueFire(kind);
+});
 
 let mode: Mode = 'title';
 let world: World = createWorld(newSeed(), tuning);
@@ -158,6 +154,9 @@ function playEvents(events: SimEvent[]): void {
       case 'dash':
         sfx.whoosh();
         break;
+      case 'freeze':
+        sfx.chill();
+        break;
     }
   }
 }
@@ -199,7 +198,7 @@ function endRun(): void {
     ['Biggest cob', `${run.maxKernels} kernel${run.maxKernels === 1 ? '' : 's'}`],
     ['Cobs chomped', String(run.chomps)],
     ['Best chomp streak', String(run.bestStreak)],
-    ['Shots fired', String(run.shots.zinger + run.shots.spicy + run.shots.popper)],
+    ['Shots fired', String(Object.values(run.shots).reduce((a, n) => a + n, 0))],
     ['Shots scooped back', `${run.firedRecoveredPct}%`],
     ['Tinks', String(run.tinks)],
     ['Seeds', String(world.stats.seeds)],
@@ -252,7 +251,7 @@ function frame(now: number): void {
     accumulator += dt;
     let steps = 0;
     while (accumulator >= DT && steps < 6) {
-      step(world, input.sample(renderer.cam, world.player.pockets));
+      step(world, input.sample(renderer.cam));
       renderer.handleEvents(world.events);
       playEvents(world.events);
       accumulator -= DT;

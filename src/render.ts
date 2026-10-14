@@ -337,6 +337,10 @@ export class Renderer {
         case 'dash':
           this.burst(e.x, e.y, 0xffe08a, 8, 180);
           break;
+        case 'freeze':
+          this.floater(e.x, e.y - 8, 'frozen!', 0xd7f3ff, 22, 1.4);
+          this.burst(e.x, e.y, 0xd7f3ff, 8, 120);
+          break;
         case 'perk': {
           const def = perkDef(e.id);
           this.floater(this.cam.x, this.cam.y - 40 / Math.max(0.2, this.cam.zoom), `${def.icon} ${def.name}!`, WHITE, 26, 1.3);
@@ -606,7 +610,13 @@ export class Renderer {
         g.circle(x, cy, r + outline * (2 + pulse)).stroke({ width: outline * 0.8, color: RED, alpha: 0.25 + 0.35 * pulse });
       }
     }
-    const mood: Mood = smug ? 'smug' : e.chompable ? 'worried' : 'angry';
+    if (e.frozenLeft > 0) {
+      g.circle(x, cy, r * 0.92).fill({ color: 0xd7f3ff, alpha: 0.5 });
+      g.circle(x, cy, r + outline).stroke({ width: outline * 1.4, color: 0x9ad7ff });
+    } else if (e.slowLeft > 0) {
+      g.circle(x, cy, r + outline * 0.8).stroke({ width: outline * 0.7, color: 0x7ec8e3, alpha: 0.9 });
+    }
+    const mood: Mood = e.frozenLeft > 0 ? 'surprised' : smug ? 'smug' : e.chompable ? 'worried' : 'angry';
     drawFace(g, x, cy, r, angle, e.vx, e.vy, mood);
 
     const badges = shieldBadges(e.kernels);

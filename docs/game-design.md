@@ -113,14 +113,20 @@ Both kinds count toward your **kernel count** (for chomping), your **health**, a
 - When you run out of a power type, its button goes gray and empty until you pick up more.
 
 **Power Pockets (how many buttons):**
-- You start with **3 Power Pockets** (3 buttons). You get +1 at size tier 3 and +1 at tier 5,
+- You start with **3 Power Pockets** (3 buttons you can fire). You get +1 at size tier 3 and +1 at tier 5,
   up to a maximum of **5** on both iPad and iPhone.
+- **[Decision] A power's button never moves.** Each power type has one fixed place on the arc, from the
+  thumb outward: Zinger, Spicy, Popper, Frosty, then later powers. Keys 1–5 match that order. Running
+  out of a power turns its button gray. It does not get replaced by another power.
 - If you pick up a new power type while your pockets are full, it goes onto your cob (it still counts
-  as health) and waits in line. Its icon shows up small next to the buttons.
-- When a pocket empties, the next waiting power moves into it automatically. A small **swap arrow**
-  on each button lets you trade it for a waiting power at any time.
-- Fewer buttons keeps the screen simple, especially on iPhone, and makes choosing your loadout part of
-  the strategy.
+  as health) and its own button shows up **dimmed**. It does not fire until you arm it. A new pocket
+  (from a size tier or Extra Pocket) arms the next dimmed power in button order.
+- **[Playtest] How you swap which powers are armed.** For now, tap a dimmed button (or press its number
+  key) to arm it. If every pocket is full, it trades with an empty armed power if you have one,
+  otherwise with the armed power latest in button order. That gesture is provisional. The buttons
+  stay put either way.
+- Fewer buttons you can fire keeps the screen simple, especially on iPhone, and makes choosing your
+  loadout part of the strategy.
 
 **Aiming:**
 - **Auto-target:** a bouncy **target ring** sits on the cob you're most likely trying to wear down
@@ -260,6 +266,10 @@ upgrade system, so Ear Up! choices are **cob perks**, picked from big picture ca
 - **Lucky Ear:** rare kernels show up more often
 
 Ear Up! pauses the game (important for kids). Tap a card to choose. You can **re-roll** once per run.
+
+**[Decision] Stacking.** Big Appetite, Big Magnet, Zoomies, Quick Hands, Long Shot, and Extra Pocket
+can be taken again, and each copy stacks (Extra Pocket never goes past 5 buttons). Boomerang, Thick
+Husk, Butter Roll, and Lucky Ear are once per run and drop out of later offers.
 
 ---
 
@@ -533,13 +543,17 @@ types, which changes which powers are useful there:
 
 | Biome              | Vibe                          | Unique feature                                      | Common kernels       |
 |--------------------|-------------------------------|-----------------------------------------------------|----------------------|
-| **Sunny Farm**     | Starting field, tractors, hay | Hay bales block shots; mud puddles slow you down    | Sunny, Zinger        |
+| **Sunny Farm**     | Starting field, tractors, hay | Hay stacks block shots; mud puddles slow you down   | Sunny, Zinger        |
 | **Picnic Park**    | Checkered blankets, ants      | Ants carry kernels away (like Crows)                | Sweetie, Boing       |
 | **Kitchen Counter**| Giant cutting board, pots     | Butter puddles = speed boost; sink splashes         | Soggy, Toasty, Frosty|
 | **Movie Theater**  | Dark carpet, popcorn buckets  | Popcorn rain event                                  | Leafy, Popper        |
 | **County Fair**    | Rides, balloons, lights       | Bumper cars bounce everything; prize booths         | Rubbery, Zappy       |
 | **Taco Night**     | Tortillas, salsa rivers       | Salsa river slows                                   | Toasty, Spicy        |
 | **Rock Garden**    | Pebbles, little fountains     | Rolling boulders                                    | Stony, Tough Nut     |
+
+**[Decision] Sunny Farm obstacles are gameplay.** Hay blocks shots. Mud slows movement. Hay bales are
+a similar, slightly large size and sit in stacks of three, one stack per chunk and sometimes two,
+with a little jitter. They are not scattered singles. The opening around spawn stays clear of both.
 
 ### 8.3 Points of Interest
 
@@ -1042,6 +1056,10 @@ Each milestone has a clear "done when" check. Scope grows only after the previou
 - Full juice on fire/pop/scoop/chomp. Size tiers + camera zoom. Power Pockets. Ear Up! choices.
   All Popped Out + Last Chance.
 - Audio unlock, music, core SFX. Offline play works.
+- **[Decision] Frosty is in this slice** (icy shot, slows, third hit freezes) so four powers exist
+  and a full set of starting pockets can leave one dimmed. Sprout, the helper plant, stays with the
+  rest of the roster in M2. Toasty (freeze-immune) is still a later plain kernel, so Frosty's job
+  for now is stopping a chaser, not winning a resist matchup.
 - **Done when:** a 3-minute run on an iPhone 12 holds 60 fps and *feels* finished.
 
 ### M2 — Content Alpha

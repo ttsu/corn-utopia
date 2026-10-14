@@ -1,4 +1,4 @@
-import { hash2, int, makeRng, range } from './rng';
+import { chance, hash2, int, makeRng, range } from './rng';
 
 export interface FarmProp {
   kind: 'hay' | 'mud';
@@ -10,16 +10,31 @@ export interface FarmProp {
 /** Keep the opening snacks clear of bales. Grass and flowers still fill this pocket. */
 const CLEAR_RADIUS = 480;
 
+/** Offsets for one haystack, bottom bale first so the pile reads as stacked. */
+const HAY_STACK = [
+  { ox: 0, oy: 20 },
+  { ox: 7, oy: -6 },
+  { ox: -5, oy: -32 },
+];
+
 /** Hay bales and mud puddles for one field chunk. Its own RNG, so it doesn't disturb kernel spawns. */
 export function propsForChunk(seed: number, cx: number, cy: number, chunkSize: number): FarmProp[] {
   const rng = makeRng(hash2(seed, cx + 9176, cy - 4403));
   const props: FarmProp[] = [];
-  const hayN = int(rng, 1, 3);
-  for (let i = 0; i < hayN; i++) {
-    const x = (cx + range(rng, 0.15, 0.85)) * chunkSize;
-    const y = (cy + range(rng, 0.15, 0.85)) * chunkSize;
+  const clumps = chance(rng, 0.35) ? 2 : 1;
+  for (let c = 0; c < clumps; c++) {
+    const x = (cx + range(rng, 0.22, 0.78)) * chunkSize;
+    const y = (cy + range(rng, 0.22, 0.78)) * chunkSize;
     if (Math.hypot(x, y) < CLEAR_RADIUS) continue;
-    props.push({ kind: 'hay', x, y, r: range(rng, 26, 42) });
+    const radius = range(rng, 38, 44);
+    for (const stack of HAY_STACK) {
+      props.push({
+        kind: 'hay',
+        x: x + stack.ox + range(rng, -3, 3),
+        y: y + stack.oy + range(rng, -2, 2),
+        r: radius,
+      });
+    }
   }
   const mudN = int(rng, 0, 2);
   for (let i = 0; i < mudN; i++) {

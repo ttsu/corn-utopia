@@ -281,6 +281,11 @@ button {
   transform: scale(0.88);
 }
 
+.power.benched {
+  opacity: 0.72;
+  border-style: dashed;
+  background: #e7eef2;
+}
 .power.empty,
 .power.locked {
   background: #c9c9c9;

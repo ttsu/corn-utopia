@@ -17,7 +17,7 @@ import {
   type PowerKind,
 } from './kernels';
 import { mudSlow, propsForChunk, segmentHitsHay, separateFromHay, type FarmProp } from './farm';
-import { layoutPockets, swapPocket } from './pockets';
+import { armPower, layoutPockets } from './pockets';
 import {
   appetiteBonus,
   hasPerk,
@@ -67,9 +67,9 @@ export interface PlayerCob extends Body {
   pickupTimer: number;
   /** Ticks at which kernels were fired, for the 5 s "still counts" window. */
   recentFired: number[];
-  /** Powers with a button, in button order. */
+  /** Powers you can fire. Each one keeps its own button for the run. */
   pockets: PowerKind[];
-  /** Powers on the cob that don't have a button yet. */
+  /** Powers on the cob whose buttons are dimmed until you arm them. */
   waiting: PowerKind[];
   perks: PerkId[];
   /** Ear Up re-rolls left this run. */
@@ -97,6 +97,12 @@ export interface Enemy extends Body {
   seeking: boolean;
   /** Hunters are big, armored cobs that chase you; more of them spawn the bigger you get. */
   hunter: boolean;
+  /** Frosty hits toward the next freeze. Resets when the cob freezes. */
+  frostHits: number;
+  /** Seconds left slowed by Frosty. */
+  slowLeft: number;
+  /** Seconds left frozen in place. */
+  frozenLeft: number;
 }
 
 export interface Shot extends Body {
@@ -159,7 +165,8 @@ export type SimEvent =
   | { type: 'poppedOut' }
   | { type: 'perk'; id: PerkId }
   | { type: 'block'; x: number; y: number }
-  | { type: 'dash'; x: number; y: number };
+  | { type: 'dash'; x: number; y: number }
+  | { type: 'freeze'; x: number; y: number };
 
 export interface Stats {
   ticks: number;
@@ -197,8 +204,6 @@ export interface InputCommand {
   /** Index into the current Ear Up offer, or null. */
   pickPerk: number | null;
   reroll: boolean;
-  /** Trade a pocketed power for a waiting one. */
-  swap: { pocket: PowerKind; with: PowerKind } | null;
   /** Butter Roll double-tap. */
   dash: boolean;
 }
@@ -237,7 +242,6 @@ export const EMPTY_COMMAND: InputCommand = {
   cycleTarget: false,
   pickPerk: null,
   reroll: false,
-  swap: null,
   dash: false,
 };
 
@@ -262,7 +266,10 @@ const TIER_SOCKETS = [12, 30, 60, 120, 200, 320, 500, 750];
 const SOCKETS_PER_EXTRA_TIER = 250;
 export const CHUNK_SIZE = 700;
 const GRID_CELL = 64;
-const SHOT_SPEED: Record<PowerKind, number> = { zinger: 600, spicy: 440, popper: 0 };
+const SHOT_SPEED: Record<PowerKind, number> = { zinger: 600, spicy: 440, popper: 0, frosty: 520 };
+const FROST_SLOW = 0.4;
+const FROST_SLOW_S = 2.4;
+const FROST_FREEZE_S = 1.6;
 const FIRED_WINDOW_TICKS = 5 * TICK_RATE;
 const MAX_SCATTER_PIECES = 6;
 const BIG_COB_REF = 30;
@@ -318,6 +325,7 @@ export function createWorld(seed: number, tuning: Tuning, loadout: Loadout = 'ga
           zinger: tuning.startZinger,
           spicy: tuning.startSpicy,
           popper: tuning.startPopper,
+          frosty: tuning.startFrosty,
         });
   if (total(startKernels) === 0) startKernels.sunny = 1;
 
@@ -333,7 +341,7 @@ export function createWorld(seed: number, tuning: Tuning, loadout: Loadout = 'ga
     kernels: startKernels,
     tier: 1,
     sockets: socketsForTier(1),
-    cooldowns: { zinger: 0, spicy: 0, popper: 0 },
+    cooldowns: { zinger: 0, spicy: 0, popper: 0, frosty: 0 },
     targetId: null,
     lockedTargetId: null,
     facingX: 1,
@@ -376,7 +384,7 @@ export function createWorld(seed: number, tuning: Tuning, loadout: Loadout = 'ga
       bestStreak: 0,
       maxKernels: total(startKernels),
       maxTier: 1,
-      shots: { zinger: 0, spicy: 0, popper: 0 },
+      shots: { zinger: 0, spicy: 0, popper: 0, frosty: 0 },
       firedTotal: 0,
       firedRecovered: 0,
       kernelsCollected: 0,
@@ -412,23 +420,21 @@ function reconcilePockets(w: World): void {
   p.waiting = laid.waiting;
 }
 
-/** Applies an Ear Up tap or a pocket swap. Offering cards happens in updateTier. */
+/** Applies an Ear Up tap. Offering cards happens in updateTier. */
 function applyMeta(w: World, cmd: InputCommand): void {
   const p = w.player;
-  if (w.earUps.length > 0) {
-    if (cmd.reroll && p.rerolls > 0) {
-      p.rerolls--;
-      w.earUps[0] = { choices: rollOffer(w.perkRng, p.perks, pocketSlots(w)) };
-    } else if (cmd.pickPerk !== null) {
-      const id = w.earUps[0].choices[cmd.pickPerk];
-      if (id) {
-        p.perks.push(id);
-        w.earUps.shift();
-        w.events.push({ type: 'perk', id });
-      }
+  if (w.earUps.length === 0) return;
+  if (cmd.reroll && p.rerolls > 0) {
+    p.rerolls--;
+    w.earUps[0] = { choices: rollOffer(w.perkRng, p.perks, pocketSlots(w)) };
+  } else if (cmd.pickPerk !== null) {
+    const id = w.earUps[0].choices[cmd.pickPerk];
+    if (id) {
+      p.perks.push(id);
+      w.earUps.shift();
+      w.events.push({ type: 'perk', id });
     }
   }
-  if (cmd.swap) swapPocket(p.pockets, p.waiting, cmd.swap.pocket, cmd.swap.with);
 }
 
 /** Advance the simulation one fixed tick. All game-state changes go through here. */
@@ -462,6 +468,10 @@ export function step(w: World, cmd: InputCommand): void {
   for (const kind of cmd.fire) {
     if (fired.has(kind)) continue;
     fired.add(kind);
+    if (p.waiting.includes(kind)) {
+      armPower(p.pockets, p.waiting, kind, p.kernels);
+      continue;
+    }
     tryFire(w, kind);
   }
   for (const kind of POWER_KINDS) p.cooldowns[kind] = Math.max(0, p.cooldowns[kind] - DT);
@@ -609,7 +619,10 @@ export function shotRange(w: World): number {
 }
 
 function rechargeFor(t: Tuning, kind: PowerKind): number {
-  return kind === 'zinger' ? t.zingerRecharge : kind === 'spicy' ? t.spicyRecharge : t.popperRecharge;
+  if (kind === 'zinger') return t.zingerRecharge;
+  if (kind === 'spicy') return t.spicyRecharge;
+  if (kind === 'frosty') return t.frostyRecharge;
+  return t.popperRecharge;
 }
 
 export function rechargeSeconds(w: World, kind: PowerKind): number {
@@ -618,14 +631,15 @@ export function rechargeSeconds(w: World, kind: PowerKind): number {
 
 function damageFor(w: World, kind: PowerKind): number {
   const t = w.tuning;
-  const base = kind === 'zinger' ? t.zingerDamage : kind === 'spicy' ? t.spicyDamage : t.popperDamage;
+  const base = kind === 'zinger' ? t.zingerDamage : kind === 'spicy' ? t.spicyDamage : kind === 'frosty' ? t.frostyDamage : t.popperDamage;
   return Math.round(base * damageScale(w));
 }
 
 /** Share of the target's knockable kernels a hit shakes loose, so big cobs take similar shots at any size. */
 function shakeFor(w: World, source: PowerKind | null): number {
   const t = w.tuning;
-  const pct = source === 'zinger' ? t.zingerShake : source === 'spicy' ? t.spicyShake : source === 'popper' ? t.popperShake : t.burnShake;
+  const pct =
+    source === 'zinger' ? t.zingerShake : source === 'spicy' ? t.spicyShake : source === 'popper' ? t.popperShake : source === 'frosty' ? t.frostyShake : t.burnShake;
   return pct / 100;
 }
 
@@ -681,7 +695,7 @@ function tryFire(w: World, kind: PowerKind): void {
     py: sy,
     vx,
     vy,
-    r: (kind === 'spicy' ? 7 : 5) * Math.sqrt(scale),
+    r: (kind === 'spicy' ? 7 : kind === 'frosty' ? 6 : 5) * Math.sqrt(scale),
     kind,
     ownerId: p.id,
     travelled: 0,
@@ -1043,6 +1057,17 @@ function hitEnemy(
     onPlayer: false,
   });
   if (res.resisted && source !== null) w.events.push({ type: 'tink', x: e.x + e.r, y: e.y - e.r, damage });
+  if (source === 'frosty' && total(e.kernels) > 0) {
+    e.frostHits++;
+    e.slowLeft = FROST_SLOW_S;
+    if (e.frostHits >= 3) {
+      e.frostHits = 0;
+      e.frozenLeft = FROST_FREEZE_S;
+      e.vx = 0;
+      e.vy = 0;
+      w.events.push({ type: 'freeze', x: e.x, y: e.y });
+    }
+  }
   if (total(e.kernels) === 0) {
     w.events.push({ type: 'poof', x: e.x, y: e.y });
     w.stats.poofs++;
@@ -1253,10 +1278,19 @@ function updateEnemies(w: World): void {
   for (const e of w.enemies) {
     e.hitFlash = Math.max(0, e.hitFlash - DT);
     e.bumpCooldown = Math.max(0, e.bumpCooldown - DT);
+    e.slowLeft = Math.max(0, e.slowLeft - DT);
+    e.frozenLeft = Math.max(0, e.frozenLeft - DT);
     e.turnTimer -= DT;
     const n = total(e.kernels);
+    if (e.frozenLeft > 0) {
+      e.vx = 0;
+      e.vy = 0;
+      e.r = radiusFor(n);
+      continue;
+    }
     const sizeFactor = Math.min(1.15, Math.max(0.55, 1.15 - (0.3 * n) / p.sockets));
     let speed = ENEMY_BASE_SPEED[e.type] * t.enemySpeed * rampSpeed * sizeFactor * Math.pow(scale, 0.75) * mudSlow(e.x, e.y, w.props);
+    if (e.slowLeft > 0) speed *= FROST_SLOW;
     const toPlayer = Math.atan2(p.y - e.y, p.x - e.x);
     const distPlayer = Math.hypot(p.x - e.x, p.y - e.y);
 
@@ -1465,6 +1499,9 @@ function spawnEnemy(w: World, type: EnemyType, kernels: Kernels, x: number, y: n
     retreat: 0,
     seeking: true,
     hunter,
+    frostHits: 0,
+    slowLeft: 0,
+    frozenLeft: 0,
   };
   w.enemies.push(e);
   return e;
@@ -1475,7 +1512,7 @@ function spawnOpeningCobs(w: World): void {
   const n = total(p.kernels);
   // A few quick snacks (each carrying a power kernel, so a plain Sunny start can arm up),
   // plus two big cobs that are too big to eat by snacking alone.
-  const babyPowers: PowerKind[] = ['zinger', 'zinger', 'spicy', 'popper'];
+  const babyPowers: PowerKind[] = ['zinger', 'spicy', 'popper', 'frosty'];
   const opening: [EnemyType, number][] = [
     ['baby', Math.max(1, Math.round(n * 0.2))],
     ['baby', Math.max(1, Math.round(n * 0.3))],

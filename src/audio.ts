@@ -67,7 +67,15 @@ export class Sfx {
     else if (kind === 'spicy') {
       this.tone(300, 0.18, 'sawtooth', 0.08, 120);
       this.noise(0.18, 0.25, 900);
+    } else if (kind === 'frosty') {
+      this.tone(1480, 0.09, 'sine', 0.08, 900);
+      this.tone(1960, 0.12, 'sine', 0.05);
     } else this.tone(260, 0.2, 'triangle', 0.15, 520);
+  }
+
+  chill(): void {
+    this.tone(1760, 0.14, 'sine', 0.08, 700);
+    this.tone(1320, 0.18, 'triangle', 0.05);
   }
 
   /** The "that didn't work, switch powers" sound. Must be distinct from everything else. */

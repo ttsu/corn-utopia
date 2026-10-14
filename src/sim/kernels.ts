@@ -1,6 +1,6 @@
-export type DamageType = 'bonk' | 'fire' | 'pop';
+export type DamageType = 'bonk' | 'fire' | 'pop' | 'freeze';
 export type PlainKind = 'sunny' | 'soggy' | 'stony';
-export type PowerKind = 'zinger' | 'spicy' | 'popper';
+export type PowerKind = 'zinger' | 'spicy' | 'popper' | 'frosty';
 export type KernelKind = PlainKind | PowerKind;
 
 export type Resist = 'immune' | 'weak';
@@ -18,7 +18,8 @@ export interface KernelDef {
 }
 
 export const PLAIN_KINDS: readonly PlainKind[] = ['sunny', 'soggy', 'stony'];
-export const POWER_KINDS: readonly PowerKind[] = ['zinger', 'spicy', 'popper'];
+/** Button order, thumb outward: Zinger, Spicy, Popper, Frosty. A power always uses its own place. */
+export const POWER_KINDS: readonly PowerKind[] = ['zinger', 'spicy', 'popper', 'frosty'];
 export const KERNEL_KINDS: readonly KernelKind[] = [...PLAIN_KINDS, ...POWER_KINDS];
 
 export const KERNELS: Record<KernelKind, KernelDef> = {
@@ -44,18 +45,21 @@ export const KERNELS: Record<KernelKind, KernelDef> = {
   zinger: { kind: 'zinger', name: 'Zinger', power: true, color: '#ff8c1a', knockWeight: 1, powerWeight: 1, resist: {} },
   spicy: { kind: 'spicy', name: 'Spicy', power: true, color: '#e63946', knockWeight: 1, powerWeight: 3, resist: {} },
   popper: { kind: 'popper', name: 'Popper', power: true, color: '#f1e3c8', knockWeight: 1, powerWeight: 3, resist: {} },
+  frosty: { kind: 'frosty', name: 'Frosty', power: true, color: '#7ec8ff', knockWeight: 1, powerWeight: 3, resist: {} },
 };
 
 export const POWER_DAMAGE: Record<PowerKind, DamageType> = {
   zinger: 'bonk',
   spicy: 'fire',
   popper: 'pop',
+  frosty: 'freeze',
 };
 
 export const DAMAGE_ICON: Record<DamageType, string> = {
   bonk: '⭐',
   fire: '🔥',
   pop: '💥',
+  freeze: '❄️',
 };
 
 export function isPower(kind: KernelKind): kind is PowerKind {
