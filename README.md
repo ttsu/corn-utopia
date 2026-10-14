@@ -22,8 +22,9 @@ What's new:
 - **Sunny Farm.** Grass, dirt, and flowers are scenery. Hay is stacked in clumps of similar-sized
   bales that block shots. Mud slows you down.
 - **Power Pockets.** Three buttons to start, a fourth at size tier 3, a fifth at tier 5 (max 5).
-  Zinger, Spicy, Popper, and Frosty each keep one button. A fifth power is not in yet, so the fourth
-  shows up dimmed until you arm it (tap it, or press its number). Keys 1–4 always fire those four.
+  Zinger, Spicy, Popper, and Frosty each keep one fixed button. With three pockets, the fourth
+  power sits dimmed on its own button until you tap it or press its number. Keys 1–4 always match
+  those four.
 - **Ear Up!** Growing a size tier pauses the run and offers 3 cob perks (one re-roll per run):
   Big Appetite, Big Magnet, Zoomies, Quick Hands, Extra Pocket, Long Shot, Boomerang, Thick Husk,
   Butter Roll (double-tap the left side, or Space), and Lucky Ear. Appetite, Magnet, Zoomies,
