@@ -47,7 +47,7 @@ What's in it:
 - Floating touch joystick (left half), one power button per power (right thumb arc), fires on touch-down.
   Two thumbs work at the same time. Keyboard also works: WASD/arrows, `1` `2` `3` to fire, `Tab` to
   switch target, `Esc` to pause.
-- Auto-target ring (nearest red cob, favoring ones in front of you) and tap-a-cob-to-lock.
+- Auto-target outline that traces the aimed cob (nearest red cob, favoring ones in front of you) and tap-a-cob-to-lock.
 - Chomp rule with green/red outlines, a chomp meter under the target, Chomp Bonus and Chomp Streak.
 - Fired kernels fly, land as pickups with a sparkle ring, and get pulled in by your magnet.
   Enemies grab ground kernels too, except kernels you just knocked off a cob: those are yours

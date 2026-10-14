@@ -129,9 +129,12 @@ Both kinds count toward your **kernel count** (for chomping), your **health**, a
   loadout part of the strategy.
 
 **Aiming:**
-- **Auto-target:** a bouncy **target ring** sits on the cob you're most likely trying to wear down
+- **Auto-target:** a bouncy **dashed white outline** traces the cob you're most likely trying to wear down
   (by default, the nearest cob with a red outline, favoring ones in front of you). Shots go there.
-- **Tap a cob** on the right side of the screen to lock the target ring onto it.
+  It follows the husk and the body, the same silhouette as the green and red status outlines.
+- **Tap a cob** on the right side of the screen to lock that outline onto it.
+- **[Decision] Aim and status marks follow the cob.** They are not circles left over from the
+  prototype. The player cob has no status outline of its own.
 - **[Decision] Auto-target plus tap-to-lock is the default.** No manual aiming is needed.
 - **Drag-to-aim (optional, off by default, in Settings):** drag from a power button like a slingshot
   to aim by hand, for players who want more control.
@@ -245,8 +248,9 @@ Your cob has a set number of **kernel sockets**. When the sockets fill up, the c
   - Firing also lowers *your* count, so a cob you could chomp a second ago might not be chompable
     anymore. Scoop up your kernels, then go for the chomp.
 - **Readability:** cobs you can chomp get a **green wiggle outline and a "yum" mouth**. Dangerous
-  cobs get a **red outline and angry eyebrows**. The outlines update live as counts change. Never
-  make players compare kernel counts by eye.
+  cobs get a **red outline and angry eyebrows**. Both outlines trace the cob (body and husk), not a
+  circle around it. They update live as counts change. Never make players compare kernel counts by eye.
+  The player cob does not get a colored outline.
 
 ### 4.7 Ear Up! (Level-Up Choice)
 
@@ -642,7 +646,7 @@ Everything is earned by playing.
 | **Drag on the left half**    | **Floating joystick** shows up where your thumb lands; drag to steer |
 | **Lift finger**              | Cob slowly coasts to a stop (doesn't stop instantly; feels smoother) |
 | **Tap a power button**       | Fire one of that power kernel at the target (one shot per tap)      |
-| **Tap a cob (right half)**   | Lock the target ring onto that cob                                  |
+| **Tap a cob (right half)**   | Lock the dashed target outline onto that cob                        |
 | **Swap arrow on a button**   | Swap that pocket for a waiting power type                           |
 | **Double-tap (left half)**   | Butter Roll dash (only if you picked that perk)                     |
 | **Pause**                    | Top corner, inside the safe area                                    |
@@ -684,7 +688,7 @@ Everything is earned by playing.
 ### 11.4 Readability (Bullet Heaven Clutter)
 
 - **Layer order (bottom → top):** ground → ground kernels → player shots → enemies → enemy shots →
-  player cob → target ring → HUD.
+  player cob → target outline → HUD.
 - Player effects **fade as more stack up** (auto-dim when there are a lot of particles).
 - Settings: **Reduce Flashing** and **Reduce Screen Shake** toggles.
 - Ground kernels get a **gentle pulsing glow** so they read even in busy moments.

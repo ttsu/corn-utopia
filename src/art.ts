@@ -116,6 +116,161 @@ export interface CobDraw {
   flash: boolean;
 }
 
+type Rot = (lx: number, ly: number) => [number, number];
+
+function rotator(x: number, y: number, angle: number): Rot {
+  const co = Math.cos(angle);
+  const si = Math.sin(angle);
+  return (lx, ly) => [x + lx * co - ly * si, y + lx * si + ly * co];
+}
+
+/** Push a local point out from the cob's center so a stroke sits just outside the shape. */
+function outward(lx: number, ly: number, pad: number): [number, number] {
+  const d = Math.hypot(lx, ly) || 1;
+  return [lx + (lx / d) * pad, ly + (ly / d) * pad];
+}
+
+function leafPts(rot: Rot, r: number, side: number, pad: number): number[] {
+  const pts: number[] = [];
+  for (let i = 0; i <= 8; i++) {
+    const t = i / 8;
+    const ly = r * (0.1 + t * 0.95);
+    const lx = side * r * (0.15 + Math.sin(t * Math.PI) * 0.55);
+    const [ox, oy] = outward(lx, ly, pad);
+    pts.push(...rot(ox, oy));
+  }
+  const [bx, by] = outward(side * r * 0.05, r * 0.2, pad);
+  pts.push(...rot(bx, by));
+  return pts;
+}
+
+function bodyPts(rot: Rot, r: number, time: number, id: number, pad: number): number[] {
+  const rx = r * 0.62;
+  const ry = r * 0.98;
+  const wob = time * 2 + id;
+  const pts: number[] = [];
+  const N = 24;
+  for (let i = 0; i < N; i++) {
+    const a = (i / N) * Math.PI * 2;
+    const lx = Math.cos(a) * (rx + Math.sin(a * 5 + wob) * rx * 0.045);
+    const ly = Math.sin(a) * (ry + Math.cos(a * 3 + wob) * ry * 0.03);
+    const [ox, oy] = outward(lx, ly, pad);
+    pts.push(...rot(ox, oy));
+  }
+  return pts;
+}
+
+/** Dashes that crawl along the husk and the body. `dash` and `gap` are world-space lengths. */
+export function dashCobOutline(
+  g: Graphics,
+  x: number,
+  y: number,
+  r: number,
+  angle: number,
+  time: number,
+  id: number,
+  color: number,
+  width: number,
+  alpha: number,
+  pad: number,
+  dash: number,
+  gap: number,
+  spin = 0,
+): void {
+  const rot = rotator(x, y, angle);
+  dashClosed(g, leafPts(rot, r, -1, pad), dash, gap, spin);
+  dashClosed(g, leafPts(rot, r, 1, pad), dash, gap, spin);
+  dashClosed(g, bodyPts(rot, r, time, id, pad), dash, gap, spin);
+  g.stroke({ width, color, alpha, join: 'round', cap: 'round' });
+}
+
+/** Walk a closed polygon and leave dash subpaths. One stroke() after all loops. */
+function dashClosed(g: Graphics, pts: number[], dash: number, gap: number, spin: number): void {
+  const n = pts.length / 2;
+  if (n < 3) return;
+  const lens: number[] = new Array(n);
+  let total = 0;
+  for (let i = 0; i < n; i++) {
+    const j = (i + 1) % n;
+    const len = Math.hypot(pts[j * 2]! - pts[i * 2]!, pts[j * 2 + 1]! - pts[i * 2 + 1]!);
+    lens[i] = len;
+    total += len;
+  }
+  if (!(total > 1)) return;
+  const period = Math.max(1, dash + gap);
+  const phase = ((spin % period) + period) % period;
+  const on = (d: number) => {
+    const u = (((d - phase) % period) + period) % period;
+    return u < dash;
+  };
+  const at = (d: number): [number, number] => {
+    let rem = d >= total ? 0 : d;
+    for (let i = 0; i < n; i++) {
+      if (rem <= lens[i]! || i === n - 1) {
+        const t = lens[i]! > 0 ? Math.min(1, rem / lens[i]!) : 0;
+        const j = (i + 1) % n;
+        return [
+          pts[i * 2]! + (pts[j * 2]! - pts[i * 2]!) * t,
+          pts[i * 2 + 1]! + (pts[j * 2 + 1]! - pts[i * 2 + 1]!) * t,
+        ];
+      }
+      rem -= lens[i]!;
+    }
+    return [pts[0]!, pts[1]!];
+  };
+
+  const step = Math.max(1.25, Math.min(dash / 3, 4));
+  let drawing = false;
+  for (let d = 0; d <= total; d += step) {
+    const dd = Math.min(d, total);
+    const here = dd === total ? 0 : dd;
+    if (on(here)) {
+      const [px, py] = at(here);
+      if (!drawing) g.moveTo(px, py);
+      else g.lineTo(px, py);
+      drawing = true;
+    } else {
+      drawing = false;
+    }
+  }
+}
+
+/** Status color that follows the husk and the oblong body, instead of a circle. */
+export function strokeCobOutline(
+  g: Graphics,
+  x: number,
+  y: number,
+  r: number,
+  angle: number,
+  time: number,
+  id: number,
+  color: number,
+  width: number,
+  alpha = 1,
+  pad = 0,
+): void {
+  const rot = rotator(x, y, angle);
+  const style = { width, color, alpha, join: 'round' as const, cap: 'round' as const };
+  g.poly(leafPts(rot, r, -1, pad), true).stroke(style);
+  g.poly(leafPts(rot, r, 1, pad), true).stroke(style);
+  g.poly(bodyPts(rot, r, time, id, pad), true).stroke(style);
+}
+
+/** Icy wash in the shape of the cob body. */
+export function fillCobBody(
+  g: Graphics,
+  x: number,
+  y: number,
+  r: number,
+  angle: number,
+  time: number,
+  id: number,
+  color: number,
+  alpha: number,
+): void {
+  g.poly(bodyPts(rotator(x, y, angle), r, time, id, 0), true).fill({ color, alpha });
+}
+
 /** Flat cutout cob: husk, body tinted by its kernels, thick wobbly ink. */
 export function drawCobShell(g: Graphics, c: CobDraw): { primary: PlainKind; secondary: PlainKind | null } {
   const { x, y, r, angle, time, id, flash } = c;
@@ -125,39 +280,16 @@ export function drawCobShell(g: Graphics, c: CobDraw): { primary: PlainKind; sec
   for (const kind of PLAIN_KINDS) {
     if (kind !== primary && c.kernels[kind] / n >= 0.3) secondary = kind;
   }
-  const rot = (lx: number, ly: number): [number, number] => {
-    const co = Math.cos(angle);
-    const si = Math.sin(angle);
-    return [x + lx * co - ly * si, y + lx * si + ly * co];
-  };
+  const rot = rotator(x, y, angle);
   const leaf = (side: number) => {
-    const pts: number[] = [];
-    for (let i = 0; i <= 8; i++) {
-      const t = i / 8;
-      const ly = r * (0.1 + t * 0.95);
-      const lx = side * r * (0.15 + Math.sin(t * Math.PI) * 0.55);
-      pts.push(...rot(lx, ly));
-    }
-    pts.push(...rot(side * r * 0.05, r * 0.2));
-    g.poly(pts, true).fill(side < 0 ? HUSK_DARK : HUSK).stroke({ width: Math.max(2, r * 0.05), color: INK });
+    g.poly(leafPts(rot, r, side, 0), true).fill(side < 0 ? HUSK_DARK : HUSK).stroke({ width: Math.max(2, r * 0.05), color: INK });
   };
   const [sx, sy] = rot(0, r * 0.85);
   g.ellipse(sx, sy, r * 0.7, r * 0.22).fill({ color: 0x000000, alpha: 0.16 });
   leaf(-1);
   leaf(1);
 
-  const rx = r * 0.62;
-  const ry = r * 0.98;
-  const wob = time * 2 + id;
-  const pts: number[] = [];
-  const N = 24;
-  for (let i = 0; i < N; i++) {
-    const a = (i / N) * Math.PI * 2;
-    const jx = Math.cos(a) * (rx + Math.sin(a * 5 + wob) * rx * 0.045);
-    const jy = Math.sin(a) * (ry + Math.cos(a * 3 + wob) * ry * 0.03);
-    pts.push(...rot(jx, jy));
-  }
-  g.poly(pts, true)
+  g.poly(bodyPts(rot, r, time, id, 0), true)
     .fill(flash ? WHITE : BODY[primary])
     .stroke({ width: Math.max(2.5, r * 0.075), color: INK, join: 'round' });
 
