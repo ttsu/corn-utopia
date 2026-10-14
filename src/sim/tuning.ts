@@ -68,6 +68,7 @@ export const TUNING_SPECS = {
   enemySpeed: spec('Director', 'Enemy speed multiplier', 1, 0.3, 2.5, 0.05),
   nervousSpeed: spec('Director', 'Chompable cobs flee speed (x)', 1.3, 0, 2.5, 0.05),
   enemyGrabs: spec('Director', 'Enemies grab ground kernels (0/1)', 1, 0, 1, 1),
+  enemyGrabLock: spec('Director', 'Kernels shot off a cob are yours only (s)', 10, 0, 30, 0.5),
   fieldKernels: spec('Director', 'Loose kernels per field chunk', 3, 0, 30, 1),
 
   huntersAtTop: spec('Challenge (grows with size)', 'Hunter cobs at top size (% of spawns)', 30, 0, 80, 5),
