@@ -20,6 +20,7 @@ const tierFill = $('tier-fill');
 const tierLabel = $('tier-label');
 const chipTime = $('chip-time');
 const chipChomps = $('chip-chomps');
+const chipSeeds = $('chip-seeds');
 const debugInfo = $('debug-info');
 
 const tuning = loadTuning();
@@ -148,12 +149,13 @@ function endRun(): void {
   appendLog(run);
   const rows: [string, string][] = [
     ['Rolled for', formatTime(run.seconds)],
-    ['Biggest cob', `${run.maxKernels} kernels`],
+    ['Biggest cob', `${run.maxKernels} kernel${run.maxKernels === 1 ? '' : 's'}`],
     ['Cobs chomped', String(run.chomps)],
     ['Best chomp streak', String(run.bestStreak)],
     ['Shots fired', String(run.shots.zinger + run.shots.spicy + run.shots.popper)],
     ['Shots scooped back', `${run.firedRecoveredPct}%`],
     ['Tinks', String(run.tinks)],
+    ['Seeds', String(world.stats.seeds)],
   ];
   $('results').innerHTML = rows.map(([k, v]) => `<span>${k}</span><span>${v}</span>`).join('');
   renderLog();
@@ -168,9 +170,11 @@ function updateHud(): void {
   const p = world.player;
   const n = total(p.kernels);
   tierFill.style.width = `${Math.min(100, (n / p.sockets) * 100)}%`;
-  tierLabel.textContent = `Size ${p.tier} · ${n}/${p.sockets}`;
+  tierLabel.textContent = `Size ${p.tier} · ${n}/${p.sockets}${p.tier >= tuning.maxTier ? ' MAX' : ''}`;
   chipTime.textContent = formatTime(world.tick * DT);
   chipChomps.textContent = `😋 ${world.stats.chomps}`;
+  chipSeeds.hidden = world.stats.seeds === 0;
+  chipSeeds.textContent = `🌱 ${world.stats.seeds}`;
   powerButtons.update(world);
   debugInfo.hidden = !showDebug;
   if (showDebug) {
@@ -184,7 +188,7 @@ function updateHud(): void {
 function frame(now: number): void {
   const dt = Math.min(0.1, (now - lastFrame) / 1000);
   lastFrame = now;
-  if (dt > 0) {
+  if (dt > 0.002) {
     fpsDisplay = fpsDisplay * 0.95 + (1 / dt) * 0.05;
     if (mode === 'playing') {
       fpsSamples++;

@@ -439,6 +439,66 @@ h3 {
   margin: 10px 0;
 }
 
+/* Narrow screens (iPhone portrait): use the full width for the top bar. */
+@media (max-width: 600px) {
+  .hud-top {
+    left: calc(var(--safe-left) + 10px);
+    right: calc(var(--safe-right) + 10px);
+    gap: 6px;
+  }
+  .chip {
+    padding: 4px 8px;
+    font-size: 14px;
+  }
+  #tier-meter {
+    flex: 1 1 auto;
+  }
+  #tier-label {
+    font-size: 12px;
+  }
+}
+
+/* Short screens (iPhone landscape): tighter cards so everything fits without scrolling. */
+@media (max-height: 520px) {
+  .screen {
+    place-items: safe center;
+  }
+  .card {
+    padding: 10px 16px;
+    max-width: 640px;
+  }
+  h1 {
+    font-size: 30px;
+  }
+  h2 {
+    font-size: 22px;
+    margin-bottom: 2px;
+  }
+  .sub {
+    margin: 2px 0 6px;
+  }
+  .howto {
+    grid-template-columns: 1fr 1fr 1fr;
+    font-size: 13px;
+    gap: 4px 10px;
+    margin: 4px 0 8px;
+  }
+  .big-btn {
+    min-height: 52px;
+    font-size: 20px;
+    margin: 4px 0;
+  }
+  .row {
+    margin: 4px 0;
+  }
+  #results {
+    grid-template-columns: repeat(4, auto);
+    gap: 4px 12px;
+    margin: 6px 0;
+    font-size: 14px;
+  }
+}
+
 #playtest-log {
   font: 12px ui-monospace, monospace;
   white-space: pre-wrap;

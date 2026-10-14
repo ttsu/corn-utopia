@@ -129,6 +129,19 @@ describe('world', () => {
     expect(w.stats.switchesAfterTink).toEqual([0]);
   });
 
+  it('at the top tier, extra kernels upgrade Sunny kernels and the rest become Seeds', () => {
+    const w = quietWorld();
+    w.tuning.maxTier = 1;
+    w.tuning.chompBonusMin = 0;
+    w.tuning.chompBonusMax = 0;
+    w.player.kernels = kernelsOf({ sunny: 11 });
+    addEnemy(w, 10, 0, kernelsOf({ sunny: 2, spicy: 3 }));
+    step(w, EMPTY_COMMAND);
+    expect(total(w.player.kernels)).toBe(12);
+    expect(w.player.kernels.spicy).toBe(3);
+    expect(w.stats.seeds).toBe(4);
+  });
+
   it('grows a size tier when sockets fill and never shrinks', () => {
     const w = quietWorld();
     w.player.kernels = kernelsOf({ sunny: 12 });

@@ -1,5 +1,4 @@
 import {
-  addAll,
   applyHit,
   canChomp,
   emptyKernels,
@@ -9,6 +8,7 @@ import {
   type Kernels,
 } from './cob';
 import {
+  KERNEL_KINDS,
   POWER_DAMAGE,
   POWER_KINDS,
   type DamageType,
@@ -134,6 +134,8 @@ export interface Stats {
   switchesAfterTink: number[];
   bumps: number;
   poofs: number;
+  /** Overflow kernels converted at the top tier (meta currency later). */
+  seeds: number;
 }
 
 export interface Director {
@@ -190,7 +192,7 @@ export function radiusFor(kernelCount: number): number {
 
 /** Half-size of the visible world along the screen's short side. Shared with the renderer's zoom. */
 export function viewRadius(player: PlayerCob): number {
-  return 330 * Math.pow(player.r / radiusFor(12), 0.8);
+  return 260 * Math.pow(player.r / radiusFor(12), 0.8);
 }
 
 export function createWorld(seed: number, tuning: Tuning): World {
@@ -258,6 +260,7 @@ export function createWorld(seed: number, tuning: Tuning): World {
       switchesAfterTink: [],
       bumps: 0,
       poofs: 0,
+      seeds: 0,
     },
     tinkWatch: null,
     over: false,
@@ -531,14 +534,14 @@ function collidePlayer(w: World): void {
 
     if (!p.bare && canChomp(p.kernels, e.kernels)) {
       const gained = total(e.kernels);
-      addAll(p.kernels, e.kernels);
+      for (const kind of KERNEL_KINDS) giveKernels(w, kind, e.kernels[kind]);
       p.streak = p.streakTimer > 0 ? p.streak + 1 : 1;
       p.streakTimer = t.streakSeconds;
       const lo = Math.min(t.chompBonusMin, t.chompBonusMax);
       const hi = Math.max(t.chompBonusMin, t.chompBonusMax);
       const streakBonus = p.streak >= 5 ? 2 : p.streak >= 3 ? 1 : 0;
       const bonus = int(w.rng, lo, hi) + streakBonus;
-      p.kernels.sunny += bonus;
+      giveKernels(w, 'sunny', bonus);
       w.stats.chomps++;
       w.stats.bestStreak = Math.max(w.stats.bestStreak, p.streak);
       w.events.push({ type: 'chomp', x: e.x, y: e.y, streak: p.streak, gained: gained + bonus });
@@ -597,10 +600,34 @@ function updatePlayerState(w: World): void {
   w.stats.maxKernels = Math.max(w.stats.maxKernels, n);
 }
 
+export function maxSockets(w: World): number {
+  return socketsForTier(w.tuning.maxTier);
+}
+
+/**
+ * Adds kernels to the player. Once every socket at the top tier is full, a new kernel
+ * replaces a Sunny (or is turned away if it's a Sunny itself) and the leftover becomes Seeds.
+ */
+function giveKernels(w: World, kind: KernelKind, count: number): void {
+  const p = w.player;
+  const cap = maxSockets(w);
+  for (let i = 0; i < count; i++) {
+    if (total(p.kernels) < cap) {
+      p.kernels[kind]++;
+    } else if (kind !== 'sunny' && p.kernels.sunny > 0) {
+      p.kernels.sunny--;
+      p.kernels[kind]++;
+      w.stats.seeds++;
+    } else {
+      w.stats.seeds++;
+    }
+  }
+}
+
 function updateTier(w: World): void {
   const p = w.player;
   let grew = false;
-  while (total(p.kernels) >= p.sockets) {
+  while (total(p.kernels) >= p.sockets && p.tier < w.tuning.maxTier) {
     p.tier++;
     p.sockets = socketsForTier(p.tier);
     grew = true;
@@ -871,7 +898,7 @@ function updateGround(w: World): void {
 
 function collect(w: World, g: GroundKernel): void {
   const p = w.player;
-  p.kernels[g.kind] += g.value;
+  giveKernels(w, g.kind, g.value);
   p.pickupStreak++;
   p.pickupTimer = 0.6;
   w.stats.kernelsCollected += g.value;
@@ -928,7 +955,11 @@ function updateEnemies(w: World): void {
       }
     }
 
-    if (e.type === 'rocky') {
+    if (e.chompable && distPlayer < 220 && !p.bare) {
+      // Nervous: a cob you can chomp backs away, so snacks take a little chasing.
+      e.heading = toPlayer + Math.PI + Math.sin((w.tick + e.id * 13) * 0.05) * 0.6;
+      speed *= t.nervousSpeed;
+    } else if (e.type === 'rocky') {
       if (e.turnTimer <= 0) {
         e.turnTimer = range(w.rng, 2.5, 4.5);
         e.heading = distPlayer < 900 ? toPlayer + range(w.rng, -0.6, 0.6) : range(w.rng, 0, Math.PI * 2);
@@ -1008,6 +1039,7 @@ function spawnFieldChunks(w: World): void {
       for (let c = 0; c < clumps; c++) {
         const ox = (cx + range(rng, 0.1, 0.9)) * CHUNK_SIZE;
         const oy = (cy + range(rng, 0.1, 0.9)) * CHUNK_SIZE;
+        if (Math.hypot(ox, oy) < 220) continue;
         const count = Math.round(totalKernels / clumps);
         for (let i = 0; i < count; i++) {
           const a = range(rng, 0, Math.PI * 2);
@@ -1053,7 +1085,9 @@ function planSpawn(w: World): NonNullable<Director['plan']> {
   let type: EnemyType;
   const early = w.tick < 15 * TICK_RATE;
   if (roll < chompableBand || early) {
-    count = Math.max(1, Math.min(Math.floor(c) - 1, Math.round(c * range(rng, 0.25, 0.8))));
+    // Snacks grow slower than you do, so each chomp is a smaller share of a bigger cob.
+    const snack = Math.pow(c, t.snackExponent) * t.snackSize * range(rng, 0.6, 1.4);
+    count = Math.max(1, Math.min(Math.floor(c) - 1, Math.round(snack)));
     type = pickWeighted(rng, ['baby', 'soggy', 'rocky'] as EnemyType[], (ty) => (ty === 'baby' ? 75 : 12.5))!;
   } else {
     const lo = roll < wearBand ? 1.05 : t.wearDownMax;
@@ -1062,7 +1096,8 @@ function planSpawn(w: World): NonNullable<Director['plan']> {
     type = pickWeighted(rng, ['baby', 'soggy', 'rocky'] as EnemyType[], (ty) => (ty === 'baby' ? 30 : 35))!;
   }
   const kernels = composeEnemy(rng, type, count);
-  return { type, kernels, cost: 1 + count / 12 };
+  // Cost is relative to your size so the spawn rate doesn't stall as you grow.
+  return { type, kernels, cost: 1 + count / c };
 }
 
 function spawnEnemy(w: World, type: EnemyType, kernels: Kernels, x: number, y: number): Enemy {
@@ -1091,13 +1126,14 @@ function spawnEnemy(w: World, type: EnemyType, kernels: Kernels, x: number, y: n
 function spawnOpeningCobs(w: World): void {
   const p = w.player;
   const n = total(p.kernels);
+  // A few quick snacks, plus two big cobs that are too big to eat by snacking alone.
   const opening: [EnemyType, number][] = [
+    ['baby', Math.max(1, Math.round(n * 0.2))],
     ['baby', Math.max(1, Math.round(n * 0.3))],
-    ['baby', Math.max(1, Math.round(n * 0.5))],
-    ['baby', Math.max(1, Math.round(n * 0.4))],
-    ['baby', Math.max(1, Math.round(n * 0.6))],
-    ['soggy', Math.round(n * 1.4)],
-    ['rocky', Math.round(n * 1.3)],
+    ['baby', Math.max(1, Math.round(n * 0.35))],
+    ['baby', Math.max(1, Math.round(n * 0.45))],
+    ['soggy', Math.round(n * 3.6)],
+    ['rocky', Math.round(n * 4)],
   ];
   opening.forEach(([type, count], i) => {
     const a = (i / opening.length) * Math.PI * 2 + range(w.rng, -0.3, 0.3);
@@ -1114,7 +1150,7 @@ function runDirector(w: World): void {
   const effCount = total(p.kernels) + firedRecent;
   const power = powerScore(p.kernels) + firedRecent * 2;
   dir.smoothedPower += (power - dir.smoothedPower) * (1 - Math.exp(-DT / 10));
-  dir.smoothedCount += (effCount - dir.smoothedCount) * (1 - Math.exp(-DT / 4));
+  dir.smoothedCount += (effCount - dir.smoothedCount) * (1 - Math.exp(-DT / 2));
 
   const seconds = w.tick * DT;
   const minutes = seconds / 60;

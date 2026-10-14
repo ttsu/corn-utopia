@@ -113,7 +113,8 @@ export class Renderer {
   }
 
   private targetZoom(w: World): number {
-    return Math.min(this.cam.width, this.cam.height) / (2 * viewRadius(w.player));
+    // Area-based so narrow phone screens don't zoom out so far that cobs become specks.
+    return Math.sqrt(this.cam.width * this.cam.height) / (2.3 * viewRadius(w.player));
   }
 
   private floater(x: number, y: number, text: string, color: string, size = 18, ttl = 0.8): void {
