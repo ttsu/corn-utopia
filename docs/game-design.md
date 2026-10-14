@@ -293,7 +293,8 @@ pickup radius. Butter Roll adds another 25% of dash distance. Lucky Ear makes ra
 Kernels are the heart of the game. Every kernel type needs:
 
 - A **unique color AND a unique mark or icon** (for colorblind players and readability)
-- The **same corn-kernel shape**: rounded crown, longer body, flatter smaller base. No face
+- The **same loose corn-kernel shape**: rounded crown, longer body, flatter smaller base. No face.
+  On a cob, that kernel is drawn as a horizontal rounded rectangle instead (§5.6)
 - A distinct **pickup sound** (and a **firing sound** for power kernels)
 - A behavior that kids can recognize just by watching it
 - A **look trait** (plain kernels) or **flair** (power kernels) that changes a cob's whole appearance
@@ -418,14 +419,15 @@ replay. The first time a combo happens, it gets a big name pop-up and a fanfare.
 ### 5.6 How Kernels Look on the Cob
 
 - **[Decision] Kernels have no faces.** A kernel is just a kernel. Faces, eyes, and mouths stay on
-  the cob. Every kernel uses one corn-kernel shape: a rounded crown (the wide end), a body that's a
-  bit longer than it is wide, and a flatter base that's smaller than the crown. Color and a small
-  mark tell the types apart. Plain kernels are matte. Power kernels are a little shinier and carry
-  their icon inside the kernel.
-- On a cob, kernels are turned crown-up and sit in **straight rows along the ear**, the way kernels
-  line up on corn on the cob (including a multicolor ear). Neighboring rows are offset by about half
-  a kernel so they nest. The cob's face sits toward the tip so those rows stay visible. The game
-  shows that front of the ear and adds a gentle wobble.
+  the cob. A loose kernel (on the ground, or in flight) uses one corn-kernel shape: a rounded crown
+  (the wide end), a body that's a bit longer than it is wide, and a flatter base that's smaller than
+  the crown. Color and a small mark tell the types apart. Plain kernels are matte. Power kernels are
+  a little shinier and carry their icon inside the kernel.
+- **[Decision] On a cob, each kernel is a rounded rectangle oriented horizontally** (wider than it
+  is tall), packed so neighbors touch. Rows run across the ear. Neighboring rows are offset by about
+  half a kernel so they nest, the way kernels line up on corn on the cob (including a multicolor ear).
+  The cob's face sits toward the tip so those rows stay visible. The game shows that front of the ear
+  and adds a gentle wobble.
 - **[Decision] The game arranges kernels automatically.** Plain kernels fill the body, and power
   kernels sit near the tip so they're easy to spot. No inventory management.
 - Every socket shows the real kernel in it, and the cob's overall look changes with its mix of
@@ -840,8 +842,9 @@ to the Heart Kernel: worried, sweaty eyebrows. Just chomped: chewing, happy chee
 ### 12.3 Character Rendering Notes
 
 - **Base cob body:** a few hand-drawn shapes per size tier, tinted by the main look trait.
-- **Kernel sprites:** one small corn-kernel sprite per kernel type (rounded crown, longer body,
-  smaller flat base, no face), placed crown-up in aligned rows by the auto-arranger (§5.6).
+- **Kernel sprites:** loose kernels use one small corn-kernel sprite per type (rounded crown, longer
+  body, smaller flat base, no face). On a cob, the same kernel is a horizontal rounded rectangle,
+  packed into tight staggered rows by the auto-arranger (§5.6).
 - **Trait overlays and flair:** separate small sprites layered on top (drips, cracks, flames, sparks).
 - **Performance:** for enemy cobs, draw the body, kernels, and overlays into **one cached texture**
   and only redraw it when the cob's kernels change. Then each enemy is a single sprite that bobs and

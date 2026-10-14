@@ -1,8 +1,7 @@
 import { Application, BitmapText, Container, Graphics, Sprite, Text, type Texture } from 'pixi.js';
 import {
-  KERNEL_ASPECT,
+  COB_KERNEL_HALF_W,
   KERNEL_COLOR,
-  KERNEL_HALF_W,
   TEX_R,
   drawCobShell,
   drawFace,
@@ -17,6 +16,7 @@ import {
 import type { Camera, Input } from './input';
 import { perkDef } from './sim/perks';
 import { shieldBadges, total, type Kernels } from './sim/cob';
+import { COB_KERNEL_DRAW_SCALE, cobKernelSlots } from './sim/cobLayout';
 import { DAMAGE_ICON, PLAIN_KINDS, POWER_KINDS, type KernelKind } from './sim/kernels';
 import { popperRadius, viewRadius, type Enemy, type SimEvent, type World } from './sim/world';
 
@@ -72,66 +72,6 @@ interface SmugMark {
 }
 
 const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
-
-/**
- * Kernel slots in cob-local units of r, ordered tip-to-base.
- * Straight columns down the ear; odd columns nest half a kernel lower,
- * the way kernels line up on a real cob.
- */
-const slotCache = new Map<number, Float32Array>();
-function slotsFor(n: number): Float32Array {
-  const cached = slotCache.get(n);
-  if (cached) return cached;
-  const count = Math.max(1, n);
-  // Fill the cob body (half-size about 0.62 by 0.98) so the rows read as an ear.
-  const rx = 0.56;
-  const ry = 0.84;
-  const inset = 1;
-  let cols = 1;
-  let rows = count;
-  let best = Infinity;
-  const maxCols = Math.min(count, 10);
-  for (let c = 1; c <= maxCols; c++) {
-    const rowsNeeded = Math.ceil(count / c);
-    const cellW = (2 * rx * inset) / c;
-    const cellH = (2 * ry * inset) / rowsNeeded;
-    const score = Math.abs(Math.log(cellH / cellW / KERNEL_ASPECT)) + (c === 1 && count > 3 ? 0.45 : 0);
-    if (score < best) {
-      best = score;
-      cols = c;
-      rows = rowsNeeded;
-    }
-  }
-  const cellW = (2 * rx * inset) / cols;
-  const cellH = (2 * ry * inset) / rows;
-  const halfW = Math.min(cellW * 0.52, (cellH * 0.52) / KERNEL_ASPECT);
-  const pts: [number, number][] = [];
-  for (let row = 0; row < rows; row++) {
-    for (let col = 0; col < cols; col++) {
-      const x = -((cols - 1) * cellW) / 2 + col * cellW;
-      const y = -((rows - 1) * cellH) / 2 + row * cellH + (col % 2) * cellH * 0.5;
-      pts.push([x, y]);
-    }
-  }
-  let minY = Infinity;
-  let maxY = -Infinity;
-  for (const p of pts) {
-    minY = Math.min(minY, p[1]);
-    maxY = Math.max(maxY, p[1]);
-  }
-  const shift = (minY + maxY) / 2;
-  for (const p of pts) p[1] -= shift;
-  pts.sort((a, b) => a[1] - b[1] || a[0] - b[0]);
-  const out = new Float32Array(count * 3);
-  for (let i = 0; i < count; i++) {
-    out[i * 3] = pts[i][0];
-    out[i * 3 + 1] = pts[i][1];
-    out[i * 3 + 2] = halfW;
-  }
-  if (slotCache.size > 400) slotCache.clear();
-  slotCache.set(n, out);
-  return out;
-}
 
 /** Reuses display objects frame to frame; anything not claimed this frame is hidden. */
 class Pool<T extends Container> {
@@ -621,12 +561,12 @@ export class Renderer {
     // them turns the ear into gray noise, so big cobs show a proportional sample.
     const minDot = 5 / this.cam.zoom;
     let n = Math.min(real, MAX_DRAWN_SLOTS);
-    let slots = slotsFor(n);
-    let dot = (slots[2] * r) / KERNEL_HALF_W;
+    let slots = cobKernelSlots(n);
+    let dot = (slots[2] * r) / COB_KERNEL_HALF_W;
     while (n > 14 && slots[2] * r * 2 < minDot) {
       n = Math.max(14, Math.floor(n * 0.72));
-      slots = slotsFor(n);
-      dot = (slots[2] * r) / KERNEL_HALF_W;
+      slots = cobKernelSlots(n);
+      dot = (slots[2] * r) / COB_KERNEL_HALF_W;
     }
     if (slots[2] * r * this.cam.zoom < MIN_DOT_PX) return;
     const shown = drawnCounts(k, real, n);
@@ -639,13 +579,13 @@ export class Renderer {
       const ly = slots[i * 3 + 1] * r;
       const wx = x + lx * co - ly * si;
       const wy = y + lx * si + ly * co;
-      const tex = kind ? this.tex.kernels[kind] : this.tex.kernels.sunny;
-      const rx = dot * scale;
+      const tex = kind ? this.tex.cobKernels[kind] : this.tex.cobKernels.sunny;
+      const rx = dot * scale * COB_KERNEL_DRAW_SCALE;
       pool.place(tex, wx, wy, rx, rx, kind ? WHITE : 0x6b4a1b, alpha, angle);
       i++;
     };
     // Power kernels sit in the top band, then plain kernels, then empty sockets.
-    for (const kind of POWER_KINDS) for (let c = shown[kind]; c > 0; c--) put(kind, 0.92);
+    for (const kind of POWER_KINDS) for (let c = shown[kind]; c > 0; c--) put(kind, 1);
     for (const kind of PLAIN_KINDS) for (let c = shown[kind]; c > 0; c--) put(kind, 1);
     while (i < n) put(null, 0.55, 0.4);
   }
