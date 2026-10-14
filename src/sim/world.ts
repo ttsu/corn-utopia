@@ -66,6 +66,8 @@ export interface Enemy extends Body {
   /** Seconds left backing away after bumping the player. */
   retreat: number;
   seeking: boolean;
+  /** Hunters are big, armored cobs that chase you; more of them spawn the bigger you get. */
+  hunter: boolean;
 }
 
 export interface Shot extends Body {
@@ -145,7 +147,7 @@ export interface Director {
   budget: number;
   smoothedPower: number;
   smoothedCount: number;
-  plan: { type: EnemyType; kernels: Kernels; cost: number } | null;
+  plan: { type: EnemyType; kernels: Kernels; cost: number; hunter: boolean } | null;
 }
 
 export interface InputCommand {
@@ -187,6 +189,8 @@ const SHOT_SPEED: Record<PowerKind, number> = { zinger: 600, spicy: 440, popper:
 const FIRED_WINDOW_TICKS = 5 * TICK_RATE;
 const MAX_SCATTER_PIECES = 6;
 const BIG_COB_REF = 30;
+const HUNTER_MIN_SIZE = 1.5;
+const MAX_EXTRA_HUNTERS = 4;
 const MAX_BUDGET = 8;
 const MAX_SPAWN_COST = MAX_BUDGET - 0.5;
 
@@ -213,6 +217,12 @@ export function sizeScale(player: PlayerCob): number {
 }
 
 /** Kernels knocked off per point of damage, so wearing a cob down takes similar shots at any size. */
+/** 0 at the first size tier, rising to 1 at the top tier: how hard the field pushes back. */
+export function challenge(w: World): number {
+  const top = Math.max(2, w.tuning.maxTier);
+  return Math.min(1, Math.max(0, (w.player.tier - 1) / (top - 1)));
+}
+
 export function damageScale(w: World): number {
   return Math.max(1, Math.pow(w.player.sockets / socketsForTier(1), w.tuning.damageSizeExponent));
 }
@@ -607,13 +617,21 @@ function collidePlayer(w: World): void {
     e.heading = Math.atan2(ny, nx);
     if (e.bumpCooldown <= 0) {
       e.bumpCooldown = 0.5;
-      e.retreat = 1.2;
+      e.retreat = e.hunter ? 0.7 : 1.2;
       w.stats.bumps++;
       w.events.push({ type: 'bump', x: p.x + nx * p.r, y: p.y + ny * p.r });
     }
-    hitPlayer(w, 'bonk', Math.round(t.bumpLoss * damageScale(w)), e.x, e.y);
+    hitPlayer(w, 'bonk', bumpLossFor(w), e.x, e.y);
   }
   w.enemies = w.enemies.filter((e) => total(e.kernels) > 0);
+}
+
+/** Kernels knocked off by a bump: a few when you're small, a share of your cob when you're big. */
+export function bumpLossFor(w: World): number {
+  const t = w.tuning;
+  const flat = Math.round(t.bumpLoss * damageScale(w));
+  const share = Math.round((challenge(w) * t.bumpLossTopPct * total(w.player.kernels)) / 100);
+  return Math.max(flat, share);
 }
 
 function updatePlayerState(w: World): void {
@@ -781,6 +799,12 @@ function hitEnemy(
   source: PowerKind | null,
 ): void {
   if (total(e.kernels) === 0) return;
+  if (e.hunter) {
+    // Armor keeps the average damage exact even when a hit is only a kernel or two.
+    const scaled = amount * w.tuning.hunterArmor;
+    amount = Math.floor(scaled) + (chance(w.rng, scaled - Math.floor(scaled)) ? 1 : 0);
+    if (amount <= 0) return;
+  }
   const res = applyHit(e.kernels, damage, amount, w.rng);
   if (res.removed.length === 0) {
     if (res.resisted && source !== null) {
@@ -990,6 +1014,8 @@ function updateEnemies(w: World): void {
   const grid = t.enemyGrabs >= 1 ? buildGrid(w.ground) : null;
   const found: GroundKernel[] = [];
   const scale = sizeScale(p);
+  const pressure = challenge(w);
+  const rampSpeed = 1 + t.enemySpeedRamp * pressure;
 
   for (const e of w.enemies) {
     e.hitFlash = Math.max(0, e.hitFlash - DT);
@@ -997,12 +1023,12 @@ function updateEnemies(w: World): void {
     e.turnTimer -= DT;
     const n = total(e.kernels);
     const sizeFactor = Math.min(1.15, Math.max(0.55, 1.15 - (0.3 * n) / p.sockets));
-    let speed = ENEMY_BASE_SPEED[e.type] * t.enemySpeed * sizeFactor * Math.pow(scale, 0.75);
+    let speed = ENEMY_BASE_SPEED[e.type] * t.enemySpeed * rampSpeed * sizeFactor * Math.pow(scale, 0.75);
     const toPlayer = Math.atan2(p.y - e.y, p.x - e.x);
     const distPlayer = Math.hypot(p.x - e.x, p.y - e.y);
 
     let seek: GroundKernel | null = null;
-    if (grid && e.type !== 'rocky') {
+    if (grid && e.type !== 'rocky' && !e.hunter) {
       let bestD = Infinity;
       for (const g of queryGrid(grid, e.x, e.y, 160 * scale, found)) {
         const d = (g.x - e.x) ** 2 + (g.y - e.y) ** 2;
@@ -1020,6 +1046,9 @@ function updateEnemies(w: World): void {
       // Nervous: a cob you can chomp backs away, so snacks take a little chasing.
       e.heading = toPlayer + Math.PI + Math.sin((w.tick + e.id * 13) * 0.05) * 0.6;
       speed *= t.nervousSpeed;
+    } else if (e.hunter && !e.chompable && !p.bare && distPlayer < 1100 * scale) {
+      e.heading = toPlayer + Math.sin((w.tick + e.id * 29) * 0.04) * 0.35;
+      speed *= t.hunterSpeed;
     } else if (e.type === 'rocky') {
       if (e.turnTimer <= 0) {
         e.turnTimer = range(w.rng, 2.5, 4.5);
@@ -1155,6 +1184,11 @@ function planSpawn(w: World): NonNullable<Director['plan']> {
   let count: number;
   let type: EnemyType;
   const early = w.tick < 15 * TICK_RATE;
+  if (!early && next(rng) * 100 < t.huntersAtTop * challenge(w)) {
+    count = Math.max(Math.ceil(c) + 1, Math.round(c * range(rng, HUNTER_MIN_SIZE, Math.max(HUNTER_MIN_SIZE, t.hunterSize))));
+    type = chance(rng, 0.5) ? 'soggy' : 'rocky';
+    return { type, kernels: composeEnemy(rng, type, count), cost: Math.min(MAX_SPAWN_COST, 1 + count / c), hunter: true };
+  }
   if (roll >= bigShare || early) {
     // Snacks grow slower than you do, so each chomp is a smaller share of a bigger cob.
     const snack = Math.pow(c, t.snackExponent) * t.snackSize * range(rng, 0.6, 1.4);
@@ -1168,10 +1202,10 @@ function planSpawn(w: World): NonNullable<Director['plan']> {
   }
   const kernels = composeEnemy(rng, type, count);
   // Cost is relative to your size so the spawn rate doesn't stall as you grow.
-  return { type, kernels, cost: Math.min(MAX_SPAWN_COST, 1 + count / c) };
+  return { type, kernels, cost: Math.min(MAX_SPAWN_COST, 1 + count / c), hunter: false };
 }
 
-function spawnEnemy(w: World, type: EnemyType, kernels: Kernels, x: number, y: number): Enemy {
+function spawnEnemy(w: World, type: EnemyType, kernels: Kernels, x: number, y: number, hunter = false): Enemy {
   const p = w.player;
   const e: Enemy = {
     id: w.nextId++,
@@ -1191,6 +1225,7 @@ function spawnEnemy(w: World, type: EnemyType, kernels: Kernels, x: number, y: n
     bumpCooldown: 0,
     retreat: 0,
     seeking: true,
+    hunter,
   };
   w.enemies.push(e);
   return e;
@@ -1238,13 +1273,15 @@ function runDirector(w: World): void {
   if (!dir.plan) dir.plan = planSpawn(w);
   const view = viewRadius(p);
   const enemyCap = Math.min(t.maxEnemies, Math.round(10 + minutes * 8));
-  if (w.enemies.length < enemyCap && dir.budget >= dir.plan.cost) {
+  // Hunters may exceed the cap a little, so a field full of uneaten snacks can't hold them back.
+  const room = w.enemies.length < enemyCap || (dir.plan.hunter && w.enemies.filter((e) => e.hunter).length < MAX_EXTRA_HUNTERS);
+  if (room && dir.budget >= dir.plan.cost) {
     dir.budget -= dir.plan.cost;
     const speed = Math.hypot(p.vx, p.vy);
     const ahead = speed > 30 && chance(w.rng, 0.7);
     const a = ahead ? Math.atan2(p.vy, p.vx) + range(w.rng, -1.1, 1.1) : range(w.rng, 0, Math.PI * 2);
     const d = view * range(w.rng, 2.1, 2.5);
-    spawnEnemy(w, dir.plan.type, dir.plan.kernels, p.x + Math.cos(a) * d, p.y + Math.sin(a) * d);
+    spawnEnemy(w, dir.plan.type, dir.plan.kernels, p.x + Math.cos(a) * d, p.y + Math.sin(a) * d, dir.plan.hunter);
     dir.plan = null;
   }
 

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { kernelsOf, total } from './cob';
 import { defaultTuning } from './tuning';
-import { EMPTY_COMMAND, canFire, createWorld, damageScale, shotRange, step, type InputCommand, type World } from './world';
+import { EMPTY_COMMAND, bumpLossFor, canFire, challenge, createWorld, damageScale, shotRange, step, type InputCommand, type World } from './world';
 
 function quietWorld(seed = 1): World {
   const w = createWorld(seed, defaultTuning());
@@ -32,6 +32,7 @@ function addEnemy(w: World, x: number, y: number, kernels: ReturnType<typeof ker
     bumpCooldown: 0,
     retreat: 0,
     seeking: true,
+    hunter: false,
   });
   return w.enemies[w.enemies.length - 1];
 }
@@ -47,6 +48,33 @@ describe('world', () => {
 
     const mix = createWorld(3, defaultTuning(), 'playtest');
     expect(mix.player.kernels.zinger).toBe(defaultTuning().startZinger);
+  });
+
+  it('pushes back harder as the cob grows: hunters spawn and bumps cost a share of the cob', () => {
+    const countHunters = (sunny: number) => {
+      const w = createWorld(5, { ...defaultTuning(), maxEnemies: 120 });
+      w.player.kernels = kernelsOf({ sunny });
+      let hunters = 0;
+      const seen = new Set<number>();
+      for (let i = 0; i < 60 * 60; i++) {
+        step(w, EMPTY_COMMAND);
+        for (const e of w.enemies) {
+          if (e.hunter && !seen.has(e.id)) hunters++;
+          seen.add(e.id);
+        }
+        // Clear the field so the enemy cap never holds spawns back.
+        w.enemies = [];
+      }
+      return { hunters, challenge: challenge(w), bump: bumpLossFor(w), size: total(w.player.kernels) };
+    };
+    const small = countHunters(8);
+    const big = countHunters(1200);
+    expect(small.challenge).toBe(0);
+    expect(small.hunters).toBe(0);
+    expect(big.challenge).toBe(1);
+    expect(big.hunters).toBeGreaterThan(5);
+    expect(big.bump).toBeGreaterThanOrEqual(Math.floor(big.size * 0.025));
+    expect(small.bump).toBe(defaultTuning().bumpLoss);
   });
 
   it('scales damage and reach up as the cob grows', () => {

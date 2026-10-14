@@ -585,6 +585,11 @@ export class Renderer {
       g.poly(pts, true).stroke({ width: outline, color: GREEN });
     } else {
       g.circle(x, cy, r + outline / 2).stroke({ width: outline * 1.1, color: RED });
+      if (e.hunter) {
+        // Hunters pulse a second red ring so kids can tell "this one is coming for me".
+        const pulse = 0.5 + 0.5 * Math.sin(time * 7 + e.id);
+        g.circle(x, cy, r + outline * (2 + pulse)).stroke({ width: outline * 0.8, color: RED, alpha: 0.25 + 0.35 * pulse });
+      }
     }
     this.drawEyes(g, x, cy, r, e.vx, e.vy, e.chompable ? 'worried' : 'angry');
 

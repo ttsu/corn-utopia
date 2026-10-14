@@ -194,8 +194,21 @@ Your cob has a set number of **kernel sockets**. When the sockets fill up, the c
   scale with your size, and kernels knocked off per hit grow too (sub-linearly), so a
   1,000-kernel cob still wears down a big cob in a sensible number of shots.
 - **Big cobs get rarer as you grow.** Chomping a cob about your size roughly doubles you, so
-  the director spawns fewer of them the bigger you are; most late growth comes from snacks.
-  (M0 tuning: the bot reaches the top tier in about 3–5 minutes; kids should take 2–3× longer.)
+  the director spawns fewer easy "wear it down" cobs the bigger you are.
+- **[Decision] It gets harder as you get bigger.** A challenge level rises from 0 at tier 1 to 1
+  at the top tier and drives:
+  - **Hunter cobs:** big (1.5–3× your size), armored (they take half damage), mostly Soggy or
+    Rocky so you have to switch powers, and they chase you. Up to 30% of spawns at the top tier,
+    none at tier 1. They pulse a second red ring so kids can see them coming. Beating one is the
+    big payoff of the late game.
+  - **Faster enemies:** up to +30% speed at the top tier (hunters stay slower than you, so you
+    can always run).
+  - **Harder bumps:** a bump costs a few kernels when you're small, and up to 3% of your cob at
+    the top tier.
+- M0 tuning, measured with the bot: time per tier rises (about 15 s at tier 4, 30 s at tier 5,
+  40 s at tier 6, about 3 minutes at tier 7). Half of the bot runs reach the top tier in 8 minutes;
+  the rest plateau around 400–550 kernels. A cob that stops playing at size 1,200 loses about a
+  third of itself in 4 minutes, versus nothing before.
 
 - **Camera zooms out as you grow** (like agar.io), so your cob takes up about the same amount of
   screen and the world feels like it's shrinking around you. This is very important for readability

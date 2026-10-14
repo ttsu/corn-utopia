@@ -11,11 +11,12 @@ import { it } from 'vitest';
 import { total } from '../src/sim/cob';
 import { KERNELS, PLAIN_KINDS, POWER_DAMAGE, POWER_KINDS } from '../src/sim/kernels';
 import { defaultTuning, sanitizeTuning } from '../src/sim/tuning';
-import { DT, EMPTY_COMMAND, createWorld, step, type InputCommand, type Loadout, type World } from '../src/sim/world';
+import { DT, EMPTY_COMMAND, createWorld, debugGrow, step, viewRadius, type InputCommand, type Loadout, type World } from '../src/sim/world';
 
 const seeds = Number(process.env.BOT_SEEDS ?? 6);
 const minutes = Number(process.env.BOT_MINUTES ?? 8);
 const trace = process.env.BOT_TRACE === '1';
+const startSize = Number(process.env.BOT_START_SIZE ?? 0);
 const overrides = process.env.BOT_TUNING ? JSON.parse(process.env.BOT_TUNING) : {};
 /** `chase` plays well; `idle` drifts in slow circles and never shoots (a distracted kid). */
 const mode = process.env.BOT_MODE === 'idle' ? 'idle' : 'chase';
@@ -79,14 +80,28 @@ it('bot balance report', () => {
   const tuning = sanitizeTuning({ ...defaultTuning(), ...overrides });
   const rows: string[] = [];
   const milestones = [30, 120, 500, 1250];
+  const tiers: Record<number, { ticks: number; bumps: number; lost: number; sizeTicks: number; redTicks: number }> = {};
   for (let seed = 1; seed <= seeds; seed++) {
     const w = createWorld(seed, { ...tuning }, loadout);
+    if (startSize > total(w.player.kernels)) {
+      debugGrow(w, startSize - total(w.player.kernels));
+      step(w, EMPTY_COMMAND);
+    }
     const reached: Record<number, number> = {};
     const lastShot = { tick: 0 };
     const income = { chomp: 0, other: 0, last: total(w.player.kernels) };
     while (!w.over && w.tick < minutes * 60 / DT) {
       step(w, botCommand(w, lastShot));
-      if (trace && seed === 1) {
+      const tier = (tiers[w.player.tier] ??= { ticks: 0, bumps: 0, lost: 0, sizeTicks: 0, redTicks: 0 });
+      tier.ticks++;
+      tier.sizeTicks += total(w.player.kernels);
+      const near = viewRadius(w.player) * 1.3;
+      for (const e of w.enemies) if (!e.chompable && Math.hypot(e.x - w.player.x, e.y - w.player.y) < near) tier.redTicks++;
+      for (const ev of w.events) {
+        if (ev.type === 'bump') tier.bumps++;
+        if (ev.type === 'hit' && ev.onPlayer) tier.lost += ev.count;
+      }
+      if (trace && seed === Number(process.env.BOT_TRACE_SEED ?? 1)) {
         const now = total(w.player.kernels);
         let chomped = 0;
         for (const ev of w.events) if (ev.type === 'chomp') chomped += ev.gained;
@@ -94,10 +109,10 @@ it('bot balance report', () => {
         income.chomp += chomped;
         income.other += now - income.last - chomped + fired;
         income.last = now;
-        if (w.tick % (30 / DT) === 0) {
+        if (w.tick % (Number(process.env.BOT_TRACE_EVERY ?? 30) / DT) === 0) {
           const big = w.enemies.filter((e) => !e.chompable).length;
           process.stdout.write(
-            `  t=${Math.round(w.tick * DT)}s size ${now} (tier ${w.player.tier})  +chomps ${income.chomp}  +scooped/other ${income.other}  enemies ${w.enemies.length} (${big} too big)\n`,
+            `  t=${Math.round(w.tick * DT)}s size ${now} (tier ${w.player.tier})  +chomps ${income.chomp}  +scooped/other ${income.other}  enemies ${w.enemies.length} (${big} too big, ${w.enemies.filter((e) => e.hunter).length} hunters)\n`,
           );
           income.chomp = 0;
           income.other = 0;
@@ -110,9 +125,21 @@ it('bot balance report', () => {
     const fmt = (m: number) => (reached[m] === undefined ? '-' : `${reached[m]}s`);
     rows.push(
       `seed ${String(seed).padStart(2)}  ${w.over ? 'popped out' : 'survived  '} at ${Math.round(w.tick * DT)}s  ` +
-        `reach 30/120/500/1250: ${fmt(30)}/${fmt(120)}/${fmt(500)}/${fmt(1250)}  max ${s.maxKernels}  chomps ${s.chomps}  ` +
+        `reach 30/120/500/1250: ${fmt(30)}/${fmt(120)}/${fmt(500)}/${fmt(1250)}  max ${s.maxKernels}  end ${total(w.player.kernels)}  chomps ${s.chomps}  ` +
         `shots ${s.firedTotal}  scooped ${s.firedRecovered}  tinks ${s.tinks}  bumps ${s.bumps}  seeds ${s.seeds}`,
     );
   }
-  process.stdout.write(`\nBot report (${mode} bot, ${loadout} start, ${seeds} runs, ${minutes} min max, overrides ${JSON.stringify(overrides)})\n${rows.join('\n')}\n\n`);
+  const tierRows = Object.entries(tiers).map(([tier, d]) => {
+    const mins = (d.ticks * DT) / 60;
+    const avgSize = d.sizeTicks / d.ticks;
+    return (
+      `  tier ${tier.padStart(2)}  ${String(Math.round((d.ticks * DT) / seeds)).padStart(4)}s avg  ` +
+      `bumps/min ${(d.bumps / mins).toFixed(1).padStart(5)}  lost ${((d.lost / avgSize / mins) * 100).toFixed(1).padStart(5)}% of cob/min  ` +
+      `red cobs nearby ${(d.redTicks / d.ticks).toFixed(1)}`
+    );
+  });
+  process.stdout.write(
+    `\nBot report (${mode} bot, ${loadout} start${startSize ? `, start size ${startSize}` : ''}, ${seeds} runs, ${minutes} min max, overrides ${JSON.stringify(overrides)})\n` +
+      `${rows.join('\n')}\n${tierRows.join('\n')}\n\n`,
+  );
 }, 600_000);

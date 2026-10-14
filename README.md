@@ -33,6 +33,8 @@ What's in it:
 - 10 size tiers from 12 up to 1,250 kernels (they only go up), camera zoom-out as you grow, and a
   top tier where extra kernels become Seeds. Shot range, blast radius, speed, magnet, and kernels
   knocked off per hit all scale with your size. Last Chance and the All Popped Out results screen.
+- It gets harder as you grow: armored **hunter cobs** (pulsing red ring) chase you, enemies speed up,
+  and bumps cost a share of your cob. All of it is in the Tuning panel under *Challenge*.
 - **Tuning panel** (Title, Pause, or Results screen → *Tuning*) with live sliders for every number
   M0 is meant to tune: recharge times, damage, range, magnet, Chomp Bonus, director bands, and more.
   Settings are saved on the device and can be copied/pasted between devices.
@@ -59,8 +61,9 @@ npm run icons      # regenerate the placeholder PWA icons
 ```
 
 `npm run bot` accepts overrides, e.g. `BOT_TUNING='{"snackSize":0.4}' BOT_SEEDS=10 npm run bot`.
-`BOT_LOADOUT=playtest` uses the Playtest mix, `BOT_MODE=idle` never shoots, and `BOT_TRACE=1` shows
-where the kernels came from. The bot is much better at chasing than a kid, so treat its times as a
+`BOT_LOADOUT=playtest` uses the Playtest mix, `BOT_MODE=idle` never shoots, `BOT_START_SIZE=500`
+starts runs already big, and `BOT_TRACE=1` shows where the kernels came from. The report ends with a
+per-tier table (time spent, bumps per minute, % of your cob lost per minute, red cobs nearby). The bot is much better at chasing than a kid, so treat its times as a
 lower bound.
 
 ### Testing on a real iPad / iPhone

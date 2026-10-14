@@ -69,6 +69,13 @@ export const TUNING_SPECS = {
   nervousSpeed: spec('Director', 'Chompable cobs flee speed (x)', 1.3, 0, 2.5, 0.05),
   enemyGrabs: spec('Director', 'Enemies grab ground kernels (0/1)', 1, 0, 1, 1),
   fieldKernels: spec('Director', 'Loose kernels per field chunk', 3, 0, 30, 1),
+
+  huntersAtTop: spec('Challenge (grows with size)', 'Hunter cobs at top size (% of spawns)', 30, 0, 80, 5),
+  hunterSize: spec('Challenge (grows with size)', 'Hunter size, 1.5 up to (x your count)', 3, 1.5, 5, 0.1),
+  hunterArmor: spec('Challenge (grows with size)', 'Damage hunters take (x)', 0.5, 0.1, 1, 0.05),
+  hunterSpeed: spec('Challenge (grows with size)', 'Hunter chase speed (x)', 1.25, 0.5, 2.5, 0.05),
+  enemySpeedRamp: spec('Challenge (grows with size)', 'Extra enemy speed at top size (+x)', 0.3, 0, 1.5, 0.05),
+  bumpLossTopPct: spec('Challenge (grows with size)', 'Bump loss at top size (% of your cob)', 3, 0, 15, 0.5),
 } satisfies Record<string, TuningSpec>;
 
 export type TuningKey = keyof typeof TUNING_SPECS;
