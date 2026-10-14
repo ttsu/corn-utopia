@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { BODY_RX, COB_KERNEL_ASPECT, COB_KERNEL_DRAW_SCALE, cobKernelSlots, insideCobBody } from './cobLayout';
+import { BODY_RX, COB_KERNEL_ASPECT, COB_KERNEL_DRAW_SCALE, cobHalfWidth, cobKernelSlots, insideCobBody } from './cobLayout';
 
 function read(n: number): { x: number; y: number; halfW: number; halfH: number }[] {
   const raw = cobKernelSlots(n);
@@ -62,5 +62,25 @@ describe('cob kernel layout', () => {
       maxX = Math.max(maxX, slot.x + slot.halfW);
     }
     expect(maxX - minX).toBeGreaterThan(BODY_RX * 1.5);
+  });
+
+  it('keeps an oval ear, narrower at the tip, and rows follow that curve', () => {
+    expect(cobHalfWidth(0)).toBeGreaterThan(cobHalfWidth(-0.7));
+    expect(cobHalfWidth(-0.7)).toBeGreaterThan(cobHalfWidth(-0.92));
+    expect(cobHalfWidth(-0.15) - cobHalfWidth(-0.75)).toBeGreaterThan(0.08);
+
+    const slots = read(48);
+    const rows = new Map<string, { y: number; span: number }>();
+    for (const slot of slots) {
+      const key = slot.y.toFixed(3);
+      const edge = Math.abs(slot.x) + slot.halfW;
+      const row = rows.get(key);
+      if (!row) rows.set(key, { y: slot.y, span: edge });
+      else row.span = Math.max(row.span, edge);
+    }
+    const list = [...rows.values()];
+    const mid = list.reduce((a, b) => (Math.abs(b.y) < Math.abs(a.y) ? b : a));
+    const tip = list.reduce((a, b) => (a.y < b.y ? a : b));
+    expect(mid.span).toBeGreaterThan(tip.span * 1.2);
   });
 });

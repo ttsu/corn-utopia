@@ -215,7 +215,7 @@ function bodyPts(rot: Rot, r: number, time: number, id: number, pad: number): nu
   const wob = time * 2 + id;
   const pts: number[] = [];
   for (const [fx, fy] of cobBodyLocal()) {
-    const wobble = 1 + Math.sin(fx * 5 + fy * 3 + wob) * 0.018;
+    const wobble = 1 + Math.sin(fx * 5 + fy * 3 + wob) * 0.035;
     const [ox, oy] = outward(fx * r * wobble, fy * r * wobble, pad);
     pts.push(...rot(ox, oy));
   }

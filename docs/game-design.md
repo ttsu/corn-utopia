@@ -424,10 +424,11 @@ replay. The first time a combo happens, it gets a big name pop-up and a fanfare.
   the crown. Color and a small mark tell the types apart. Plain kernels are matte. Power kernels are
   a little shinier and carry their icon inside the kernel.
 - **[Decision] On a cob, each kernel is a rounded rectangle oriented horizontally** (wider than it
-  is tall), packed so neighbors touch. Rows run across the ear. Neighboring rows are offset by about
-  half a kernel so they nest, the way kernels line up on corn on the cob (including a multicolor ear).
-  The cob's face sits toward the tip so those rows stay visible. The game shows that front of the ear
-  and adds a gentle wobble.
+  is tall), packed so neighbors touch. The cob itself stays an oval ear, narrower at the tip, with
+  husk leaves at the base. Kernel rows run across that oval and get shorter toward the tip, the way
+  kernels line up on corn on the cob (including a multicolor ear). Neighboring rows are offset by
+  about half a kernel so they nest. The cob's face sits on the upper kernels. The game shows that
+  front of the ear and adds a gentle wobble.
 - **[Decision] The game arranges kernels automatically.** Plain kernels fill the body, and power
   kernels sit near the tip so they're easy to spot. No inventory management.
 - Every socket shows the real kernel in it, and the cob's overall look changes with its mix of
