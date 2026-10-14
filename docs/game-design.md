@@ -92,7 +92,7 @@ fill in the Kernelpedia collection book.
 |---|---|---|
 | **Job** | Health and size | Special shots |
 | **Can be fired?** | No | Yes, with that power's button |
-| **Look** | Rounder, matte, calm faces | Shinier, with a glowing icon and an excited face |
+| **Look** | Matte corn kernel, no face | Shinier kernel with a small icon, no face |
 | **Special traits** | Some are extra durable or resist a damage type | Each has a damage type and an effect |
 | **Share of a typical cob** | Most of it (about 70–85%) | The rest |
 
@@ -133,7 +133,8 @@ Both kinds count toward your **kernel count** (for chomping), your **health**, a
   (by default, the nearest cob with a red outline, favoring ones in front of you). Shots go there.
 - **Tap a cob** on the right side of the screen to lock that circle onto it.
 - **[Decision] Status outlines follow the cob. The aim marker stays a circle.** Green and red
-  outlines trace the husk and the body, drawn tight behind the cob with a thin glow. The dashed
+  outlines trace the husk and the body, drawn tight behind the cob and thick enough to read at a
+  glance, with a soft glow. The dashed
   aim marker is a circle, because a dashed cob shape reads as clutter. The player cob has no
   status outline of its own.
 - **[Decision] Auto-target plus tap-to-lock is the default.** No manual aiming is needed.
@@ -271,7 +272,9 @@ upgrade system, so Ear Up! choices are **cob perks**, picked from big picture ca
 - **Lucky Ear:** rare kernels show up 25% more often
 
 You **start with a dash**. It is the big button under your right thumb, so one finger can steer
-while the other dashes. Butter Roll does not unlock it. Each copy just makes that dash longer.
+while the other dashes. The starting dash is a short hop, only a little faster than walking, so it
+helps but it is not a get-out-of-trouble button. Butter Roll does not unlock it. Each copy makes
+that dash 25% further, which is the reason to take the upgrade.
 
 Ear Up! pauses the game (important for kids). Tap a card to choose. You can **re-roll** once per run.
 
@@ -286,8 +289,8 @@ dash distance. Lucky Ear makes rare kernels another 25% more common.
 
 Kernels are the heart of the game. Every kernel type needs:
 
-- A **unique color AND a unique shape or pattern/icon** (for colorblind players and readability)
-- A **tiny face** with its own expression
+- A **unique color AND a unique mark or icon** (for colorblind players and readability)
+- The **same corn-kernel shape**: rounded crown, longer body, flatter smaller base. No face
 - A distinct **pickup sound** (and a **firing sound** for power kernels)
 - A behavior that kids can recognize just by watching it
 - A **look trait** (plain kernels) or **flair** (power kernels) that changes a cob's whole appearance
@@ -297,7 +300,7 @@ Kernels are the heart of the game. Every kernel type needs:
 
 | Kernel             | Look                         | Trait                                                        | Rarity    |
 |--------------------|------------------------------|--------------------------------------------------------------|-----------|
-| **Sunny** (Yellow) | Classic yellow, smile        | Basic kernel. 1 hit pops it off.                             | Common    |
+| **Sunny** (Yellow) | Classic yellow kernel        | Basic kernel. 1 hit pops it off.                             | Common    |
 | **Sweetie** (White)| Pearly, heart pattern        | Slowly grows a brand-new Sunny kernel on your cob            | Uncommon  |
 | **Tough Nut**      | Dark brown, shiny shield     | Takes **3 hits** of any type before popping off              | Rare      |
 | **Soggy**          | Teal, water-drop pattern     | **Immune to Fire.** Weak to Zap (Zap knocks off 2)           | Uncommon  |
@@ -411,10 +414,17 @@ replay. The first time a combo happens, it gets a big name pop-up and a fanfare.
 
 ### 5.6 How Kernels Look on the Cob
 
-- Kernels sit in **rows** around the cob. The game shows the front face and adds a gentle "rotation"
-  wobble so you can see the variety.
+- **[Decision] Kernels have no faces.** A kernel is just a kernel. Faces, eyes, and mouths stay on
+  the cob. Every kernel uses one corn-kernel shape: a rounded crown (the wide end), a body that's a
+  bit longer than it is wide, and a flatter base that's smaller than the crown. Color and a small
+  mark tell the types apart. Plain kernels are matte. Power kernels are a little shinier and carry
+  their icon inside the kernel.
+- On a cob, kernels are turned crown-up and sit in **straight rows along the ear**, the way kernels
+  line up on corn on the cob (including a multicolor ear). Neighboring rows are offset by about half
+  a kernel so they nest. The cob's face sits toward the tip so those rows stay visible. The game
+  shows that front of the ear and adds a gentle wobble.
 - **[Decision] The game arranges kernels automatically.** Plain kernels fill the body, and power
-  kernels sit in a glowing band near the top so they're easy to spot. No inventory management.
+  kernels sit near the tip so they're easy to spot. No inventory management.
 - Every socket shows the real kernel in it, and the cob's overall look changes with its mix of
   kernels (see §12.2).
 - **Later idea (not for launch):** an optional "Cob Garden" screen between runs where older kids can
@@ -760,10 +770,10 @@ What to change for our audience:
 
 General rules:
 
-- **Big googly eyes and expressive faces** on cobs *and* kernels.
+- **Big googly eyes and expressive faces on cobs.** Kernels do not get faces.
 - **Squash and stretch** on everything: cobs squish when they turn, kernels boing when they land.
-- **Plain vs. power kernels must read instantly:** plain kernels are matte with calm faces; power
-  kernels are shiny, have a glowing icon, and look excited.
+- **Plain vs. power kernels must read instantly:** both are corn-kernel shaped. Plain kernels are
+  matte. Power kernels are shinier and carry a small icon.
 - Secondary references: *Crashlands* (same studio, same outline style), *Pikmin* and *Kirby* for
   cuteness, and the crowd readability of *Vampire Survivors* and *Brotato*.
 
@@ -827,7 +837,8 @@ to the Heart Kernel: worried, sweaty eyebrows. Just chomped: chewing, happy chee
 ### 12.3 Character Rendering Notes
 
 - **Base cob body:** a few hand-drawn shapes per size tier, tinted by the main look trait.
-- **Kernel sprites:** one small sprite per kernel type, placed into sockets by the auto-arranger (§5.6).
+- **Kernel sprites:** one small corn-kernel sprite per kernel type (rounded crown, longer body,
+  smaller flat base, no face), placed crown-up in aligned rows by the auto-arranger (§5.6).
 - **Trait overlays and flair:** separate small sprites layered on top (drips, cracks, flames, sparks).
 - **Performance:** for enemy cobs, draw the body, kernels, and overlays into **one cached texture**
   and only redraw it when the cob's kernels change. Then each enemy is a single sprite that bobs and
