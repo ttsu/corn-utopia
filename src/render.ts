@@ -178,6 +178,8 @@ class LabelPool extends Pool<BitmapText> {
 
 /** A cob's draw layers, so each cob's kernels sit above its body and below its outline and eyes. */
 interface CobLayers {
+  /** Status color, drawn behind the cob so leaf strokes don't cross the body. */
+  outline: Graphics;
   body: Graphics;
   kernels: SpritePool;
   overlay: Graphics;
@@ -246,7 +248,7 @@ export class Renderer {
     this.shotSprites = new SpritePool(shotLayer);
     this.enemies = makeCobLayers();
     this.player = makeCobLayers();
-    this.playerLayer.addChild(this.player.body, this.player.kernels.layer, this.player.overlay);
+    this.playerLayer.addChild(this.player.outline, this.player.body, this.player.kernels.layer, this.player.overlay);
     const fxSpriteLayer = new Container();
     this.fxSprites = new SpritePool(fxSpriteLayer);
     this.world.addChild(
@@ -254,6 +256,7 @@ export class Renderer {
       groundSpriteLayer,
       groundLabelLayer,
       shotLayer,
+      this.enemies.outline,
       this.enemies.body,
       this.enemies.kernels.layer,
       this.enemies.overlay,
@@ -470,6 +473,7 @@ export class Renderer {
     this.shotSprites.end();
 
     // Enemies. (Their overlay was already started above for popper landing circles.)
+    this.enemies.outline.clear();
     this.enemies.body.clear();
     this.enemies.kernels.begin();
     for (const e of w.enemies) {
@@ -559,6 +563,24 @@ export class Renderer {
     drawFarm(g, w.seed, w.props, cam.x - halfW, cam.y - halfH, cam.x + halfW, cam.y + halfH);
   }
 
+  /** Crisp status line plus a soft halo, both behind the cob art. */
+  private strokeStatus(
+    g: Graphics,
+    x: number,
+    y: number,
+    r: number,
+    angle: number,
+    time: number,
+    id: number,
+    color: number,
+    width: number,
+    alpha: number,
+    pad: number,
+  ): void {
+    strokeCobOutline(g, x, y, r, angle, time, id, color, width * 2.8, alpha * 0.28, pad + width * 0.55);
+    strokeCobOutline(g, x, y, r, angle, time, id, color, width, alpha, pad);
+  }
+
   /** Draws a cob body with its kernels in sockets. `sockets` > kernel count shows empty holes. */
   private drawCobBody(layers: CobLayers, x: number, y: number, r: number, k: Kernels, sockets: number, angle: number, time: number, id: number, flash: boolean): void {
     const spec = { x, y, r, kernels: k, sockets, angle, time, id, flash };
@@ -606,26 +628,28 @@ export class Renderer {
     const outline = Math.max(4, 2.2 / this.cam.zoom);
     const smug = this.smug.some((mark) => (mark.x - x) ** 2 + (mark.y - y) ** 2 < (r + 30) ** 2);
 
-    this.drawCobBody(layers, x, cy, r, e.kernels, 0, angle, time, e.id, e.hitFlash > 0);
-
-    const g = layers.overlay;
+    const edge = layers.outline;
     if (e.chompable) {
       const pulse = 1 + Math.sin(time * 8 + e.id) * 0.06;
-      strokeCobOutline(g, x, cy, r, angle, time, e.id, GREEN, outline * 1.15, 1, outline * (0.7 + pulse));
+      this.strokeStatus(edge, x, cy, r, angle, time, e.id, GREEN, outline * 1.15, 1, outline * (0.85 + pulse));
     } else {
-      strokeCobOutline(g, x, cy, r, angle, time, e.id, RED, outline * 1.25, 1, outline * 0.45);
+      this.strokeStatus(edge, x, cy, r, angle, time, e.id, RED, outline * 1.25, 1, outline * 0.9);
       if (e.hunter) {
         // Hunters pulse a second red edge so kids can tell "this one is coming for me".
         const pulse = 0.5 + 0.5 * Math.sin(time * 7 + e.id);
-        strokeCobOutline(g, x, cy, r, angle, time, e.id, RED, outline * 0.85, 0.28 + 0.4 * pulse, outline * (1.8 + pulse));
+        this.strokeStatus(edge, x, cy, r, angle, time, e.id, RED, outline * 0.85, 0.28 + 0.4 * pulse, outline * (1.8 + pulse));
       }
     }
     if (e.frozenLeft > 0) {
-      fillCobBody(g, x, cy, r, angle, time, e.id, 0xd7f3ff, 0.45);
-      strokeCobOutline(g, x, cy, r, angle, time, e.id, 0x9ad7ff, outline * 1.1, 1, outline * 0.3);
+      this.strokeStatus(edge, x, cy, r, angle, time, e.id, 0x9ad7ff, outline * 1.1, 1, outline * 0.7);
     } else if (e.slowLeft > 0) {
-      strokeCobOutline(g, x, cy, r, angle, time, e.id, 0x7ec8e3, outline * 0.75, 0.9, outline * 0.25);
+      this.strokeStatus(edge, x, cy, r, angle, time, e.id, 0x7ec8e3, outline * 0.75, 0.9, outline * 0.55);
     }
+
+    this.drawCobBody(layers, x, cy, r, e.kernels, 0, angle, time, e.id, e.hitFlash > 0);
+
+    const g = layers.overlay;
+    if (e.frozenLeft > 0) fillCobBody(g, x, cy, r, angle, time, e.id, 0xd7f3ff, 0.45);
     const mood: Mood = e.frozenLeft > 0 ? 'surprised' : smug ? 'smug' : e.chompable ? 'worried' : 'angry';
     drawFace(g, x, cy, r, angle, e.vx, e.vy, mood);
 
@@ -766,7 +790,7 @@ function drawnCounts(k: Kernels, real: number, n: number): Kernels {
 
 function makeCobLayers(): CobLayers {
   const kernelLayer = new Container();
-  return { body: new Graphics(), kernels: new SpritePool(kernelLayer), overlay: new Graphics() };
+  return { outline: new Graphics(), body: new Graphics(), kernels: new SpritePool(kernelLayer), overlay: new Graphics() };
 }
 
 /** Bob, lean, and on-screen size shared by the cob drawing and its aim marker. */
