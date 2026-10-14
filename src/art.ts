@@ -1,6 +1,7 @@
 import { Graphics, type Application, type Texture } from 'pixi.js';
 import { decorForChunk, type FarmProp } from './sim/farm';
 import { dominantPlain, total, type Kernels } from './sim/cob';
+import { COB_KERNEL_ASPECT, cobBodyLocal } from './sim/cobLayout';
 import { KERNELS, PLAIN_KINDS, type KernelKind, type PlainKind } from './sim/kernels';
 import { CHUNK_SIZE } from './sim/world';
 
@@ -20,7 +21,10 @@ const HUSK = 0x3f8f2a;
 const HUSK_DARK = 0x2f6b1c;
 
 export interface ArtTextures {
+  /** Loose kernels (on the ground, in flight): crown-up corn shape. */
   kernels: Record<KernelKind, Texture>;
+  /** Kernels still on a cob: horizontal ovals. */
+  cobKernels: Record<KernelKind, Texture>;
   dot: Texture;
   square: Texture;
 }
@@ -34,23 +38,30 @@ export function makeArtTextures(app: Application): ArtTextures {
     return tex;
   };
   const kernels = {} as Record<KernelKind, Texture>;
+  const cobKernels = {} as Record<KernelKind, Texture>;
   for (const kind of Object.keys(KERNELS) as KernelKind[]) {
     kernels[kind] = bake((g) => drawKernel(g, kind));
+    cobKernels[kind] = bake((g) => drawCobKernel(g, kind));
   }
   return {
     kernels,
+    cobKernels,
     dot: bake((g) => g.circle(0, 0, TEX_R).fill(WHITE)),
     square: bake((g) => g.rect(-TEX_R, -TEX_R, TEX_R * 2, TEX_R * 2).fill(WHITE)),
   };
 }
 
 /**
- * Half-width of the kernel drawing, as a fraction of TEX_R.
+ * Half-width of a loose kernel drawing, as a fraction of TEX_R.
  * The crown is the wide rounded end; the flat base is narrower.
  */
 export const KERNEL_HALF_W = 0.56;
-/** How much longer a kernel is than it is wide (crown to flat base). */
-export const KERNEL_ASPECT = 1.48;
+
+/**
+ * Half-width of an on-cob kernel, as a fraction of TEX_R.
+ * The sprite is an oval, wider than it is tall (see COB_KERNEL_ASPECT).
+ */
+export const COB_KERNEL_HALF_W = 0.9;
 
 /**
  * A corn kernel: rounded crown, a longer body, and a flatter base
@@ -121,6 +132,42 @@ function drawKernel(g: Graphics, kind: KernelKind): void {
   }
 }
 
+/** A kernel attached to a cob: a horizontal oval, round on every side. */
+function drawCobKernel(g: Graphics, kind: KernelKind): void {
+  const R = TEX_R;
+  const hw = R * COB_KERNEL_HALF_W;
+  const hh = hw * COB_KERNEL_ASPECT;
+  const color = KERNEL_COLOR[kind];
+  const ink = Math.max(1.6, R * 0.07);
+  const shiny = KERNELS[kind].power;
+  g.ellipse(0, 0, hw, hh).fill(color).stroke({ width: ink, color: INK });
+  g.ellipse(-hw * 0.08, -hh * 0.22, hw * 0.36, hh * 0.32).fill({ color: WHITE, alpha: shiny ? 0.5 : 0.28 });
+  g.ellipse(hw * 0.04, hh * 0.28, hw * 0.34, hh * 0.24).fill({ color: 0x000000, alpha: 0.12 });
+  drawCobMark(g, kind, hw, hh, ink);
+}
+
+function drawCobMark(g: Graphics, kind: KernelKind, hw: number, hh: number, ink: number): void {
+  if (kind === 'soggy') {
+    g.ellipse(-hw * 0.06, -hh * 0.02, hh * 0.32, hh * 0.42).fill({ color: WHITE, alpha: 0.55 });
+  } else if (kind === 'stony') {
+    g.moveTo(-hw * 0.16, -hh * 0.15).lineTo(hw * 0.04, hh * 0.08).lineTo(-hw * 0.02, hh * 0.42).stroke({ width: ink * 0.75, color: 0x4d5560 });
+  } else if (kind === 'zinger') {
+    g.poly([0, -hh * 0.48, hw * 0.14, hh * 0.2, -hw * 0.14, hh * 0.2], true).fill(0xfff3b0).stroke({ width: ink * 0.45, color: INK });
+  } else if (kind === 'spicy') {
+    g.poly([0, -hh * 0.55, hw * 0.12, hh * 0.02, 0, -hh * 0.12, -hw * 0.12, hh * 0.02], true)
+      .fill(0xffb703)
+      .stroke({ width: ink * 0.45, color: 0xc4450a });
+  } else if (kind === 'frosty') {
+    g.poly([0, -hh * 0.42, hh * 0.16, 0, 0, hh * 0.42, -hh * 0.16, 0], true).fill(0xf4fbff);
+    g.poly([0, -hh * 0.16, hh * 0.42, 0, 0, hh * 0.16, -hh * 0.42, 0], true)
+      .fill(0xf4fbff)
+      .stroke({ width: ink * 0.4, color: 0x2f6f99 });
+  } else if (kind === 'popper') {
+    g.circle(-hw * 0.16, hh * 0.02, hh * 0.28).fill({ color: WHITE, alpha: 0.5 });
+    g.circle(hw * 0.14, hh * 0.12, hh * 0.22).fill({ color: WHITE, alpha: 0.38 });
+  }
+}
+
 export interface CobDraw {
   x: number;
   y: number;
@@ -163,16 +210,11 @@ function leafPts(rot: Rot, r: number, side: number, pad: number): number[] {
 }
 
 function bodyPts(rot: Rot, r: number, time: number, id: number, pad: number): number[] {
-  const rx = r * 0.62;
-  const ry = r * 0.98;
   const wob = time * 2 + id;
   const pts: number[] = [];
-  const N = 24;
-  for (let i = 0; i < N; i++) {
-    const a = (i / N) * Math.PI * 2;
-    const lx = Math.cos(a) * (rx + Math.sin(a * 5 + wob) * rx * 0.045);
-    const ly = Math.sin(a) * (ry + Math.cos(a * 3 + wob) * ry * 0.03);
-    const [ox, oy] = outward(lx, ly, pad);
+  for (const [fx, fy] of cobBodyLocal()) {
+    const wobble = 1 + Math.sin(fx * 5 + fy * 3 + wob) * 0.035;
+    const [ox, oy] = outward(fx * r * wobble, fy * r * wobble, pad);
     pts.push(...rot(ox, oy));
   }
   return pts;
