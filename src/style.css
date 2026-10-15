@@ -124,13 +124,39 @@ button {
 }
 
 /* Power buttons sit in an arc around the right thumb, clear of the home indicator. */
+#moon {
+  position: absolute;
+  top: calc(var(--safe-top) + 58px);
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.small-btn.on {
+  background: var(--corn);
+}
+
 #powers {
   position: absolute;
   right: calc(var(--safe-right) + 16px);
   bottom: calc(var(--safe-bottom) + 20px);
-  width: 280px;
-  height: 280px;
+  width: 360px;
+  height: 380px;
   pointer-events: none;
+}
+
+#powers.lefty {
+  right: auto;
+  left: calc(var(--safe-left) + 16px);
+}
+
+.power.mile {
+  box-shadow: 0 0 0 3px #ffe08a;
+}
+
+.power.smart-fire {
+  font-weight: 900;
+  font-size: 18px;
+  background: #ffe08a;
 }
 
 .power {

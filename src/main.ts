@@ -4,19 +4,26 @@ import { Sfx } from './audio';
 import { Input } from './input';
 import { appendLog, clearLog, formatLog, formatTime, loadLog, summarize } from './playtestLog';
 import { Renderer } from './render';
+import { loadSettings, saveSettings, type Difficulty } from './settings';
 import { total } from './sim/cob';
 import { perkDef } from './sim/perks';
 import { DT, EMPTY_COMMAND, createWorld, debugGrow, step, tierName, type Loadout, type SimEvent, type World } from './sim/world';
 import { PowerButtons } from './ui/powerButtons';
 import { TuningPanel, loadTuning } from './ui/tuningPanel';
 
-type Mode = 'title' | 'playing' | 'paused' | 'earup' | 'over';
+type Mode = 'title' | 'playing' | 'paused' | 'earup' | 'deal' | 'over';
 
 const $ = <T extends HTMLElement = HTMLElement>(id: string) => document.getElementById(id) as T;
 
 const canvas = $<HTMLCanvasElement>('game');
 const hud = $('hud');
-const screens = { title: $('screen-title'), paused: $('screen-pause'), earup: $('screen-earup'), over: $('screen-over') };
+const screens = {
+  title: $('screen-title'),
+  paused: $('screen-pause'),
+  earup: $('screen-earup'),
+  deal: $('screen-deal'),
+  over: $('screen-over'),
+};
 const tierFill = $('tier-fill');
 const tierLabel = $('tier-label');
 const chipTime = $('chip-time');
@@ -25,6 +32,7 @@ const chipSeeds = $('chip-seeds');
 const debugInfo = $('debug-info');
 
 const tuning = loadTuning();
+const settings = loadSettings();
 const tuningPanel = new TuningPanel($('tuning'), tuning);
 const sfx = new Sfx();
 const renderer = await Renderer.create(canvas);
@@ -39,10 +47,19 @@ const powerButtons = new PowerButtons(
     sfx.unlock();
     input.queueDash();
   },
+  () => {
+    sfx.unlock();
+    input.queueSmart();
+  },
+  (kind, clientX, clientY) => {
+    sfx.unlock();
+    const rect = canvas.getBoundingClientRect();
+    input.queueAim(kind, clientX - rect.left, clientY - rect.top);
+  },
 );
 
 let mode: Mode = 'title';
-let world: World = createWorld(newSeed(), tuning);
+let world: World = createWorld(newSeed(), tuning, 'game', { difficulty: settings.difficulty });
 let accumulator = 0;
 let lastFrame = performance.now();
 let fpsSamples = 0;
@@ -60,8 +77,9 @@ function setMode(next: Mode): void {
   screens.title.hidden = next !== 'title';
   screens.paused.hidden = next !== 'paused';
   screens.earup.hidden = next !== 'earup';
+  screens.deal.hidden = next !== 'deal';
   screens.over.hidden = next !== 'over';
-  hud.hidden = next === 'title' || next === 'earup';
+  hud.hidden = next === 'title' || next === 'earup' || next === 'deal';
   input.enabled = next === 'playing';
   if (next !== 'playing') input.reset();
   if (next === 'playing') void requestWakeLock();
@@ -73,7 +91,8 @@ let loadout: Loadout = 'game';
 function startRun(): void {
   sfx.unlock();
   sfx.startMusic();
-  world = createWorld(newSeed(), tuning, loadout);
+  $('settings').hidden = true;
+  world = createWorld(newSeed(), tuning, loadout, { difficulty: settings.difficulty });
   accumulator = 0;
   fpsSamples = 0;
   fpsTotal = 0;
@@ -161,8 +180,15 @@ function playEvents(events: SimEvent[]): void {
       case 'dash':
         sfx.whoosh();
         break;
-      case 'freeze':
-        sfx.chill();
+      case 'victory':
+        sfx.tierUp();
+        break;
+      case 'combo':
+      case 'milestone':
+      case 'harvest':
+      case 'coat':
+      case 'trade':
+        sfx.perk();
         break;
     }
   }
@@ -196,7 +222,40 @@ function renderEarUp(): void {
   reroll.textContent = world.player.rerolls > 0 ? 'Re-roll' : 'No re-rolls left';
 }
 
+function renderDeal(): void {
+  const deal = world.deals[0];
+  const title = $('deal-title');
+  const cards = $('deal-cards');
+  cards.replaceChildren();
+  if (!deal) return;
+  title.textContent = deal.title;
+  deal.choices.forEach((choice, index) => {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'ear-card';
+    btn.innerHTML = `<span class="ear-icon">${choice.icon}</span><span class="ear-name">${choice.name}</span><span class="ear-blurb">${choice.blurb}</span>`;
+    btn.addEventListener('click', () => {
+      sfx.unlock();
+      step(world, { ...EMPTY_COMMAND, pickDeal: index });
+      renderer.handleEvents(world.events);
+      playEvents(world.events);
+      if (world.deals.length > 0) renderDeal();
+      else setMode('playing');
+    });
+    cards.append(btn);
+  });
+}
+
 function endRun(): void {
+  const title = $('over-title');
+  const sub = $('over-sub');
+  if (world.won) {
+    title.textContent = 'Harvest Moon!';
+    sub.textContent = 'You chomped King Cob.';
+  } else {
+    title.textContent = 'All Popped Out!';
+    sub.textContent = 'Zzz... your cob is taking a nap.';
+  }
   const avgFps = fpsSamples > 0 ? fpsTotal / fpsSamples : 0;
   const run = summarize(world, avgFps);
   appendLog(run);
@@ -219,6 +278,18 @@ function renderLog(): void {
   $('playtest-log').textContent = formatLog(loadLog());
 }
 
+const chipMoon = $('moon');
+
+function applySettings(): void {
+  input.followFinger = settings.followFinger;
+  input.leftHanded = settings.leftHanded;
+  powerButtons.smart = settings.smartFire;
+  powerButtons.dragAim = settings.dragAim;
+  powerButtons.leftHanded = settings.leftHanded;
+  renderer.reduceShake = settings.reduceShake;
+  renderer.reduceFlash = settings.reduceFlashing;
+}
+
 function updateHud(): void {
   const p = world.player;
   const n = total(p.kernels);
@@ -228,6 +299,12 @@ function updateHud(): void {
   chipChomps.textContent = `😋 ${world.stats.chomps}`;
   chipSeeds.hidden = world.stats.seeds === 0;
   chipSeeds.textContent = `🌱 ${world.stats.seeds}`;
+  if (world.harvestSeconds <= 0) chipMoon.hidden = true;
+  else {
+    chipMoon.hidden = false;
+    const left = Math.max(0, world.harvestSeconds - world.tick * DT);
+    chipMoon.textContent = world.won ? '👑 Chomped!' : world.kingSpawned ? '🌙 Harvest Moon' : `🌙 ${formatTime(left)}`;
+  }
   powerButtons.update(world);
   debugInfo.hidden = !showDebug;
   if (showDebug) {
@@ -249,9 +326,14 @@ function frame(now: number): void {
     }
   }
 
+  applySettings();
+
   if (mode === 'playing' && world.earUps.length > 0) {
     renderEarUp();
     setMode('earup');
+  } else if (mode === 'playing' && world.deals.length > 0) {
+    renderDeal();
+    setMode('deal');
   }
 
   if (mode === 'playing') {
@@ -263,13 +345,16 @@ function frame(now: number): void {
       playEvents(world.events);
       accumulator -= DT;
       steps++;
-      if (world.over || world.earUps.length > 0) break;
+      if (world.over || world.earUps.length > 0 || world.deals.length > 0) break;
     }
     if (steps === 6) accumulator = 0;
     if (world.over) endRun();
     else if (world.earUps.length > 0) {
       renderEarUp();
       setMode('earup');
+    } else if (world.deals.length > 0) {
+      renderDeal();
+      setMode('deal');
     }
   }
 
@@ -301,7 +386,13 @@ $('playtest-btn').addEventListener('click', () => {
 });
 $('again-btn').addEventListener('click', startRun);
 $('restart-btn').addEventListener('click', startRun);
-$('resume-btn').addEventListener('click', () => setMode(world.earUps.length > 0 ? 'earup' : 'playing'));
+$('resume-btn').addEventListener('click', () => {
+  if (world.earUps.length > 0) setMode('earup');
+  else if (world.deals.length > 0) {
+    renderDeal();
+    setMode('deal');
+  } else setMode('playing');
+});
 $('earup-reroll').addEventListener('click', () => {
   if (world.player.rerolls <= 0) return;
   sfx.unlock();
@@ -325,6 +416,76 @@ for (const id of ['title-tuning-btn', 'pause-tuning-btn', 'over-tuning-btn']) {
   });
 }
 $('tuning-close').addEventListener('click', () => tuningPanel.close());
+
+const settingsPanel = $('settings');
+const diffButtons = [...settingsPanel.querySelectorAll<HTMLButtonElement>('[data-diff]')];
+const setSmart = $<HTMLInputElement>('set-smart');
+const setFollow = $<HTMLInputElement>('set-follow');
+const setDrag = $<HTMLInputElement>('set-drag');
+const setLeft = $<HTMLInputElement>('set-left');
+const setFlash = $<HTMLInputElement>('set-flash');
+const setShake = $<HTMLInputElement>('set-shake');
+
+function syncSettingsPanel(): void {
+  for (const btn of diffButtons) btn.classList.toggle('on', btn.dataset.diff === settings.difficulty);
+  setSmart.checked = settings.smartFire;
+  setFollow.checked = settings.followFinger;
+  setDrag.checked = settings.dragAim;
+  setLeft.checked = settings.leftHanded;
+  setFlash.checked = settings.reduceFlashing;
+  setShake.checked = settings.reduceShake;
+}
+
+function commitSettings(): void {
+  saveSettings(settings);
+  syncSettingsPanel();
+  applySettings();
+}
+
+function openSettings(): void {
+  syncSettingsPanel();
+  settingsPanel.hidden = false;
+}
+
+for (const btn of diffButtons) {
+  btn.addEventListener('click', () => {
+    const next = btn.dataset.diff;
+    if (next !== 'easy' && next !== 'normal' && next !== 'spicy') return;
+    settings.difficulty = next satisfies Difficulty;
+    if (next === 'easy') settings.smartFire = true;
+    commitSettings();
+  });
+}
+setSmart.addEventListener('change', () => {
+  settings.smartFire = setSmart.checked;
+  commitSettings();
+});
+setFollow.addEventListener('change', () => {
+  settings.followFinger = setFollow.checked;
+  commitSettings();
+});
+setDrag.addEventListener('change', () => {
+  settings.dragAim = setDrag.checked;
+  commitSettings();
+});
+setLeft.addEventListener('change', () => {
+  settings.leftHanded = setLeft.checked;
+  commitSettings();
+});
+setFlash.addEventListener('change', () => {
+  settings.reduceFlashing = setFlash.checked;
+  commitSettings();
+});
+setShake.addEventListener('change', () => {
+  settings.reduceShake = setShake.checked;
+  commitSettings();
+});
+$('settings-close').addEventListener('click', () => {
+  settingsPanel.hidden = true;
+});
+for (const id of ['title-settings-btn', 'pause-settings-btn']) {
+  $(id).addEventListener('click', openSettings);
+}
 const debugToggle = $<HTMLInputElement>('debug-toggle');
 debugToggle.checked = showDebug;
 debugToggle.addEventListener('change', () => (showDebug = debugToggle.checked));

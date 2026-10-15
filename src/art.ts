@@ -1,5 +1,5 @@
 import { Graphics, type Application, type Texture } from 'pixi.js';
-import { decorForChunk, type FarmProp } from './sim/farm';
+import { biomeAt, decorForChunk, type FarmProp } from './sim/farm';
 import { dominantPlain, total, type Kernels } from './sim/cob';
 import { COB_KERNEL_ASPECT, cobBodyLocal } from './sim/cobLayout';
 import { KERNELS, PLAIN_KINDS, type KernelKind, type PlainKind } from './sim/kernels';
@@ -16,7 +16,17 @@ export const KERNEL_COLOR = Object.fromEntries(Object.entries(KERNELS).map(([k, 
   number
 >;
 
-const BODY: Record<PlainKind, number> = { sunny: 0xffe08a, soggy: 0x7fd8cf, stony: 0xc5ced6 };
+const BODY: Record<PlainKind, number> = {
+  sunny: 0xffe08a,
+  sweetie: 0xfff6ee,
+  soggy: 0x7fd8cf,
+  toasty: 0xe0b07a,
+  rubbery: 0xffc0d0,
+  leafy: 0xb7e39a,
+  stony: 0xc5ced6,
+  tough: 0xc4a07a,
+  goldie: 0xffe27a,
+};
 const HUSK = 0x3f8f2a;
 const HUSK_DARK = 0x2f6b1c;
 
@@ -100,35 +110,53 @@ function drawKernel(g: Graphics, kind: KernelKind): void {
   const shiny = KERNELS[kind].power;
   g.ellipse(0, shoulderY - wide * 0.28, wide * 0.36, wide * 0.16).fill({ color: WHITE, alpha: shiny ? 0.5 : 0.24 });
   if (kind === 'soggy') g.ellipse(-wide * 0.12, shoulderY + R * 0.08, wide * 0.22, wide * 0.14).fill({ color: WHITE, alpha: 0.5 });
-  if (kind === 'stony') {
+  drawLooseMark(g, kind, wide, shoulderY, R, ink);
+}
+
+function drawLooseMark(g: Graphics, kind: KernelKind, wide: number, shoulderY: number, R: number, ink: number): void {
+  if (kind === 'stony' || kind === 'tough') {
     g.moveTo(-wide * 0.2, shoulderY + R * 0.05)
       .lineTo(wide * 0.05, R * 0.12)
       .lineTo(-wide * 0.02, R * 0.48)
-      .stroke({ width: ink * 0.7, color: 0x5c6570 });
-  }
-  if (kind === 'zinger') {
+      .stroke({ width: ink * 0.7, color: kind === 'tough' ? 0x3a2416 : 0x5c6570 });
+  } else if (kind === 'sweetie') {
+    g.circle(0, shoulderY + R * 0.2, wide * 0.16).fill(0xff8fab);
+  } else if (kind === 'toasty') {
+    g.moveTo(-wide * 0.3, shoulderY).lineTo(wide * 0.3, shoulderY).stroke({ width: ink * 0.6, color: 0x8a4b24 });
+  } else if (kind === 'rubbery') {
+    g.moveTo(-wide * 0.3, R * 0.1).quadraticCurveTo(0, R * 0.35, wide * 0.3, R * 0.05).stroke({ width: ink * 0.6, color: 0xc4537a });
+  } else if (kind === 'leafy') {
+    g.ellipse(0, shoulderY + R * 0.15, wide * 0.16, wide * 0.28).fill(0x2f7d32);
+  } else if (kind === 'goldie') {
+    g.circle(0, shoulderY + R * 0.15, wide * 0.12).fill(0xfff6c2);
+  } else if (kind === 'zinger') {
     g.poly([0, shoulderY - wide * 0.15, wide * 0.22, shoulderY + wide * 0.28, -wide * 0.22, shoulderY + wide * 0.28], true)
       .fill(0xfff3b0)
       .stroke({ width: ink * 0.55, color: INK });
-  }
-  if (kind === 'spicy') {
-    g.poly(
-      [0, shoulderY - wide * 0.22, wide * 0.16, shoulderY + wide * 0.18, 0, shoulderY + wide * 0.02, -wide * 0.16, shoulderY + wide * 0.18],
-      true,
-    )
+  } else if (kind === 'spicy') {
+    g.poly([0, shoulderY - wide * 0.22, wide * 0.16, shoulderY + wide * 0.18, 0, shoulderY + wide * 0.02, -wide * 0.16, shoulderY + wide * 0.18], true)
       .fill(0xffb703)
       .stroke({ width: ink * 0.5, color: 0xc4450a });
-  }
-  if (kind === 'frosty') {
+  } else if (kind === 'frosty') {
     const y = shoulderY + R * 0.18;
     g.poly([0, y - R * 0.22, R * 0.07, y, 0, y + R * 0.22, -R * 0.07, y], true).fill(0xf4fbff);
     g.poly([0, y - R * 0.07, R * 0.2, y, 0, y + R * 0.07, -R * 0.2, y], true)
       .fill(0xf4fbff)
       .stroke({ width: ink * 0.45, color: 0x2f6f99 });
-  }
-  if (kind === 'popper') {
+  } else if (kind === 'popper') {
     g.circle(-wide * 0.22, R * 0.18, wide * 0.22).fill({ color: WHITE, alpha: 0.45 });
     g.circle(wide * 0.2, R * 0.28, wide * 0.18).fill({ color: WHITE, alpha: 0.35 });
+  } else if (kind === 'boing') {
+    g.moveTo(-wide * 0.2, R * 0.35).lineTo(0, shoulderY).lineTo(wide * 0.2, R * 0.35).stroke({ width: ink * 0.7, color: 0x6a4cc4 });
+  } else if (kind === 'zappy') {
+    g.poly([0, shoulderY, wide * 0.16, R * 0.15, 0, R * 0.05, -wide * 0.08, R * 0.4], true).fill(0xfff3b0);
+  } else if (kind === 'caramel') {
+    g.ellipse(0, R * 0.2, wide * 0.18, wide * 0.28).fill(0x6b3e26);
+  } else if (kind === 'sprout') {
+    g.moveTo(0, R * 0.35).lineTo(0, shoulderY).stroke({ width: ink * 0.6, color: 0x1f7a32 });
+    g.ellipse(wide * 0.12, shoulderY + R * 0.05, wide * 0.16, wide * 0.08).fill(0x2f9e44);
+  } else if (kind === 'gem') {
+    g.poly([0, shoulderY - wide * 0.05, wide * 0.16, R * 0.2, 0, R * 0.42, -wide * 0.16, R * 0.2], true).fill(0xffffff).stroke({ width: ink * 0.4, color: 0x8a6bb5 });
   }
 }
 
@@ -165,6 +193,28 @@ function drawCobMark(g: Graphics, kind: KernelKind, hw: number, hh: number, ink:
   } else if (kind === 'popper') {
     g.circle(-hw * 0.16, hh * 0.02, hh * 0.28).fill({ color: WHITE, alpha: 0.5 });
     g.circle(hw * 0.14, hh * 0.12, hh * 0.22).fill({ color: WHITE, alpha: 0.38 });
+  } else if (kind === 'sweetie') {
+    g.circle(0, 0, hh * 0.28).fill(0xff8fab);
+  } else if (kind === 'toasty') {
+    g.moveTo(-hw * 0.35, -hh * 0.1).lineTo(hw * 0.35, -hh * 0.1).stroke({ width: ink, color: 0x8a4b24 });
+  } else if (kind === 'rubbery') {
+    g.moveTo(-hw * 0.3, 0).quadraticCurveTo(0, hh * 0.45, hw * 0.3, 0).stroke({ width: ink, color: 0xc4537a });
+  } else if (kind === 'leafy') {
+    g.ellipse(0, 0, hh * 0.3, hh * 0.5).fill(0x2f7d32);
+  } else if (kind === 'goldie') {
+    g.circle(0, -hh * 0.05, hh * 0.22).fill(0xfff6c2);
+  } else if (kind === 'tough') {
+    g.moveTo(-hw * 0.2, -hh * 0.2).lineTo(hw * 0.05, hh * 0.1).stroke({ width: ink, color: 0x3a2416 });
+  } else if (kind === 'boing') {
+    g.moveTo(-hw * 0.25, hh * 0.3).lineTo(0, -hh * 0.35).lineTo(hw * 0.25, hh * 0.3).stroke({ width: ink, color: 0x6a4cc4 });
+  } else if (kind === 'zappy') {
+    g.poly([0, -hh * 0.4, hw * 0.16, hh * 0.05, 0, -hh * 0.05, -hw * 0.1, hh * 0.4], true).fill(0xfff3b0);
+  } else if (kind === 'caramel') {
+    g.ellipse(0, hh * 0.05, hw * 0.16, hh * 0.4).fill(0x6b3e26);
+  } else if (kind === 'sprout') {
+    g.moveTo(0, hh * 0.4).lineTo(0, -hh * 0.35).stroke({ width: ink, color: 0x1f7a32 });
+  } else if (kind === 'gem') {
+    g.poly([0, -hh * 0.4, hw * 0.18, hh * 0.05, 0, hh * 0.4, -hw * 0.18, hh * 0.05], true).fill(0xffffff).stroke({ width: ink * 0.5, color: 0x8a6bb5 });
   }
 }
 
@@ -284,7 +334,7 @@ export function drawCobShell(g: Graphics, c: CobDraw): { primary: PlainKind; sec
       g.ellipse(dx, dy, r * 0.08, r * 0.16).fill(0x2ec4b6).stroke({ width: Math.max(1.5, r * 0.03), color: INK });
     }
   }
-  if (primary === 'stony' || secondary === 'stony') {
+  if (primary === 'stony' || secondary === 'stony' || primary === 'tough' || secondary === 'tough') {
     const crack: number[] = [];
     for (const [lx, ly] of [
       [-0.2, -0.4],
@@ -293,7 +343,19 @@ export function drawCobShell(g: Graphics, c: CobDraw): { primary: PlainKind; sec
     ]) {
       crack.push(...rot(r * lx, r * ly));
     }
-    g.poly(crack).stroke({ width: Math.max(1.5, r * 0.035), color: 0x6d7580 });
+    g.poly(crack).stroke({ width: Math.max(1.5, r * 0.035), color: primary === 'tough' ? 0x5a3a22 : 0x6d7580 });
+  }
+  if (primary === 'sweetie' || secondary === 'sweetie') {
+    const [hx, hy] = rot(r * 0.15, -r * 0.2);
+    g.circle(hx, hy, r * 0.06).fill(0xff8fab);
+  }
+  if (primary === 'leafy' || secondary === 'leafy') {
+    const [lx, ly] = rot(-r * 0.42, r * 0.1);
+    g.ellipse(lx, ly, r * 0.16, r * 0.08).fill(0x3d8f45).stroke({ width: Math.max(1.2, r * 0.03), color: INK });
+  }
+  if (primary === 'goldie') {
+    const [gx, gy] = rot(0, -r * 0.72);
+    g.circle(gx, gy, r * 0.08).fill(0xfff3b0);
   }
   return { primary, secondary };
 }
@@ -318,6 +380,21 @@ export function drawFlair(g: Graphics, c: CobDraw): void {
   if (kernels.popper > 0 && Math.sin(time * 6 + c.id) > 0.35) {
     const [px, py] = rot(r * 0.55, -r * 0.2);
     g.circle(px, py, r * 0.1).fill(0xfff8e7).stroke({ width: ink, color: INK });
+  }
+  if (kernels.boing > 0) {
+    const [bx, by] = rot(-r * 0.1, -r * 0.85);
+    g.moveTo(bx, by).lineTo(bx + r * 0.08, by - r * 0.16).lineTo(bx + r * 0.16, by).stroke({ width: ink, color: 0x6a4cc4 });
+  }
+  if (kernels.zappy > 0 && Math.sin(time * 14 + c.id) > 0.2) {
+    const [zx, zy] = rot(r * 0.35, -r * 0.4);
+    g.circle(zx, zy, r * 0.06).fill(0xfff3b0);
+  }
+  if (kernels.sprout > 0) {
+    const [sx, sy] = rot(-r * 0.4, r * 0.15);
+    g.moveTo(sx, sy).lineTo(sx, sy - r * 0.22).stroke({ width: ink, color: 0x2f9e44 });
+  }
+  if (kernels.gem > 0) {
+    g.poly(bodyPts(rotator(x, y, angle), r, time, c.id, 0), true).stroke({ width: ink, color: 0xff8ad4, alpha: 0.7 });
   }
 }
 
@@ -385,6 +462,13 @@ export function drawFarm(
   const y1 = Math.floor(bottom / CHUNK_SIZE) + 1;
   for (let cx = x0; cx <= x1; cx++) {
     for (let cy = y0; cy <= y1; cy++) {
+      const biome = biomeAt((cx + 0.5) * CHUNK_SIZE, (cy + 0.5) * CHUNK_SIZE);
+      if (biome !== 'farm') {
+        g.rect(cx * CHUNK_SIZE, cy * CHUNK_SIZE, CHUNK_SIZE, CHUNK_SIZE).fill({
+          color: biome === 'picnic' ? 0xc6e38a : 0xd7d2c4,
+          alpha: 0.55,
+        });
+      }
       for (const d of decorForChunk(seed, cx, cy, CHUNK_SIZE)) {
         if (d.x < left - 80 || d.x > right + 80 || d.y < top - 80 || d.y > bottom + 80) continue;
         if (d.kind === 'dirt') {
@@ -411,6 +495,11 @@ export function drawFarm(
     if (p.kind === 'mud') {
       g.ellipse(p.x, p.y, p.r, p.r * 0.72).fill(0x8d6b4a).stroke({ width: 3, color: 0x6b4f34 });
       g.ellipse(p.x - p.r * 0.2, p.y - p.r * 0.15, p.r * 0.35, p.r * 0.16).fill({ color: WHITE, alpha: 0.25 });
+    } else if (p.kind === 'butter') {
+      g.ellipse(p.x, p.y, p.r, p.r * 0.7).fill(0xffe08a).stroke({ width: 3, color: 0xe0b000 });
+    } else if (p.kind === 'sink') {
+      g.ellipse(p.x, p.y, p.r, p.r * 0.7).fill(0xb9e3f5).stroke({ width: 4, color: 0x8aa4b0 });
+      g.circle(p.x, p.y, p.r * 0.18).fill(0x9fd3ea);
     } else {
       g.roundRect(p.x - p.r, p.y - p.r * 0.62, p.r * 2, p.r * 1.24, p.r * 0.25)
         .fill(0xf0d264)

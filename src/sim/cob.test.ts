@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { applyHit, canChomp, kernelsOf, shieldBadges, total } from './cob';
+import { applyHit, canChomp, emptyKernels, kernelsOf, shieldBadges, total } from './cob';
 import { makeRng } from './rng';
 
 describe('chomp rule', () => {
@@ -59,5 +59,34 @@ describe('shieldBadges', () => {
   it('shows a badge for resistances covering most kernels', () => {
     expect(shieldBadges(kernelsOf({ soggy: 6, sunny: 2 }))).toEqual(['fire']);
     expect(shieldBadges(kernelsOf({ stony: 3, sunny: 5 }))).toEqual([]);
+  });
+
+  it('shows freeze and zap badges', () => {
+    expect(shieldBadges(kernelsOf({ toasty: 5, sunny: 1 }))).toEqual(['freeze']);
+    expect(shieldBadges(kernelsOf({ rubbery: 4 }))).toContain('zap');
+  });
+});
+
+describe('durability', () => {
+  it('Tough Nut soaks three hits, Toasty shrugs off freeze, and Rubbery halves bonk', () => {
+    const tough = kernelsOf({ tough: 1 });
+    const chip = emptyKernels();
+    expect(applyHit(tough, 'bonk', 1, makeRng(1), { chip }).removed).toEqual([]);
+    expect(applyHit(tough, 'bonk', 1, makeRng(1), { chip }).removed).toEqual([]);
+    expect(applyHit(tough, 'bonk', 1, makeRng(1), { chip }).removed).toEqual(['tough']);
+
+    const toasty = kernelsOf({ toasty: 3 });
+    expect(applyHit(toasty, 'freeze', 2, makeRng(1)).resisted).toBe(true);
+    expect(total(toasty)).toBe(3);
+
+    const chip2 = emptyKernels();
+    const rubber = kernelsOf({ rubbery: 1 });
+    expect(applyHit(rubber, 'bonk', 1, makeRng(2), { chip: chip2 }).removed).toEqual([]);
+    expect(applyHit(rubber, 'bonk', 1, makeRng(2), { chip: chip2 }).removed).toEqual(['rubbery']);
+    expect(applyHit(kernelsOf({ rubbery: 2 }), 'zap', 1, makeRng(1)).resisted).toBe(true);
+
+    const soggy = kernelsOf({ soggy: 2 });
+    expect(applyHit(soggy, 'zap', 1, makeRng(1)).removed).toEqual(['soggy', 'soggy']);
+    expect(applyHit(kernelsOf({ leafy: 3 }), 'pop', 1, makeRng(1)).resisted).toBe(true);
   });
 });

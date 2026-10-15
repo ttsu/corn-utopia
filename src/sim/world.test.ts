@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { kernelsOf, total } from './cob';
-import { POWER_KINDS } from './kernels';
+import { STARTER_POWERS } from './kernels';
 import { defaultTuning } from './tuning';
-import { EMPTY_COMMAND, bumpLossFor, canFire, challenge, createWorld, damageScale, shotRange, step, type InputCommand, type World } from './world';
+import { EMPTY_COMMAND, bestPower, bumpLossFor, canFire, challenge, createWorld, damageScale, shotRange, step, type InputCommand, type World } from './world';
 
 function quietWorld(seed = 1): World {
   const w = createWorld(seed, defaultTuning());
@@ -37,6 +37,21 @@ function addEnemy(w: World, x: number, y: number, kernels: ReturnType<typeof ker
     frostHits: 0,
     slowLeft: 0,
     frozenLeft: 0,
+    burnLeft: 0,
+    zapLeft: 0,
+    caramelLeft: 0,
+    stuckLeft: 0,
+    husk: 0,
+    popHp: 0,
+    popMax: 0,
+    shotCd: 0,
+    fuse: -1,
+    loot: kernelsOf({}),
+    chip: kernelsOf({}),
+    king: false,
+    kingPhase: 0,
+    kingStart: 0,
+    gustCd: 0,
   });
   return w.enemies[w.enemies.length - 1];
 }
@@ -47,7 +62,7 @@ describe('world', () => {
     expect(w.player.kernels).toEqual(kernelsOf({ sunny: defaultTuning().gameStartSunny }));
     const babies = w.enemies.filter((e) => e.type === 'baby');
     expect(babies.length).toBe(4);
-    for (const kind of POWER_KINDS) expect(babies.some((b) => b.kernels[kind] > 0)).toBe(true);
+    for (const kind of STARTER_POWERS) expect(babies.some((b) => b.kernels[kind] > 0)).toBe(true);
     for (const b of babies) expect(total(b.kernels)).toBeLessThan(total(w.player.kernels));
 
     const mix = createWorld(3, defaultTuning(), 'playtest');
@@ -539,5 +554,66 @@ describe('world', () => {
     const frozenX = e.x;
     for (let i = 0; i < 20; i++) step(w, EMPTY_COMMAND);
     expect(e.x).toBe(frozenX);
+  });
+
+  it('caramel sticks a cob and leaves its kernels on', () => {
+    const w = quietWorld();
+    w.player.kernels = kernelsOf({ sunny: 4, caramel: 2 });
+    const e = addEnemy(w, 80, 0, kernelsOf({ sunny: 20 }));
+    step(w, EMPTY_COMMAND);
+    step(w, fire('caramel'));
+    for (let i = 0; i < 90 && e.caramelLeft === 0; i++) step(w, EMPTY_COMMAND);
+    expect(e.caramelLeft).toBeGreaterThan(0);
+    expect(total(e.kernels)).toBe(20);
+  });
+
+  it('Steam Burst on a frozen cob ignores Toasty', () => {
+    const w = quietWorld();
+    w.tuning.spicyShake = 0;
+    w.player.kernels = kernelsOf({ sunny: 4, spicy: 2 });
+    const e = addEnemy(w, 90, 0, kernelsOf({ sunny: 8, toasty: 6 }));
+    e.frozenLeft = 2;
+    step(w, EMPTY_COMMAND);
+    let burst = false;
+    step(w, fire('spicy'));
+    if (w.events.some((ev) => ev.type === 'combo' && ev.name === 'Steam Burst')) burst = true;
+    for (let i = 0; i < 90 && e.kernels.toasty === 6; i++) {
+      step(w, EMPTY_COMMAND);
+      if (w.events.some((ev) => ev.type === 'combo' && ev.name === 'Steam Burst')) burst = true;
+    }
+    expect(burst).toBe(true);
+    expect(e.kernels.toasty).toBeLessThan(6);
+  });
+
+  it('Smart Fire prefers a power the target does not resist', () => {
+    const w = quietWorld();
+    w.player.kernels = kernelsOf({ sunny: 4, zinger: 2, spicy: 2 });
+    const e = addEnemy(w, 40, 0, kernelsOf({ stony: 30 }));
+    step(w, EMPTY_COMMAND);
+    expect(w.player.targetId).toBe(e.id);
+    expect(bestPower(w)).toBe('spicy');
+  });
+
+  it('spawns King Cob when the Harvest Moon timer ends', () => {
+    const w = quietWorld();
+    w.harvestSeconds = 1 / 60;
+    step(w, EMPTY_COMMAND);
+    expect(w.kingSpawned).toBe(true);
+    expect(w.enemies.some((e) => e.king)).toBe(true);
+    expect(w.events.some((e) => e.type === 'harvest')).toBe(true);
+  });
+
+  it('Easy Peasy skips the crow raid', () => {
+    const run = (difficulty: 'easy' | 'normal') => {
+      const w = createWorld(2, { ...defaultTuning(), maxEnemies: 80 }, 'game', { difficulty, harvestSeconds: 0 });
+      w.enemies = [];
+      for (let n = 0; n < 4; n++) {
+        w.nextEvent = w.tick;
+        step(w, EMPTY_COMMAND);
+      }
+      return w.enemies.some((e) => e.type === 'crow');
+    };
+    expect(run('easy')).toBe(false);
+    expect(run('normal')).toBe(true);
   });
 });

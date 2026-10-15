@@ -1,5 +1,6 @@
 import { DAMAGE_ICON, KERNELS, POWER_DAMAGE, POWER_KINDS, type PowerKind } from '../sim/kernels';
-import { DASH_COOLDOWN, canFire, heartLocked, rechargeSeconds, type World } from '../sim/world';
+import { milestoneName } from '../sim/milestones';
+import { DASH_COOLDOWN, canFire, heartLocked, powerMilestone, rechargeSeconds, type World } from '../sim/world';
 
 interface ButtonEls {
   root: HTMLButtonElement;
@@ -44,7 +45,7 @@ const ARC_SLOTS = 4;
  * bows around the dash: the first and last buttons flank it, and the middle
  * bows out into the field.
  */
-export function powerButtonArc(slots = ARC_SLOTS): ArcSpot[] {
+export function powerButtonArc(slots = ARC_SLOTS, buttonSize = BUTTON_SIZE): ArcSpot[] {
   const d = FLANK_DISTANCE;
   const h = BULGE;
   const halfChord = d / Math.SQRT2;
@@ -63,16 +64,31 @@ export function powerButtonArc(slots = ARC_SLOTS): ArcSpot[] {
     const relX = center + radius * Math.cos(a);
     const relY = center + radius * Math.sin(a);
     spots.push({
-      x: origin + relX - BUTTON_SIZE / 2,
-      y: origin + relY - BUTTON_SIZE / 2,
-      size: BUTTON_SIZE,
+      x: origin + relX - buttonSize / 2,
+      y: origin + relY - buttonSize / 2,
+      size: buttonSize,
       angle: Math.atan2(relY, relX),
     });
   }
   return spots;
 }
 
-const ARC = powerButtonArc();
+const INNER = powerButtonArc(5, 58);
+const OUTER = powerButtonArc(4, 50);
+
+function spotForPower(kind: PowerKind): ArcSpot {
+  const i = POWER_KINDS.indexOf(kind);
+  if (i < INNER.length) return INNER[i];
+  const outer = OUTER[Math.min(OUTER.length - 1, i - INNER.length)];
+  const dash = DASH_SPOT.size / 2;
+  const cx = outer.x + outer.size / 2;
+  const cy = outer.y + outer.size / 2;
+  const dx = cx - dash;
+  const dy = cy - dash;
+  const dist = Math.hypot(dx, dy) || 1;
+  const push = 74;
+  return { ...outer, x: outer.x + (dx / dist) * push, y: outer.y + (dy / dist) * push };
+}
 
 /** Names sit just outside the button, away from the dash, so they don't land on a neighbor. */
 export function labelOffset(angle: number, size: number): { x: number; y: number } {
@@ -89,12 +105,19 @@ export class PowerButtons {
   private buttons: ButtonEls[] = [];
   private hint: HTMLDivElement;
   private dash: { root: HTMLButtonElement; ring: HTMLDivElement; last: string };
+  smart = false;
+  dragAim = false;
+  leftHanded = false;
+  private smartBtn: HTMLButtonElement | null = null;
+  private drag: { kind: PowerKind; x: number; y: number } | null = null;
   private signature = '';
 
   constructor(
     private container: HTMLElement,
     private onPress: (kind: PowerKind) => void,
     private onDash: () => void,
+    private onSmart: () => void,
+    private onAim: (kind: PowerKind, clientX: number, clientY: number) => void,
   ) {
     this.hint = document.createElement('div');
     this.hint.className = 'power-hint';
@@ -139,12 +162,15 @@ export class PowerButtons {
     const pockets = w.player.pockets;
     const waiting = w.player.waiting;
     const shown = POWER_KINDS.filter((k) => pockets.includes(k) || waiting.includes(k));
-    const signature = shown.map((k) => `${k}:${waiting.includes(k) ? 'wait' : 'on'}`).join(',');
+    const signature = `${this.smart ? 'smart' : 'arc'}|${this.leftHanded ? 'L' : 'R'}|` + shown.map((k) => `${k}:${waiting.includes(k) ? 'wait' : 'on'}`).join(',');
     if (signature !== this.signature) {
       this.signature = signature;
       this.rebuild(shown, waiting);
     }
-    this.hint.hidden = shown.length > 0;
+    this.container.classList.toggle('lefty', this.leftHanded);
+    this.dash.root.style.right = this.leftHanded ? 'auto' : '0px';
+    this.dash.root.style.left = this.leftHanded ? '0px' : 'auto';
+    this.hint.hidden = shown.length > 0 || this.smart;
     const dashFrac = w.player.dashCd > 0 ? w.player.dashCd / DASH_COOLDOWN : 0;
     const dashKey = `${Math.round(dashFrac * 40)}|${w.player.dashTime > 0 ? 'go' : 'ready'}`;
     if (dashKey !== this.dash.last) {
@@ -160,14 +186,17 @@ export class PowerButtons {
       const cd = w.player.cooldowns[kind];
       const frac = cd > 0 ? cd / rechargeSeconds(w, kind) : 0;
       const state = benched ? 'benched' : n === 0 ? 'empty' : locked ? 'locked' : canFire(w, kind) ? 'ready' : 'charging';
-      const key = `${n}|${state}|${Math.round(frac * 40)}`;
+      const level = powerMilestone(w, kind);
+      const named = milestoneName(kind, level);
+      const key = `${n}|${state}|${Math.round(frac * 40)}|${level}`;
       if (key === b.last) continue;
       b.last = key;
       b.count.textContent = String(n);
-      b.root.setAttribute('aria-label', benched ? `${KERNELS[kind].name}, tap to arm` : KERNELS[kind].name);
+      b.root.setAttribute('aria-label', benched ? `${KERNELS[kind].name}, tap to arm` : named ? `${KERNELS[kind].name} ${named}` : KERNELS[kind].name);
       b.root.classList.toggle('benched', state === 'benched');
       b.root.classList.toggle('empty', state === 'empty');
       b.root.classList.toggle('locked', state === 'locked');
+      b.root.classList.toggle('mile', level > 0);
       b.ring.style.background = !benched && frac > 0 ? `conic-gradient(rgba(0,0,0,0.45) ${frac * 360}deg, transparent 0deg)` : 'transparent';
     }
   }
@@ -175,8 +204,34 @@ export class PowerButtons {
   private rebuild(shown: readonly PowerKind[], waiting: readonly PowerKind[]): void {
     for (const b of this.buttons) b.root.remove();
     this.buttons = [];
+    this.smartBtn?.remove();
+    this.smartBtn = null;
+    if (this.smart) {
+      const root = document.createElement('button');
+      root.type = 'button';
+      root.className = 'power smart-fire';
+      root.textContent = 'Fire';
+      root.setAttribute('aria-label', 'Smart Fire');
+      root.style.width = '84px';
+      root.style.height = '84px';
+      root.style.bottom = '108px';
+      root.style.right = this.leftHanded ? 'auto' : '8px';
+      root.style.left = this.leftHanded ? '8px' : 'auto';
+      root.addEventListener('pointerdown', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        root.classList.add('pressed');
+        this.onSmart();
+      });
+      root.addEventListener('pointerup', () => root.classList.remove('pressed'));
+      root.addEventListener('pointercancel', () => root.classList.remove('pressed'));
+      root.addEventListener('contextmenu', (e) => e.preventDefault());
+      this.container.append(root);
+      this.smartBtn = root;
+      return;
+    }
     for (const kind of shown) {
-      const spot = ARC[Math.min(POWER_KINDS.indexOf(kind), ARC.length - 1)];
+      const spot = spotForPower(kind);
       const def = KERNELS[kind];
       const benched = waiting.includes(kind);
       const root = document.createElement('button');
@@ -186,8 +241,9 @@ export class PowerButtons {
       root.setAttribute('aria-label', benched ? `${def.name}, tap to arm` : def.name);
       root.style.width = `${spot.size}px`;
       root.style.height = `${spot.size}px`;
-      root.style.right = `${spot.x}px`;
       root.style.bottom = `${spot.y}px`;
+      root.style.right = this.leftHanded ? 'auto' : `${spot.x}px`;
+      root.style.left = this.leftHanded ? `${spot.x}px` : 'auto';
       const ring = document.createElement('div');
       ring.className = 'ring';
       const icon = document.createElement('div');
@@ -208,13 +264,28 @@ export class PowerButtons {
       root.addEventListener('pointerdown', (e) => {
         e.preventDefault();
         e.stopPropagation();
+        if (this.dragAim) {
+          this.drag = { kind, x: e.clientX, y: e.clientY };
+          root.setPointerCapture(e.pointerId);
+          return;
+        }
         root.classList.add('pressed');
         this.onPress(kind);
       });
-      const release = () => root.classList.remove('pressed');
+      const release = (e: PointerEvent) => {
+        root.classList.remove('pressed');
+        if (!this.drag || this.drag.kind !== kind) return;
+        const moved = Math.hypot(e.clientX - this.drag.x, e.clientY - this.drag.y);
+        const from = this.drag;
+        this.drag = null;
+        if (moved > 18) this.onAim(from.kind, e.clientX, e.clientY);
+        else this.onPress(from.kind);
+      };
       root.addEventListener('pointerup', release);
-      root.addEventListener('pointercancel', release);
-      root.addEventListener('pointerleave', release);
+      root.addEventListener('pointercancel', () => {
+        this.drag = null;
+        root.classList.remove('pressed');
+      });
       root.addEventListener('contextmenu', (e) => e.preventDefault());
       this.container.append(root);
       this.buttons.push({ root, ring, count, last: '' });
