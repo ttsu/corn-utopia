@@ -9,6 +9,7 @@ import {
   type Kernels,
 } from './cob';
 import {
+  ALL_POWER_KINDS,
   KERNEL_KINDS,
   PLAIN_KINDS,
   POWER_DAMAGE,
@@ -445,6 +446,8 @@ const MAX_EXTRA_HUNTERS = 4;
 const MAX_BUDGET = 8;
 const MAX_SPAWN_COST = MAX_BUDGET - 0.5;
 const EVENT_GAP = 150 * TICK_RATE;
+/** Piñatas, patches, sprinklers, shrines, rescues, and stalks. Off until the field is calmer. */
+const SHOW_POINTS_OF_INTEREST = false;
 const HARVEST_DEFAULT = 600;
 
 export interface RunOptions {
@@ -516,7 +519,7 @@ export function createWorld(seed: number, tuning: Tuning, loadout: Loadout = 'ga
     kernels: startKernels,
     tier: 1,
     sockets: socketsForTier(1),
-    cooldowns: zeroCounts(POWER_KINDS),
+    cooldowns: zeroCounts(ALL_POWER_KINDS),
     targetId: null,
     lockedTargetId: null,
     facingX: 1,
@@ -531,7 +534,7 @@ export function createWorld(seed: number, tuning: Tuning, loadout: Loadout = 'ga
     recentFired: [],
     chip: emptyKernels(),
     sweetieTimer: 8,
-    milestoneSeen: zeroCounts(POWER_KINDS) as Record<PowerKind, Milestone>,
+    milestoneSeen: zeroCounts(ALL_POWER_KINDS) as Record<PowerKind, Milestone>,
     pockets: [],
     waiting: [],
     perks: [],
@@ -575,7 +578,7 @@ export function createWorld(seed: number, tuning: Tuning, loadout: Loadout = 'ga
       bestStreak: 0,
       maxKernels: total(startKernels),
       maxTier: 1,
-      shots: zeroCounts(POWER_KINDS),
+      shots: zeroCounts(ALL_POWER_KINDS),
       firedTotal: 0,
       firedRecovered: 0,
       kernelsCollected: 0,
@@ -678,7 +681,7 @@ export function step(w: World, cmd: InputCommand): void {
     }
     tryFire(w, kind, cmd.aim);
   }
-  for (const kind of POWER_KINDS) p.cooldowns[kind] = Math.max(0, p.cooldowns[kind] - DT);
+  for (const kind of ALL_POWER_KINDS) p.cooldowns[kind] = Math.max(0, p.cooldowns[kind] - DT);
 
   updateShots(w);
   updatePatches(w);
@@ -2237,7 +2240,8 @@ function spawnFieldChunks(w: World): void {
           const extra = int(rng, 1, 3);
           for (let i = 0; i < extra; i++) addGround(w, kind, ox + range(rng, -25, 25), oy + range(rng, -25, 25), 0, 0, 0, null);
         }
-        if (chance(rng, 0.22)) spawnPoi(w, rng, ox, oy);
+        // Shrines and the other points of interest are parked until the field is calmer.
+        if (SHOW_POINTS_OF_INTEREST && chance(rng, 0.22)) spawnPoi(w, rng, ox, oy);
       }
     }
   }
@@ -2259,7 +2263,7 @@ function composeEnemy(rng: Rng, type: EnemyType, count: number, rare = 1): Kerne
           : type === 'husky'
             ? 'tough'
             : type === 'zoomer'
-              ? 'boing'
+              ? 'zappy'
               : type === 'bomber'
                 ? 'popper'
                 : 'sunny';

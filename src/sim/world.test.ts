@@ -561,6 +561,7 @@ describe('world', () => {
     w.player.kernels = kernelsOf({ sunny: 4, caramel: 2 });
     const e = addEnemy(w, 80, 0, kernelsOf({ sunny: 20 }));
     step(w, EMPTY_COMMAND);
+    w.player.pockets = ['caramel'];
     step(w, fire('caramel'));
     for (let i = 0; i < 90 && e.caramelLeft === 0; i++) step(w, EMPTY_COMMAND);
     expect(e.caramelLeft).toBeGreaterThan(0);
@@ -601,6 +602,17 @@ describe('world', () => {
     expect(w.kingSpawned).toBe(true);
     expect(w.enemies.some((e) => e.king)).toBe(true);
     expect(w.events.some((e) => e.type === 'harvest')).toBe(true);
+  });
+
+  it('leaves shrines, other points of interest, and parked powers off the field', () => {
+    const w = createWorld(4, { ...defaultTuning(), maxEnemies: 40 });
+    for (let i = 0; i < 20 * 60; i++) step(w, { ...EMPTY_COMMAND, moveX: 1, moveY: 0.3 });
+    expect(w.pois).toHaveLength(0);
+    expect(w.deals).toHaveLength(0);
+    const parked = (kind: string) => kind === 'boing' || kind === 'caramel' || kind === 'gem';
+    expect(w.ground.some((g) => parked(g.kind))).toBe(false);
+    expect(w.enemies.some((e) => e.kernels.boing + e.kernels.caramel + e.kernels.gem > 0)).toBe(false);
+    expect(w.player.pockets.some(parked)).toBe(false);
   });
 
   it('Easy Peasy skips the crow raid', () => {

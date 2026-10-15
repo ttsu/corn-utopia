@@ -38,23 +38,20 @@ export const PLAIN_KINDS: readonly PlainKind[] = [
 /**
  * Button order, thumb outward. The first four are the M1 set. Later powers
  * keep the places after them, and only five can be armed at once.
+ * Boing, Caramel, and Gem stay in the sim and stay off this list, so they
+ * never get a button or show up as loot.
  */
-export const POWER_KINDS: readonly PowerKind[] = [
-  'zinger',
-  'spicy',
-  'popper',
-  'frosty',
-  'boing',
-  'zappy',
-  'caramel',
-  'sprout',
-  'gem',
-];
+export const POWER_KINDS: readonly PowerKind[] = ['zinger', 'spicy', 'popper', 'frosty', 'zappy', 'sprout'];
+
+/** Parked powers. Still typed and simulated, not offered in a run. */
+export const HIDDEN_POWERS: readonly PowerKind[] = ['boing', 'caramel', 'gem'];
+
+export const ALL_POWER_KINDS: readonly PowerKind[] = [...POWER_KINDS, ...HIDDEN_POWERS];
 
 /** The snacks around spawn each carry one of these, so a plain start can arm up. */
 export const STARTER_POWERS: readonly PowerKind[] = ['zinger', 'spicy', 'popper', 'frosty'];
 
-export const KERNEL_KINDS: readonly KernelKind[] = [...PLAIN_KINDS, ...POWER_KINDS];
+export const KERNEL_KINDS: readonly KernelKind[] = [...PLAIN_KINDS, ...ALL_POWER_KINDS];
 
 /** Damage types that can knock a kernel off. Sticky only slows. */
 export const KNOCK_DAMAGE: readonly DamageType[] = ['bonk', 'fire', 'freeze', 'zap', 'pop'];

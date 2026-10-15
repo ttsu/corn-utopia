@@ -1109,7 +1109,9 @@ Each milestone has a clear "done when" check. Scope grows only after the previou
 - Settings: difficulty, Smart Fire, controls (Follow My Finger, drag-to-aim, left-handed), reduce
   flashing/shake.
 - **[M2 fill-ins]** Three biomes ship here: Sunny Farm (inner), Picnic Park, Kitchen Counter.
-  The salt shaker trades 10 Sunny for 1 Spicy or 2 Soggy. Milestone names besides Spicy are in §5.4.
+  Milestone names besides Spicy are in §5.4. Points of interest, including the salt shaker, are
+  turned off for now. Boing, Caramel, and Gem stay in the sim and are not offered, so the buttons
+  are Zinger, Spicy, Popper, Frosty, Zappy, and Sprout.
 - **Done when:** a full run is winnable and the director feels balanced across power levels.
 
 ### M3 — Meta + Beta

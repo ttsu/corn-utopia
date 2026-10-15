@@ -16,9 +16,10 @@ wins the run. The field keeps going if you leave him alone.
 
 What's in it:
 
-- **Every kernel.** Plains: Sunny, Sweetie, Soggy, Toasty, Rubbery, Leafy, Stony, Tough Nut, Goldie.
-  Powers: Zinger, Spicy, Popper, Frosty, Boing, Zappy, Caramel, Sprout, Gem. Opening snacks still
-  carry the first four powers. The rest show up as loot.
+- **Every plain kernel.** Sunny, Sweetie, Soggy, Toasty, Rubbery, Leafy, Stony, Tough Nut, Goldie.
+  Powers on the buttons: Zinger, Spicy, Popper, Frosty, Zappy, Sprout. Opening snacks still carry
+  the first four. Boing, Caramel, and Gem stay in the sim and are not offered, so the button row
+  stays short.
 - **Milestones at 5 / 10 / 20** of a power you are holding (shots from the last few seconds still
   count). Spicy matches the design doc. The other eight follow the same shape and are listed in
   `src/sim/milestones.ts`.
@@ -28,8 +29,8 @@ What's in it:
   goes soggy, then mostly stony, then a tough-nut mix. Non-cobs pop; you chomp cobs.
 - **Three biomes.** Sunny Farm near the start, Picnic Park farther out, Kitchen Counter past that.
   Later biomes stay for M3.
-- **Places and events.** Piñata, power patch, sprinkler, salt-shaker shrine, rescue, golden stalk.
-  Every 150 seconds: a swarm, a crow raid (skipped on Easy), Harvey, then a mini-boss.
+- **Events.** Every 150 seconds: a swarm, a crow raid (skipped on Easy), Harvey, then a mini-boss.
+  Piñatas, patches, sprinklers, shrines, rescues, and golden stalks are turned off for now.
 - **Settings** (title and pause): Easy Peasy / Just Right / Spicy, Smart Fire, Follow My Finger,
   drag-to-aim, left-handed, reduce flashing, reduce shake. Picking Easy Peasy turns Smart Fire on.
   You can turn it off again. Difficulty applies to the next run.
@@ -69,7 +70,7 @@ What's in it:
 
 - Floating touch joystick (left half). **Dash** is the big button under the right thumb, and you have it
   from the start. Power buttons arc around it and fire on touch-down. Two thumbs work at the same time:
-  steer with one, dash or shoot with the other. Keyboard: WASD/arrows, `1`–`9` to fire (button order),
+  steer with one, dash or shoot with the other. Keyboard: WASD/arrows, `1`–`6` to fire (button order),
   Space or Shift to dash, `Tab` to switch target, `Esc` to pause.
 - Auto-target is a dashed circle on the aimed cob (nearest red cob, favoring ones in front of you) and tap-a-cob-to-lock. Green and red outlines follow the cob.
 - Chomp rule with green/red outlines, a chomp meter under the target, Chomp Bonus and Chomp Streak.
