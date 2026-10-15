@@ -11,14 +11,14 @@
     <link rel="apple-touch-icon" href="./icons/apple-touch-icon.png" />
     <link rel="icon" type="image/png" href="./icons/favicon.png" />
     <title>Corn Utopia</title>
-    <script type="module" crossorigin src="./assets/index-DcVYOp8r.js"></script>
+    <script type="module" crossorigin src="./assets/index-xoO_xMp7.js"></script>
     <link rel="modulepreload" crossorigin href="./assets/CanvasPool-BXD7OQ_d.js">
     <link rel="modulepreload" crossorigin href="./assets/canvasUtils-BQOjyW_s.js">
     <link rel="modulepreload" crossorigin href="./assets/getPo2TextureFromSource-Dvk7X46i.js">
     <link rel="modulepreload" crossorigin href="./assets/RenderTargetSystem-Z7QiOw2m.js">
     <link rel="modulepreload" crossorigin href="./assets/getTextureBatchBindGroup-Dl25LH3f.js">
     <link rel="modulepreload" crossorigin href="./assets/CanvasRenderer-CAnFd5yj.js">
-    <link rel="stylesheet" crossorigin href="./assets/index-BZLQg9S6.css">
+    <link rel="stylesheet" crossorigin href="./assets/index-Co0DWQva.css">
   <link rel="manifest" href="./manifest.webmanifest"></head>
   <body>
     <div id="app">
@@ -35,6 +35,7 @@
           <div class="chip" id="chip-chomps">😋 0</div>
           <div class="chip" id="chip-seeds" hidden>🌱 0</div>
         </div>
+        <div class="chip" id="moon" hidden>🌙 10:00</div>
         <div id="powers"></div>
         <div id="debug-info" hidden></div>
       </div>
@@ -56,6 +57,7 @@
           <button id="play-btn" class="big-btn">Play!</button>
           <div class="row">
             <button id="playtest-btn" class="small-btn" title="Start with the Playtest mix of power kernels (set in Tuning)">Playtest mix</button>
+            <button id="title-settings-btn" class="small-btn">Settings</button>
             <button id="title-tuning-btn" class="small-btn">Tuning</button>
           </div>
           <button id="update-btn" class="small-btn update" hidden>New corn is ready! Tap to update</button>
@@ -71,6 +73,7 @@
           <button id="resume-btn" class="big-btn">Keep Rolling</button>
           <div class="row">
             <button id="restart-btn" class="small-btn">Restart</button>
+            <button id="pause-settings-btn" class="small-btn">Settings</button>
             <button id="pause-tuning-btn" class="small-btn">Tuning</button>
             <button id="sound-btn" class="small-btn">Sound: on</button>
           </div>
@@ -86,16 +89,44 @@
         </div>
       </div>
 
+      <div id="screen-deal" class="screen" hidden>
+        <div class="card">
+          <h2 id="deal-title">A trade</h2>
+          <p class="sub">Pick one</p>
+          <div id="deal-cards" class="ear-cards"></div>
+        </div>
+      </div>
+
       <div id="screen-over" class="screen" hidden>
         <div class="card">
-          <h2>All Popped Out!</h2>
-          <p class="sub">Zzz... your cob is taking a nap.</p>
+          <h2 id="over-title">All Popped Out!</h2>
+          <p id="over-sub" class="sub">Zzz... your cob is taking a nap.</p>
           <div id="results"></div>
           <button id="again-btn" class="big-btn">Wake Up &amp; Play Again!</button>
           <div class="row">
             <button id="over-tuning-btn" class="small-btn">Tuning</button>
           </div>
         </div>
+      </div>
+
+      <div id="settings" class="panel" hidden>
+        <div class="panel-head">
+          <h2>Settings</h2>
+          <button id="settings-close" class="round-btn" aria-label="Close">✕</button>
+        </div>
+        <p class="hint">Saved on this device. Difficulty applies to the next run.</p>
+        <h3>How spicy?</h3>
+        <div class="row" id="diff-row">
+          <button type="button" class="small-btn" data-diff="easy">Easy Peasy</button>
+          <button type="button" class="small-btn" data-diff="normal">Just Right</button>
+          <button type="button" class="small-btn" data-diff="spicy">Spicy</button>
+        </div>
+        <label class="toggle"><input type="checkbox" id="set-smart" /> Smart Fire (one button picks the power)</label>
+        <label class="toggle"><input type="checkbox" id="set-follow" /> Follow My Finger</label>
+        <label class="toggle"><input type="checkbox" id="set-drag" /> Drag a button to aim</label>
+        <label class="toggle"><input type="checkbox" id="set-left" /> Left-handed</label>
+        <label class="toggle"><input type="checkbox" id="set-flash" /> Reduce flashing</label>
+        <label class="toggle"><input type="checkbox" id="set-shake" /> Reduce shake</label>
       </div>
 
       <div id="tuning" class="panel" hidden>
