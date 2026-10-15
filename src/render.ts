@@ -172,6 +172,7 @@ interface CobLayers {
 export class Renderer {
   readonly cam: Camera = { x: 0, y: 0, zoom: 1, width: 1, height: 1 };
   reduceShake = false;
+  reduceFlash = false;
   private floaters: Floater[] = [];
   private particles: Particle[] = [];
   private rings: Ring[] = [];
@@ -361,6 +362,28 @@ export class Renderer {
         case 'saved':
           this.floater(this.cam.x, this.cam.y - 50 / this.cam.zoom, 'Phew!', GREEN, 26, 1);
           break;
+        case 'combo':
+          this.floater(e.x, e.y - 18, e.name, 0xffe08a, 22, 1.2);
+          this.burst(e.x, e.y, 0xffe08a, 8, 160);
+          break;
+        case 'milestone':
+          this.floater(this.cam.x, this.cam.y - 70 / Math.max(0.2, this.cam.zoom), `${e.name}!`, WHITE, 26, 1.3);
+          break;
+        case 'harvest':
+          this.floater(this.cam.x, this.cam.y - 80 / Math.max(0.2, this.cam.zoom), 'Harvest Moon!', 0xffe08a, 30, 1.6);
+          this.shake = Math.max(this.shake, 8);
+          break;
+        case 'victory':
+          this.floater(e.x, e.y, 'King Cob!', 0xffe08a, 32, 1.6);
+          this.burst(e.x, e.y, 0xffd23f, 24, 300, true);
+          this.shake = Math.max(this.shake, 10);
+          break;
+        case 'coat':
+          this.floater(e.x, e.y - 16, e.phase === 1 ? 'Stony coat!' : 'Tough coat!', WHITE, 22, 1.2);
+          break;
+        case 'trade':
+          this.floater(this.cam.x, this.cam.y - 40 / Math.max(0.2, this.cam.zoom), e.name, WHITE, 22, 1.1);
+          break;
         default:
           break;
       }
@@ -409,7 +432,28 @@ export class Renderer {
     this.shotSprites.begin();
     for (const patch of w.patches) {
       if (!visible(patch.x, patch.y, patch.r)) continue;
-      g0.circle(patch.x, patch.y, patch.r).fill({ color: 0xff7b00, alpha: Math.min(1, patch.ttl * 2) * (0.35 + 0.1 * Math.sin(time * 20 + patch.id)) });
+      const kind = patch.kind ?? 'fire';
+      const color = kind === 'caramel' ? 0xc68642 : kind === 'slick' ? 0xffe08a : 0xff7b00;
+      g0.circle(patch.x, patch.y, patch.r).fill({ color, alpha: Math.min(1, patch.ttl * 2) * (0.35 + 0.1 * Math.sin(time * 20 + patch.id)) });
+    }
+    for (const plant of w.plants) {
+      if (!visible(plant.x, plant.y, 24)) continue;
+      g0.circle(plant.x, plant.y, 8).fill(0x6b4a1b);
+      g0.ellipse(plant.x, plant.y - 16, 7, 16).fill(0x3d8c40);
+      g0.circle(plant.x, plant.y - 30, 6).fill(0xf4d35e);
+    }
+    for (const b of w.barriers) {
+      if (!visible(b.x, b.y, b.r)) continue;
+      g0.circle(b.x, b.y, b.r).stroke({ width: 5, color: 0x4f7d32, alpha: 0.85 });
+    }
+    for (const boom of w.booms) {
+      if (!visible(boom.x, boom.y, boom.r)) continue;
+      const pulse = 0.35 + 0.2 * Math.sin(time * 16);
+      g0.circle(boom.x, boom.y, boom.r * (0.4 + pulse)).fill({ color: 0xfff8e1, alpha: 0.35 });
+    }
+    for (const poi of w.pois) {
+      if (poi.used || !visible(poi.x, poi.y, 40)) continue;
+      this.drawPoi(g0, poi, time, toScreenX, toScreenY);
     }
     // Ground kernels stay at least a few screen pixels wide so they're findable when you're huge.
     const minGround = 3.2 / cam.zoom;
@@ -598,6 +642,11 @@ export class Renderer {
     const smug = this.smug.some((mark) => (mark.x - x) ** 2 + (mark.y - y) ** 2 < (r + 30) ** 2);
 
     const edge = layers.outline;
+    if (e.popMax > 0) {
+      edge.circle(x, cy, r + outline).stroke({ width: outline, color: RED, alpha: 0.9 });
+      this.drawFoe(e, x, cy, r, toScreenX, toScreenY);
+      return;
+    }
     if (e.chompable) {
       const wobble = Math.sin(time * 8 + e.id) * 0.08;
       this.strokeStatus(edge, x, cy, r, angle, time, e.id, GREEN, outline * 0.95, 1, outline * (0.48 + wobble));
@@ -615,12 +664,25 @@ export class Renderer {
       this.strokeStatus(edge, x, cy, r, angle, time, e.id, 0x7ec8e3, outline * 0.55, 0.85, outline * 0.32);
     }
 
-    this.drawCobBody(layers, x, cy, r, e.kernels, 0, angle, time, e.id, e.hitFlash > 0);
+    if (e.husk > 0) {
+      this.strokeStatus(edge, x, cy, r, angle, time, e.id, 0x6aa84f, outline * 0.7, 0.9, outline * 0.15);
+    }
+    this.drawCobBody(layers, x, cy, r, e.kernels, 0, angle, time, e.id, e.hitFlash > 0 && !this.reduceFlash);
 
     const g = layers.overlay;
     if (e.frozenLeft > 0) fillCobBody(g, x, cy, r, angle, time, e.id, 0xd7f3ff, 0.45);
     const mood: Mood = e.frozenLeft > 0 ? 'surprised' : smug ? 'smug' : e.chompable ? 'worried' : 'angry';
     drawFace(g, x, cy, r, angle, e.vx, e.vy, mood);
+    if (e.king) {
+      g.moveTo(x - r * 0.45, cy - r * 0.95)
+        .lineTo(x - r * 0.25, cy - r * 1.35)
+        .lineTo(x, cy - r * 0.95)
+        .lineTo(x + r * 0.25, cy - r * 1.35)
+        .lineTo(x + r * 0.45, cy - r * 0.95)
+        .closePath()
+        .fill(0xffe08a)
+        .stroke({ width: Math.max(2, r * 0.04), color: INK });
+    }
 
     const badges = shieldBadges(e.kernels);
     if (badges.length > 0) {
@@ -637,7 +699,7 @@ export class Renderer {
     const p = w.player;
     const layers = this.player;
     const n = total(p.kernels);
-    const flashing = p.invuln > 0 && Math.floor(time * 20) % 2 === 0;
+    const flashing = !this.reduceFlash && p.invuln > 0 && Math.floor(time * 20) % 2 === 0;
     const wobble = p.invuln > 0 ? Math.sin(time * 40) * Math.max(2, p.r * 0.05) : 0;
     const body = layers.body.clear();
     const g = layers.overlay.clear();
@@ -706,6 +768,68 @@ export class Renderer {
     }
   }
 
+  private drawPoi(
+    g: Graphics,
+    poi: World['pois'][number],
+    time: number,
+    toScreenX: (x: number) => number,
+    toScreenY: (y: number) => number,
+  ): void {
+    const bob = Math.sin(time * 3 + poi.id) * 3;
+    const y = poi.y + bob;
+    if (poi.kind === 'pinata') g.circle(poi.x, y, 16).fill(0xe5383b).stroke({ width: 3, color: 0xf4a300 });
+    else if (poi.kind === 'patch') g.ellipse(poi.x, y, 18, 10).fill(0x6aa84f);
+    else if (poi.kind === 'sprinkler') g.circle(poi.x, y, 12).fill(0x4cc9f0);
+    else if (poi.kind === 'shrine') g.roundRect(poi.x - 10, y - 16, 20, 28, 4).fill(0xfffaf0).stroke({ width: 3, color: INK });
+    else if (poi.kind === 'rescue') g.circle(poi.x, y, 14).fill(0xffd23f);
+    else g.ellipse(poi.x, y - 8, 6, 18).fill(0xf4d35e);
+    const label =
+      poi.kind === 'pinata'
+        ? 'Piñata'
+        : poi.kind === 'patch'
+          ? 'Patch'
+          : poi.kind === 'sprinkler'
+            ? 'Sprinkler'
+            : poi.kind === 'shrine'
+              ? 'Shrine'
+              : poi.kind === 'rescue'
+                ? 'Rescue'
+                : 'Stalk';
+    this.screenText.show(label, toScreenX(poi.x), toScreenY(y) - 22, 12, WHITE);
+  }
+
+  /** Crows, ants, and bosses that pop instead of getting chomped. */
+  private drawFoe(e: Enemy, x: number, y: number, r: number, toScreenX: (x: number) => number, toScreenY: (y: number) => number): void {
+    const g = this.enemies.body;
+    const flash = e.hitFlash > 0 && !this.reduceFlash;
+    const tint = flash ? WHITE : foeColor(e.type);
+    if (e.type === 'crow') {
+      g.ellipse(x, y, r * 1.1, r * 0.55).fill(tint).stroke({ width: 3, color: INK });
+      g.poly([x + r, y, x + r * 1.45, y - r * 0.15, x + r, y + r * 0.2]).fill(0xf4a300);
+    } else if (e.type === 'ant') {
+      g.circle(x - r * 0.45, y, r * 0.38).fill(tint);
+      g.circle(x, y, r * 0.48).fill(tint);
+      g.circle(x + r * 0.5, y, r * 0.34).fill(tint);
+    } else if (e.type === 'steve') {
+      g.rect(x - 4, y - r * 0.2, 8, r * 1.3).fill(0x6b4a1b);
+      g.roundRect(x - r * 0.7, y - r * 1.05, r * 1.4, r * 0.7, 6).fill(tint).stroke({ width: 3, color: INK });
+    } else if (e.type === 'butter') {
+      g.circle(x, y, r * 0.85).fill(tint).stroke({ width: 4, color: INK });
+      g.roundRect(x + r * 0.2, y - r * 0.45, r * 0.7, r * 0.9, 6).fill(0xfff6d8).stroke({ width: 3, color: INK });
+    } else {
+      g.roundRect(x - r, y - r * 0.7, r * 2, r * 1.4, 8).fill(tint).stroke({ width: 4, color: INK });
+      g.circle(x - r * 0.35, y - r * 0.1, r * 0.12).fill(INK);
+      g.circle(x + r * 0.35, y - r * 0.1, r * 0.12).fill(INK);
+    }
+    if (e.popMax > 0) {
+      const sx = toScreenX(x);
+      const sy = toScreenY(y - r) - 10;
+      const width = 36;
+      this.screenGfx.roundRect(sx - width / 2, sy - 4, width, 8, 4).fill({ color: 0x000000, alpha: 0.45 });
+      this.screenGfx.roundRect(sx - width / 2, sy - 4, width * Math.max(0, e.popHp / e.popMax), 8, 4).fill(0xffe08a);
+    }
+  }
+
   private drawChompMeter(x: number, y: number, need: number): void {
     const g = this.screenGfx;
     const shown = Math.min(need, 10);
@@ -755,6 +879,15 @@ function drawnCounts(k: Kernels, real: number, n: number): Kernels {
     }
   }
   return out;
+}
+
+function foeColor(type: Enemy['type']): number {
+  if (type === 'crow') return 0x2b2b2b;
+  if (type === 'ant') return 0x5c3317;
+  if (type === 'steve') return 0xc47a3a;
+  if (type === 'butter') return 0xffe08a;
+  if (type === 'harvey') return 0x8d4a32;
+  return 0x6b4a1b;
 }
 
 function makeCobLayers(): CobLayers {

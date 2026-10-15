@@ -1,11 +1,11 @@
-import { KERNEL_KINDS, KERNELS, type DamageType, type KernelKind, type PlainKind } from './kernels';
+import { KERNEL_KINDS, KERNELS, KNOCK_DAMAGE, zeroCounts, type DamageType, type KernelKind, type PlainKind } from './kernels';
 import { pickWeighted, type Rng } from './rng';
 
 /** Every cob (player or enemy) is just a count of kernels per type. */
 export type Kernels = Record<KernelKind, number>;
 
 export function emptyKernels(): Kernels {
-  return { sunny: 0, soggy: 0, stony: 0, zinger: 0, spicy: 0, popper: 0, frosty: 0 };
+  return zeroCounts(KERNEL_KINDS);
 }
 
 export function kernelsOf(partial: Partial<Kernels>): Kernels {
@@ -36,8 +36,9 @@ export function powerScore(k: Kernels): number {
 /** Plain kernel type making up the largest share, used for tint and shield badges. */
 export function dominantPlain(k: Kernels): PlainKind {
   let best: PlainKind = 'sunny';
-  if (k.soggy > k[best]) best = 'soggy';
-  if (k.stony > k[best]) best = 'stony';
+  for (const kind of ['sweetie', 'soggy', 'toasty', 'rubbery', 'leafy', 'stony', 'tough', 'goldie'] as const) {
+    if (k[kind] > k[best]) best = kind;
+  }
   return best;
 }
 
@@ -46,7 +47,7 @@ export function shieldBadges(k: Kernels, threshold = 0.5): DamageType[] {
   const n = total(k);
   if (n === 0) return [];
   const out: DamageType[] = [];
-  for (const dmg of ['bonk', 'fire', 'pop'] as DamageType[]) {
+  for (const dmg of KNOCK_DAMAGE) {
     let immune = 0;
     for (const kind of KERNEL_KINDS) if (KERNELS[kind].resist[dmg] === 'immune') immune += k[kind];
     if (immune / n >= threshold) out.push(dmg);
@@ -67,37 +68,64 @@ export interface HitResult {
   resisted: boolean;
   /** True when a weak-spot kernel was hit (x2). */
   weak: boolean;
+  /** A Tough Nut or half-strength kernel took a hit and stayed on. */
+  chipped: boolean;
 }
 
 export interface HitOptions {
   /** Ignore resistances when only one kernel is left (the Heart Kernel always pops). */
   heartIgnoresResist?: boolean;
+  /** Hits soaked by Tough Nuts and half-strength kernels. Pass the same bag across hits. */
+  chip?: Kernels;
+  /** Combo hits that ignore one kernel's immunity (Steam Burst skips Toasty, Shatter skips Stony). */
+  pierce?: readonly KernelKind[];
 }
 
 /**
  * Knock `amount` kernels off a cob with one damage type. Each point picks a random
  * non-immune kernel, weighted toward common kernels. Weak kernels lose 2 per point.
+ * Kernels that need several hits (Tough Nut, Rubbery vs Bonk) store the spare hits on `chip`.
  */
 export function applyHit(k: Kernels, damage: DamageType, amount: number, rng: Rng, opts: HitOptions = {}): HitResult {
-  const result: HitResult = { removed: [], resisted: false, weak: false };
+  const result: HitResult = { removed: [], resisted: false, weak: false, chipped: false };
+  const chip = opts.chip ?? emptyKernels();
   for (let i = 0; i < amount; i++) {
     const n = total(k);
     if (n === 0) break;
     const ignoreResist = opts.heartIgnoresResist === true && n === 1;
     const pick = pickWeighted(rng, KERNEL_KINDS, (kind) => {
       if (k[kind] <= 0) return 0;
-      if (!ignoreResist && KERNELS[kind].resist[damage] === 'immune') return 0;
+      if (!ignoreResist && !opts.pierce?.includes(kind) && KERNELS[kind].resist[damage] === 'immune') return 0;
       return k[kind] * KERNELS[kind].knockWeight;
     });
     if (pick === undefined) {
       result.resisted = true;
       break;
     }
-    const isWeak = !ignoreResist && KERNELS[pick].resist[damage] === 'weak';
-    const count = Math.min(k[pick], isWeak ? 2 : 1);
-    if (isWeak) result.weak = true;
-    k[pick] -= count;
-    for (let c = 0; c < count; c++) result.removed.push(pick);
+    const pierced = ignoreResist || opts.pierce?.includes(pick) === true;
+    const resist = pierced ? undefined : KERNELS[pick].resist[damage];
+    if (resist === 'weak') {
+      const count = Math.min(k[pick], 2);
+      result.weak = true;
+      k[pick] -= count;
+      for (let c = 0; c < count; c++) result.removed.push(pick);
+      if (k[pick] === 0) chip[pick] = 0;
+      continue;
+    }
+    const need = resist === 'half' ? KERNELS[pick].hits * 2 : pierced ? 1 : KERNELS[pick].hits;
+    if (need <= 1) {
+      k[pick] -= 1;
+      result.removed.push(pick);
+      if (k[pick] === 0) chip[pick] = 0;
+      continue;
+    }
+    chip[pick] += 1;
+    if (chip[pick] >= need) {
+      chip[pick] -= need;
+      k[pick] -= 1;
+      result.removed.push(pick);
+      if (k[pick] === 0) chip[pick] = 0;
+    } else result.chipped = true;
   }
   return result;
 }
