@@ -742,6 +742,13 @@ export class Renderer {
       g.moveTo(x + Math.cos(a0) * r, y + Math.sin(a0) * r)
         .arc(x, y, r, a0, a0 + Math.PI * 2 * f)
         .stroke({ width: 5, color: RED });
+    } else if (p.pickupLock > 0 && w.tuning.pickupLockSeconds > 0) {
+      const f = Math.max(0, p.pickupLock / w.tuning.pickupLockSeconds);
+      const r = p.r + 12;
+      const a0 = -Math.PI / 2;
+      g.moveTo(x + Math.cos(a0) * r, y + Math.sin(a0) * r)
+        .arc(x, y, r, a0, a0 + Math.PI * 2 * f)
+        .stroke({ width: 4, color: 0xc68642 });
     }
 
     // When down to the Heart Kernel, point at the nearest kernels on the ground.

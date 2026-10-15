@@ -28,6 +28,7 @@ export const TUNING_SPECS = {
   magnetPull: spec('Player', 'Magnet pull strength', 3000, 200, 6000, 50),
   bumpLoss: spec('Player', 'Kernels lost per bump', 2, 1, 6, 1),
   mercySeconds: spec('Player', 'Mercy invulnerability (s)', 0.75, 0.2, 2, 0.05),
+  pickupLockSeconds: spec('Player', 'No pickups after a hit (s)', 5, 0, 12, 0.25),
   lastChanceSeconds: spec('Player', 'Last Chance (s)', 3, 1, 8, 0.5),
   maxTier: spec('Player', 'Top size tier (then extras become Seeds)', 10, 2, 30, 1),
   damageSizeExponent: spec('Player', 'Damage growth with size (exponent)', 0.4, 0, 1.5, 0.05),
