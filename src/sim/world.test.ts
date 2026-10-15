@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { kernelsOf, total } from './cob';
-import { POWER_KINDS } from './kernels';
+import { countsToOrder, kernelsOf, removeLatestKernels, total } from './cob';
+import { POWER_KINDS, type KernelKind } from './kernels';
 import { defaultTuning } from './tuning';
 import { EMPTY_COMMAND, bumpLossFor, canFire, challenge, createWorld, damageScale, shotRange, step, type InputCommand, type World } from './world';
 
@@ -19,6 +19,7 @@ function addEnemy(w: World, x: number, y: number, kernels: ReturnType<typeof ker
     id: w.nextId++,
     type: 'baby',
     kernels,
+    kernelOrder: countsToOrder(kernels),
     x,
     y,
     px: x,
@@ -45,10 +46,15 @@ describe('world', () => {
   it('starts the real game as a plain Sunny cob, with opening snacks that carry power kernels', () => {
     const w = createWorld(3, defaultTuning());
     expect(w.player.kernels).toEqual(kernelsOf({ sunny: defaultTuning().gameStartSunny }));
+    expect(w.player.kernelOrder).toEqual(Array(defaultTuning().gameStartSunny).fill('sunny'));
     const babies = w.enemies.filter((e) => e.type === 'baby');
     expect(babies.length).toBe(4);
     for (const kind of POWER_KINDS) expect(babies.some((b) => b.kernels[kind] > 0)).toBe(true);
-    for (const b of babies) expect(total(b.kernels)).toBeLessThan(total(w.player.kernels));
+    for (const b of babies) {
+      expect(total(b.kernels)).toBeLessThan(total(w.player.kernels));
+      expect(b.kernelOrder.length).toBe(total(b.kernels));
+      expect(POWER_KINDS).toContain(b.kernelOrder[b.kernelOrder.length - 1]);
+    }
 
     const mix = createWorld(3, defaultTuning(), 'playtest');
     expect(mix.player.kernels.zinger).toBe(defaultTuning().startZinger);
@@ -151,6 +157,80 @@ describe('world', () => {
     step(w, fire('zinger'));
     expect(w.player.kernels.zinger).toBe(1);
     expect(w.events.some((e) => e.type === 'heartLock')).toBe(true);
+  });
+
+  it('keeps picked-up kernels in pickup order instead of sorting them by type', () => {
+    const w = quietWorld();
+    w.player.kernels = kernelsOf({ sunny: 1 });
+    w.player.kernelOrder = ['sunny'];
+    const picked: KernelKind[] = ['spicy', 'soggy', 'zinger'];
+    for (const kind of picked) {
+      w.ground.push({
+        id: w.nextId++,
+        kind,
+        value: 1,
+        x: w.player.x,
+        y: w.player.y,
+        px: w.player.x,
+        py: w.player.y,
+        vx: 0,
+        vy: 0,
+        delay: 0,
+        enemyLock: 0,
+        age: 0,
+        sparkle: 0,
+        ownerId: null,
+        dead: false,
+      });
+    }
+    step(w, EMPTY_COMMAND);
+    expect(w.player.kernelOrder).toEqual(['sunny', 'spicy', 'soggy', 'zinger']);
+  });
+
+  it('adds a chomped cob in the order it held its kernels', () => {
+    const w = quietWorld();
+    w.tuning.chompBonusMin = 0;
+    w.tuning.chompBonusMax = 0;
+    w.player.kernels = kernelsOf({ sunny: 4 });
+    w.player.kernelOrder = ['sunny', 'sunny', 'sunny', 'sunny'];
+    const e = addEnemy(w, 10, 0, kernelsOf({ sunny: 1, spicy: 1, soggy: 1 }));
+    e.kernelOrder = ['spicy', 'soggy', 'sunny'];
+    step(w, EMPTY_COMMAND);
+    expect(w.enemies.length).toBe(0);
+    expect(w.player.kernelOrder).toEqual(['sunny', 'sunny', 'sunny', 'sunny', 'spicy', 'soggy', 'sunny']);
+  });
+
+  it('firing removes the newest kernel of that kind and leaves the rest in order', () => {
+    const w = quietWorld();
+    w.player.kernels = kernelsOf({ sunny: 2, zinger: 2 });
+    w.player.kernelOrder = ['sunny', 'zinger', 'sunny', 'zinger'];
+    step(w, fire('zinger'));
+    expect(w.player.kernelOrder).toEqual(['sunny', 'zinger', 'sunny']);
+    expect(w.player.kernels.zinger).toBe(1);
+  });
+
+  it('knocks kernels off without regrouping the ones that stay', () => {
+    const w = quietWorld();
+    const before: KernelKind[] = ['zinger', 'sunny', 'spicy', 'sunny', 'sunny', 'sunny', 'zinger', 'sunny'];
+    w.player.kernels = kernelsOf({ sunny: 5, zinger: 2, spicy: 1 });
+    w.player.kernelOrder = [...before];
+    addEnemy(w, 10, 0, kernelsOf({ sunny: 20 }));
+    step(w, EMPTY_COMMAND);
+    const after = w.player.kernelOrder;
+    expect(after.length).toBe(before.length - w.tuning.bumpLoss);
+    // Survivors stay a subsequence of the pickup order. The kernels that left
+    // are the newest of their kind, not a regrouping by type.
+    const removed: KernelKind[] = [];
+    let j = 0;
+    for (const kind of before) {
+      if (j < after.length && after[j] === kind) j++;
+      else removed.push(kind);
+    }
+    expect(j).toBe(after.length);
+    const expected = [...before];
+    removeLatestKernels(expected, removed);
+    expect(after).toEqual(expected);
+    expect(after).not.toEqual(countsToOrder(w.player.kernels));
   });
 
   it('chomping a smaller cob takes all its kernels plus a Chomp Bonus', () => {
