@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { applyHit, canChomp, kernelsOf, shieldBadges, total } from './cob';
+import { applyHit, arrangedKernels, canChomp, kernelsOf, removeLatestKernels, shieldBadges, total } from './cob';
+import type { KernelKind } from './kernels';
 import { makeRng } from './rng';
 
 describe('chomp rule', () => {
@@ -52,6 +53,28 @@ describe('applyHit', () => {
     const res = applyHit(k, 'bonk', 5, makeRng(1));
     expect(res.removed.length).toBe(1);
     expect(total(k)).toBe(0);
+  });
+});
+
+describe('kernel pickup order', () => {
+  it('draws kernels in the order they were picked up, not grouped by type', () => {
+    const order: KernelKind[] = ['sunny', 'spicy', 'sunny', 'zinger', 'soggy'];
+    expect(arrangedKernels(order, 0, order.length)).toEqual(order);
+  });
+
+  it('leaves empty sockets after the kernels you have', () => {
+    expect(arrangedKernels(['sunny', 'zinger'], 4, 4)).toEqual(['sunny', 'zinger', null, null]);
+  });
+
+  it('samples a crowded cob from the start of the pickup order through the end', () => {
+    const order: KernelKind[] = ['zinger', 'sunny', 'sunny', 'sunny', 'soggy'];
+    expect(arrangedKernels(order, 0, 3)).toEqual(['zinger', 'sunny', 'soggy']);
+  });
+
+  it('removes the newest kernel of a kind and keeps the others in place', () => {
+    const order: KernelKind[] = ['sunny', 'zinger', 'sunny', 'zinger', 'soggy'];
+    removeLatestKernels(order, ['zinger', 'sunny']);
+    expect(order).toEqual(['sunny', 'zinger', 'soggy']);
   });
 });
 

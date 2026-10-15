@@ -1,15 +1,17 @@
 import {
   applyHit,
   canChomp,
+  countsToOrder,
   emptyKernels,
   kernelsOf,
   knockable,
   powerScore,
+  removeLatestKernels,
+  syncKernelOrder,
   total,
   type Kernels,
 } from './cob';
 import {
-  KERNEL_KINDS,
   PLAIN_KINDS,
   POWER_DAMAGE,
   POWER_KINDS,
@@ -63,6 +65,8 @@ export interface Body {
 
 export interface PlayerCob extends Body {
   kernels: Kernels;
+  /** Oldest pickup first. Drawing follows this, not kernel type. */
+  kernelOrder: KernelKind[];
   tier: number;
   sockets: number;
   cooldowns: Record<PowerKind, number>;
@@ -99,6 +103,8 @@ export interface PlayerCob extends Body {
 export interface Enemy extends Body {
   type: EnemyType;
   kernels: Kernels;
+  /** Oldest kernel first, including ones this cob picked up off the ground. */
+  kernelOrder: KernelKind[];
   heading: number;
   turnTimer: number;
   chompable: boolean;
@@ -203,7 +209,7 @@ export interface Director {
   budget: number;
   smoothedPower: number;
   smoothedCount: number;
-  plan: { type: EnemyType; kernels: Kernels; cost: number; hunter: boolean } | null;
+  plan: { type: EnemyType; kernels: Kernels; kernelOrder: KernelKind[]; cost: number; hunter: boolean } | null;
 }
 
 export interface InputCommand {
@@ -351,6 +357,7 @@ export function createWorld(seed: number, tuning: Tuning, loadout: Loadout = 'ga
     vy: 0,
     r: radiusFor(12),
     kernels: startKernels,
+    kernelOrder: countsToOrder(startKernels),
     tier: 1,
     sockets: socketsForTier(1),
     cooldowns: { zinger: 0, spicy: 0, popper: 0, frosty: 0 },
@@ -669,7 +676,9 @@ function tryFire(w: World, kind: PowerKind): void {
     w.events.push({ type: 'heartLock' });
     return;
   }
+  const order = syncKernelOrder(p.kernelOrder, p.kernels);
   p.kernels[kind]--;
+  removeLatestKernels(order, [kind]);
   p.shotSerial++;
   p.cooldowns[kind] = rechargeSeconds(w, kind);
   p.recentFired.push(w.tick);
@@ -750,7 +759,9 @@ function hitPlayer(w: World, damage: DamageType, amount: number, fromX: number, 
       return;
     }
   }
+  const order = syncKernelOrder(p.kernelOrder, p.kernels);
   const res = applyHit(p.kernels, damage, amount, w.rng, { heartIgnoresResist: true });
+  removeLatestKernels(order, res.removed);
   if (res.removed.length === 0) {
     if (res.resisted) w.events.push({ type: 'tink', x: p.x, y: p.y, damage });
     return;
@@ -778,7 +789,8 @@ function collidePlayer(w: World): void {
 
     if (!p.bare && canChomp(p.kernels, e.kernels)) {
       const gained = total(e.kernels);
-      for (const kind of KERNEL_KINDS) giveKernels(w, kind, e.kernels[kind]);
+      const incoming = syncKernelOrder(e.kernelOrder, e.kernels);
+      for (let i = 0; i < incoming.length; i++) giveKernels(w, incoming[i], 1);
       p.streak = p.streakTimer > 0 ? p.streak + 1 : 1;
       p.streakTimer = t.streakSeconds;
       const lo = Math.min(t.chompBonusMin, t.chompBonusMax);
@@ -790,6 +802,7 @@ function collidePlayer(w: World): void {
       w.stats.bestStreak = Math.max(w.stats.bestStreak, p.streak);
       w.events.push({ type: 'chomp', x: e.x, y: e.y, streak: p.streak, gained: gained + bonus });
       e.kernels = emptyKernels();
+      e.kernelOrder.length = 0;
       continue;
     }
 
@@ -888,15 +901,19 @@ function capVictim(kernels: Kernels, incoming: KernelKind): KernelKind | null {
 function giveKernels(w: World, kind: KernelKind, count: number): void {
   const p = w.player;
   const cap = maxSockets(w);
+  const order = syncKernelOrder(p.kernelOrder, p.kernels);
   for (let i = 0; i < count; i++) {
     if (total(p.kernels) < cap) {
       p.kernels[kind]++;
+      order.push(kind);
       continue;
     }
     const victim = capVictim(p.kernels, kind);
     if (victim) {
       p.kernels[victim]--;
       p.kernels[kind]++;
+      removeLatestKernels(order, [victim]);
+      order.push(kind);
     }
     w.stats.seeds++;
   }
@@ -1078,7 +1095,9 @@ function hitEnemy(
     amount = Math.floor(scaled) + (chance(w.rng, scaled - Math.floor(scaled)) ? 1 : 0);
     if (amount <= 0) return;
   }
+  const order = syncKernelOrder(e.kernelOrder, e.kernels);
   const res = applyHit(e.kernels, damage, amount, w.rng);
+  removeLatestKernels(order, res.removed);
   if (res.removed.length === 0) {
     if (res.resisted && source !== null) {
       w.events.push({ type: 'tink', x: e.x, y: e.y - e.r, damage });
@@ -1270,7 +1289,9 @@ function updateGround(w: World): void {
     for (const e of w.enemies) {
       for (const g of queryGrid(grid, e.x, e.y, e.r + 3, found)) {
         if (g.delay > 0 || g.enemyLock > 0) continue;
+        const order = syncKernelOrder(e.kernelOrder, e.kernels);
         e.kernels[g.kind] += g.value;
+        for (let i = 0; i < g.value; i++) order.push(g.kind);
         g.dead = true;
       }
     }
@@ -1475,18 +1496,20 @@ function spawnFieldChunks(w: World): void {
   }
 }
 
-function composeEnemy(rng: Rng, type: EnemyType, count: number, rare = 1): Kernels {
-  const k = emptyKernels();
+function composeEnemy(rng: Rng, type: EnemyType, count: number, rare = 1): { kernels: Kernels; kernelOrder: KernelKind[] } {
+  const kernels = emptyKernels();
+  const kernelOrder: KernelKind[] = [];
   const main = type === 'soggy' ? 'soggy' : type === 'rocky' ? 'stony' : 'sunny';
   const baseMain = type === 'baby' ? 0.9 : 0.65;
   const mainShare = Math.max(0.2, 1 - (1 - baseMain) * rare);
   for (let i = 0; i < count; i++) {
     const roll = next(rng);
-    if (roll < mainShare) k[main]++;
-    else if (roll < 0.9) k.sunny++;
-    else k[POWER_KINDS[int(rng, 0, POWER_KINDS.length - 1)]]++;
+    const kind: KernelKind =
+      roll < mainShare ? main : roll < 0.9 ? 'sunny' : POWER_KINDS[int(rng, 0, POWER_KINDS.length - 1)];
+    kernels[kind]++;
+    kernelOrder.push(kind);
   }
-  return k;
+  return { kernels, kernelOrder };
 }
 
 function planSpawn(w: World): NonNullable<Director['plan']> {
@@ -1504,7 +1527,8 @@ function planSpawn(w: World): NonNullable<Director['plan']> {
   if (!early && next(rng) * 100 < t.huntersAtTop * challenge(w)) {
     count = Math.max(Math.ceil(c) + 1, Math.round(c * range(rng, HUNTER_MIN_SIZE, Math.max(HUNTER_MIN_SIZE, t.hunterSize))));
     type = chance(rng, 0.5) ? 'soggy' : 'rocky';
-    return { type, kernels: composeEnemy(rng, type, count, luckyMul(w.player.perks)), cost: Math.min(MAX_SPAWN_COST, 1 + count / c), hunter: true };
+    const cob = composeEnemy(rng, type, count, luckyMul(w.player.perks));
+    return { type, kernels: cob.kernels, kernelOrder: cob.kernelOrder, cost: Math.min(MAX_SPAWN_COST, 1 + count / c), hunter: true };
   }
   if (roll >= bigShare || early) {
     // Snacks grow slower than you do, so each chomp is a smaller share of a bigger cob.
@@ -1517,17 +1541,18 @@ function planSpawn(w: World): NonNullable<Director['plan']> {
     count = Math.max(Math.ceil(c) + 1, Math.round(c * range(rng, lo, hi)));
     type = pickWeighted(rng, ['baby', 'soggy', 'rocky'] as EnemyType[], (ty) => (ty === 'baby' ? 30 : 35))!;
   }
-  const kernels = composeEnemy(rng, type, count, luckyMul(w.player.perks));
+  const cob = composeEnemy(rng, type, count, luckyMul(w.player.perks));
   // Cost is relative to your size so the spawn rate doesn't stall as you grow.
-  return { type, kernels, cost: Math.min(MAX_SPAWN_COST, 1 + count / c), hunter: false };
+  return { type, kernels: cob.kernels, kernelOrder: cob.kernelOrder, cost: Math.min(MAX_SPAWN_COST, 1 + count / c), hunter: false };
 }
 
-function spawnEnemy(w: World, type: EnemyType, kernels: Kernels, x: number, y: number, hunter = false): Enemy {
+function spawnEnemy(w: World, type: EnemyType, kernels: Kernels, kernelOrder: KernelKind[], x: number, y: number, hunter = false): Enemy {
   const p = w.player;
   const e: Enemy = {
     id: w.nextId++,
     type,
     kernels,
+    kernelOrder,
     x,
     y,
     px: x,
@@ -1568,9 +1593,12 @@ function spawnOpeningCobs(w: World): void {
   opening.forEach(([type, count], i) => {
     const a = (i / opening.length) * Math.PI * 2 + range(w.rng, -0.3, 0.3);
     const d = range(w.rng, 230, 420);
-    const kernels = composeEnemy(w.rng, type, count, luckyMul(w.player.perks));
-    if (type === 'baby' && babyPowers[i]) kernels[babyPowers[i]] += 1;
-    spawnEnemy(w, type, kernels, p.x + Math.cos(a) * d, p.y + Math.sin(a) * d);
+    const cob = composeEnemy(w.rng, type, count, luckyMul(w.player.perks));
+    if (type === 'baby' && babyPowers[i]) {
+      cob.kernels[babyPowers[i]] += 1;
+      cob.kernelOrder.push(babyPowers[i]);
+    }
+    spawnEnemy(w, type, cob.kernels, cob.kernelOrder, p.x + Math.cos(a) * d, p.y + Math.sin(a) * d);
   });
 }
 
@@ -1601,7 +1629,7 @@ function runDirector(w: World): void {
     const ahead = speed > 30 && chance(w.rng, 0.7);
     const a = ahead ? Math.atan2(p.vy, p.vx) + range(w.rng, -1.1, 1.1) : range(w.rng, 0, Math.PI * 2);
     const d = view * range(w.rng, 2.1, 2.5);
-    spawnEnemy(w, dir.plan.type, dir.plan.kernels, p.x + Math.cos(a) * d, p.y + Math.sin(a) * d, dir.plan.hunter);
+    spawnEnemy(w, dir.plan.type, dir.plan.kernels, dir.plan.kernelOrder, p.x + Math.cos(a) * d, p.y + Math.sin(a) * d, dir.plan.hunter);
     dir.plan = null;
   }
 

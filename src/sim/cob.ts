@@ -1,7 +1,7 @@
 import { KERNEL_KINDS, KERNELS, type DamageType, type KernelKind, type PlainKind } from './kernels';
 import { pickWeighted, type Rng } from './rng';
 
-/** Every cob (player or enemy) is just a count of kernels per type. */
+/** Kernel counts per type. The order they were picked up is tracked separately. */
 export type Kernels = Record<KernelKind, number>;
 
 export function emptyKernels(): Kernels {
@@ -20,6 +20,85 @@ export function total(k: Kernels): number {
 
 export function addAll(into: Kernels, from: Kernels): void {
   for (const kind of KERNEL_KINDS) into[kind] += from[kind];
+}
+
+/** Oldest first. Used when a cob is created from counts and has no pickup history yet. */
+export function countsToOrder(kernels: Kernels): KernelKind[] {
+  const order: KernelKind[] = [];
+  for (const kind of KERNEL_KINDS) {
+    for (let n = kernels[kind]; n > 0; n--) order.push(kind);
+  }
+  return order;
+}
+
+/** True when `order` lists exactly the kernels in `kernels`. */
+export function orderMatches(order: readonly KernelKind[], kernels: Kernels): boolean {
+  if (order.length !== total(kernels)) return false;
+  const seen = emptyKernels();
+  for (let i = 0; i < order.length; i++) seen[order[i]]++;
+  for (const kind of KERNEL_KINDS) if (seen[kind] !== kernels[kind]) return false;
+  return true;
+}
+
+/**
+ * Makes `order` list the same kernels as `kernels`, oldest pickup first.
+ * A list that already matches is left alone so pickup order is not regrouped by type.
+ */
+export function syncKernelOrder(order: KernelKind[], kernels: Kernels): KernelKind[] {
+  if (orderMatches(order, kernels)) return order;
+  order.length = 0;
+  for (const kind of KERNEL_KINDS) {
+    for (let n = kernels[kind]; n > 0; n--) order.push(kind);
+  }
+  return order;
+}
+
+/** Drops the most recently picked kernel of each listed kind. Survivors keep their order. */
+export function removeLatestKernels(order: KernelKind[], removed: readonly KernelKind[]): void {
+  if (removed.length === 0 || order.length === 0) return;
+  const need = emptyKernels();
+  let left = 0;
+  for (const kind of removed) {
+    need[kind]++;
+    left++;
+  }
+  for (let i = order.length - 1; i >= 0 && left > 0; i--) {
+    const kind = order[i];
+    if (need[kind] > 0) {
+      need[kind]--;
+      left--;
+      order.splice(i, 1);
+    }
+  }
+}
+
+/**
+ * Slot contents from the tip toward the base: kernels in pickup order
+ * (oldest first), then empty sockets. A cob with more kernels than drawn
+ * slots is sampled evenly along that order, so kinds stay where they were
+ * picked up instead of being grouped by type.
+ */
+export function arrangedKernels(order: readonly KernelKind[], sockets: number, drawn: number): (KernelKind | null)[] {
+  const count = order.length;
+  const real = Math.max(sockets, count);
+  const n = Math.max(0, Math.min(drawn, real));
+  const out: (KernelKind | null)[] = [];
+  if (n === 0) return out;
+  let kernelSlots = Math.round((count * n) / real);
+  if (count > 0) kernelSlots = Math.max(1, kernelSlots);
+  kernelSlots = Math.min(count, n, kernelSlots);
+  if (kernelSlots >= count) {
+    for (let i = 0; i < count; i++) out.push(order[i]);
+  } else if (kernelSlots === 1) {
+    out.push(order[0]);
+  } else {
+    for (let i = 0; i < kernelSlots; i++) {
+      const idx = Math.round((i * (count - 1)) / (kernelSlots - 1));
+      out.push(order[idx]);
+    }
+  }
+  while (out.length < n) out.push(null);
+  return out;
 }
 
 /** The chomp rule: you can chomp any cob with fewer kernels than you. */

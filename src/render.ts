@@ -15,9 +15,9 @@ import {
 } from './art';
 import type { Camera, Input } from './input';
 import { perkDef } from './sim/perks';
-import { shieldBadges, total, type Kernels } from './sim/cob';
+import { arrangedKernels, countsToOrder, orderMatches, shieldBadges, total, type Kernels } from './sim/cob';
 import { COB_KERNEL_DRAW_SCALE, cobKernelSlots } from './sim/cobLayout';
-import { DAMAGE_ICON, PLAIN_KINDS, POWER_KINDS, type KernelKind } from './sim/kernels';
+import { DAMAGE_ICON, type KernelKind } from './sim/kernels';
 import { popperRadius, viewRadius, type Enemy, type SimEvent, type World } from './sim/world';
 
 const FIELD = 0x8fce6a;
@@ -550,7 +550,19 @@ export class Renderer {
   }
 
   /** Draws a cob body with its kernels in sockets. `sockets` > kernel count shows empty holes. */
-  private drawCobBody(layers: CobLayers, x: number, y: number, r: number, k: Kernels, sockets: number, angle: number, time: number, id: number, flash: boolean): void {
+  private drawCobBody(
+    layers: CobLayers,
+    x: number,
+    y: number,
+    r: number,
+    k: Kernels,
+    kernelOrder: readonly KernelKind[],
+    sockets: number,
+    angle: number,
+    time: number,
+    id: number,
+    flash: boolean,
+  ): void {
     const spec = { x, y, r, kernels: k, sockets, angle, time, id, flash };
     drawCobShell(layers.body, spec);
     drawFlair(layers.overlay, spec);
@@ -569,25 +581,23 @@ export class Renderer {
       dot = (slots[2] * r) / COB_KERNEL_HALF_W;
     }
     if (slots[2] * r * this.cam.zoom < MIN_DOT_PX) return;
-    const shown = drawnCounts(k, real, n);
+    const order = orderMatches(kernelOrder, k) ? kernelOrder : countsToOrder(k);
+    const sequence = arrangedKernels(order, sockets, n);
     const pool = layers.kernels;
     const co = Math.cos(angle);
     const si = Math.sin(angle);
-    let i = 0;
-    const put = (kind: KernelKind | null, scale: number, alpha = 1) => {
+    for (let i = 0; i < sequence.length; i++) {
+      const kind = sequence[i];
       const lx = slots[i * 3] * r;
       const ly = slots[i * 3 + 1] * r;
       const wx = x + lx * co - ly * si;
       const wy = y + lx * si + ly * co;
       const tex = kind ? this.tex.cobKernels[kind] : this.tex.cobKernels.sunny;
+      const scale = kind ? 1 : 0.55;
+      const alpha = kind ? 1 : 0.4;
       const rx = dot * scale * COB_KERNEL_DRAW_SCALE;
       pool.place(tex, wx, wy, rx, rx, kind ? WHITE : 0x6b4a1b, alpha, angle);
-      i++;
-    };
-    // Power kernels sit in the top band, then plain kernels, then empty sockets.
-    for (const kind of POWER_KINDS) for (let c = shown[kind]; c > 0; c--) put(kind, 1);
-    for (const kind of PLAIN_KINDS) for (let c = shown[kind]; c > 0; c--) put(kind, 1);
-    while (i < n) put(null, 0.55, 0.4);
+    }
   }
 
   private drawEnemy(e: Enemy, x: number, y: number, time: number, toScreenX: (x: number) => number, toScreenY: (y: number) => number): void {
@@ -615,7 +625,7 @@ export class Renderer {
       this.strokeStatus(edge, x, cy, r, angle, time, e.id, 0x7ec8e3, outline * 0.55, 0.85, outline * 0.32);
     }
 
-    this.drawCobBody(layers, x, cy, r, e.kernels, 0, angle, time, e.id, e.hitFlash > 0);
+    this.drawCobBody(layers, x, cy, r, e.kernels, e.kernelOrder, 0, angle, time, e.id, e.hitFlash > 0);
 
     const g = layers.overlay;
     if (e.frozenLeft > 0) fillCobBody(g, x, cy, r, angle, time, e.id, 0xd7f3ff, 0.45);
@@ -658,7 +668,7 @@ export class Renderer {
       body.ellipse(px, y + bob, p.r * 0.85, p.r * 0.7).fill(BARE_TINT).stroke({ width: Math.max(3, p.r * 0.06), color: INK });
       body.ellipse(px, y + bob + p.r * 0.15, p.r * 1.05, p.r * 0.55).fill(0x6aa84f).stroke({ width: Math.max(2, p.r * 0.05), color: INK });
     } else {
-      this.drawCobBody(layers, px, y + bob, p.r, p.kernels, p.sockets, angle, time, 1, flashing);
+      this.drawCobBody(layers, px, y + bob, p.r, p.kernels, p.kernelOrder, p.sockets, angle, time, 1, flashing);
     }
     layers.kernels.end();
 
@@ -731,30 +741,6 @@ export class Renderer {
       .circle(js.originX + v.x * R, js.originY + v.y * R, R * 0.45)
       .fill({ color: WHITE, alpha: 0.85 });
   }
-}
-
-/** Scales kernel counts down to `n` drawn slots (largest remainder), keeping every kind that's present visible. */
-function drawnCounts(k: Kernels, real: number, n: number): Kernels {
-  if (real <= n) return k;
-  const out = { ...k };
-  const kinds = [...POWER_KINDS, ...PLAIN_KINDS] as KernelKind[];
-  const rest: [KernelKind, number][] = [];
-  let used = 0;
-  for (const kind of kinds) {
-    const exact = (k[kind] * n) / real;
-    out[kind] = k[kind] > 0 ? Math.max(1, Math.floor(exact)) : 0;
-    used += out[kind];
-    rest.push([kind, exact - Math.floor(exact)]);
-  }
-  const target = Math.round((total(k) * n) / real);
-  rest.sort((a, b) => b[1] - a[1]);
-  for (let j = 0; used < target && j < rest.length; j++) {
-    if (k[rest[j][0]] > 0) {
-      out[rest[j][0]]++;
-      used++;
-    }
-  }
-  return out;
 }
 
 function makeCobLayers(): CobLayers {

@@ -429,8 +429,9 @@ replay. The first time a combo happens, it gets a big name pop-up and a fanfare.
   kernels line up on corn on the cob (including a multicolor ear). Neighboring rows are offset by
   about half a kernel so they nest. The cob's face sits on the upper kernels. The game shows that
   front of the ear and adds a gentle wobble.
-- **[Decision] The game arranges kernels automatically.** Plain kernels fill the body, and power
-  kernels sit near the tip so they're easy to spot. No inventory management.
+- **[Decision] The game arranges kernels in the order they were picked up.** The oldest kernel
+  sits toward the tip and the newest toward the base. Kernels are not sorted or banded by type.
+  Empty sockets follow the kernels you already hold. No inventory management.
 - Every socket shows the real kernel in it, and the cob's overall look changes with its mix of
   kernels (see §12.2).
 - **Later idea (not for launch):** an optional "Cob Garden" screen between runs where older kids can
@@ -939,9 +940,9 @@ from rendering so you could swap engines later.
 - **Data-driven content:** kernel types, damage types, the matchup chart, combos, enemies, biomes, and
   director curves live in JSON/TS config files so they can be balanced without code changes. Add a
   debug panel to tweak them live.
-- **Cobs as kernel lists:** every cob (player or enemy) is a list of kernel counts by type. Damage,
-  resistances, chomping, and drops all work on that one shared model, so player and enemy rules
-  can't drift apart.
+- **Cobs as kernel lists:** every cob (player or enemy) keeps kernel counts by type, plus the
+  order those kernels were picked up. Damage, resistances, and chomping use the counts. The cob's
+  look uses the pickup order. Player and enemy rules stay on one shared model, so they can't drift apart.
 - **Floating origin:** every so often, shift the world back toward 0,0 so positions don't lose
   precision far from the start on the infinite map.
 - **Input layer** turns touch, mouse, keyboard, and gamepad into one "move vector + power taps +
