@@ -1,1 +1,0 @@
-export{t as WebGPURenderer}from"./WebGPURenderer-B_1Cb1kR.js";
