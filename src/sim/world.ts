@@ -10,6 +10,7 @@ import {
 } from './cob';
 import {
   KERNEL_KINDS,
+  PLAIN_KINDS,
   POWER_DAMAGE,
   POWER_KINDS,
   type DamageType,
@@ -858,9 +859,31 @@ export function maxSockets(w: World): number {
   return socketsForTier(w.tuning.maxTier);
 }
 
+/** Sunny, then Soggy, then Stony. Every power kernel outranks every plain kernel. */
+function kernelRank(kind: KernelKind): number {
+  if (kind === 'soggy') return 1;
+  if (kind === 'stony') return 2;
+  if (kind === 'sunny') return 0;
+  return 3;
+}
+
+/**
+ * The plain kernel a full cob will drop to make room for `incoming`.
+ * Weaker plains go first. Nothing outranks a power kernel, so a plain pickup
+ * can never take the socket of a kernel you can shoot.
+ */
+function capVictim(kernels: Kernels, incoming: KernelKind): KernelKind | null {
+  const rank = kernelRank(incoming);
+  for (const kind of PLAIN_KINDS) {
+    if (kernels[kind] > 0 && kernelRank(kind) < rank) return kind;
+  }
+  return null;
+}
+
 /**
  * Adds kernels to the player. Once every socket at the top tier is full, a new kernel
- * replaces a Sunny (or is turned away if it's a Sunny itself) and the leftover becomes Seeds.
+ * replaces the weakest weaker one and the leftover becomes Seeds. A Sunny replaces
+ * nothing. A power kernel replaces any plain kernel, and a plain kernel never replaces a power kernel.
  */
 function giveKernels(w: World, kind: KernelKind, count: number): void {
   const p = w.player;
@@ -868,13 +891,14 @@ function giveKernels(w: World, kind: KernelKind, count: number): void {
   for (let i = 0; i < count; i++) {
     if (total(p.kernels) < cap) {
       p.kernels[kind]++;
-    } else if (kind !== 'sunny' && p.kernels.sunny > 0) {
-      p.kernels.sunny--;
-      p.kernels[kind]++;
-      w.stats.seeds++;
-    } else {
-      w.stats.seeds++;
+      continue;
     }
+    const victim = capVictim(p.kernels, kind);
+    if (victim) {
+      p.kernels[victim]--;
+      p.kernels[kind]++;
+    }
+    w.stats.seeds++;
   }
 }
 

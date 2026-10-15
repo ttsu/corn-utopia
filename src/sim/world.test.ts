@@ -246,6 +246,74 @@ describe('world', () => {
     expect(w.stats.seeds).toBe(4);
   });
 
+  it('at the top tier, a power kernel replaces any plain kernel', () => {
+    const w = quietWorld();
+    w.tuning.maxTier = 1;
+    w.tuning.chompBonusMin = 0;
+    w.tuning.chompBonusMax = 0;
+    w.player.kernels = kernelsOf({ stony: 12 });
+    addEnemy(w, 10, 0, kernelsOf({ spicy: 3 }));
+    step(w, EMPTY_COMMAND);
+    expect(w.player.kernels.spicy).toBe(3);
+    expect(w.player.kernels.stony).toBe(9);
+    expect(total(w.player.kernels)).toBe(12);
+    expect(w.stats.seeds).toBe(3);
+  });
+
+  it('at the top tier, a plain kernel never replaces a power kernel', () => {
+    const w = quietWorld();
+    w.tuning.maxTier = 1;
+    w.tuning.chompBonusMin = 0;
+    w.tuning.chompBonusMax = 0;
+    w.player.kernels = kernelsOf({ zinger: 6, stony: 6 });
+    addEnemy(w, 10, 0, kernelsOf({ sunny: 4, soggy: 2 }));
+    step(w, EMPTY_COMMAND);
+    expect(w.player.kernels.zinger).toBe(6);
+    expect(w.player.kernels.stony).toBe(6);
+    expect(w.stats.seeds).toBe(6);
+  });
+
+  it('at the top tier, a tougher plain kernel replaces a weaker one', () => {
+    const w = quietWorld();
+    w.tuning.maxTier = 1;
+    w.tuning.chompBonusMin = 0;
+    w.tuning.chompBonusMax = 0;
+    w.player.kernels = kernelsOf({ sunny: 4, soggy: 8 });
+    addEnemy(w, 10, 0, kernelsOf({ soggy: 2, stony: 3 }));
+    step(w, EMPTY_COMMAND);
+    expect(w.player.kernels).toMatchObject({ sunny: 0, soggy: 9, stony: 3 });
+    expect(w.stats.seeds).toBe(5);
+  });
+
+  it('a fired power kernel reclaims its socket from the plain kernel that filled it', () => {
+    const w = quietWorld();
+    w.tuning.maxTier = 1;
+    w.tuning.chompBonusMin = 0;
+    w.tuning.chompBonusMax = 0;
+    w.player.kernels = kernelsOf({ zinger: 4, stony: 8 });
+    step(w, fire('zinger'));
+    expect(w.player.kernels).toMatchObject({ zinger: 3, stony: 8 });
+    // The enemy sits off the shot's path so the chomp fills the socket without eating the Zinger.
+    addEnemy(w, 0, 8, kernelsOf({ stony: 5 }));
+    step(w, EMPTY_COMMAND);
+    expect(w.player.kernels).toMatchObject({ zinger: 3, stony: 9 });
+    expect(w.stats.seeds).toBe(4);
+
+    for (let i = 0; i < 120 && w.shots.length > 0; i++) step(w, EMPTY_COMMAND);
+    const spent = w.ground.find((g) => g.kind === 'zinger' && g.ownerId === w.player.id);
+    expect(spent).toBeDefined();
+    spent!.x = w.player.x;
+    spent!.y = w.player.y;
+    spent!.vx = 0;
+    spent!.vy = 0;
+    spent!.delay = 0;
+    w.player.vx = 0;
+    w.player.vy = 0;
+    step(w, EMPTY_COMMAND);
+    expect(w.player.kernels).toMatchObject({ zinger: 4, stony: 8 });
+    expect(w.stats.seeds).toBe(5);
+  });
+
   it('grows a size tier when sockets fill and never shrinks', () => {
     const w = quietWorld();
     w.player.kernels = kernelsOf({ sunny: 12 });
