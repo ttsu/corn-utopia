@@ -83,7 +83,7 @@ npm run typecheck
 npm run build      # production build + service worker into dist/
 npm run preview    # serve the production build
 npm run bot        # headless balance report (a bot plays seeded runs)
-npm run icons      # regenerate the placeholder PWA icons
+npm run icons      # regenerate the PWA icons
 ```
 
 `npm run bot` accepts overrides, e.g. `BOT_TUNING='{"snackSize":0.4}' BOT_SEEDS=10 npm run bot`.
