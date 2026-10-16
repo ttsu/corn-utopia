@@ -165,7 +165,12 @@ Both kinds count toward your **kernel count** (for chomping), your **health**, a
 - That means your plain kernels are also your **armor**. Collect Soggy kernels and enemy fireballs
   can't knock them off. Tough Nut kernels take 3 hits before popping off.
 - **Knocked-off kernels never disappear.** They stay on the ground until someone picks them up:
-  you, an enemy cob, or a crow (§6.1). Getting hit is a setback you can always undo by scooping.
+  you, an enemy cob, or a crow (§6.1). Getting hit is a setback you can undo by scooping, but not
+  right away.
+- **Scoop lock:** for 5 seconds after a hit that knocks kernels off, your magnet is off and you
+  can't pick kernels up. A dizzy halo — a flat ring with stars — turns above the cob the way a
+  spinning ring does, wobbling a little, until scooping works again. Another hit starts the 5 seconds over. Last Chance skips this
+  lock, so a Bare Cob can still grab a kernel.
 - **Mercy invulnerability:** about 0.75 s after each hit, with the cob flashing and wobbling.
 
 ### 4.4 All Popped Out (Losing)

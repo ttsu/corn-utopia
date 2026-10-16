@@ -92,6 +92,8 @@ export interface PlayerCob extends Body {
   facingX: number;
   facingY: number;
   invuln: number;
+  /** Seconds left after a hit before ground kernels can be scooped again. */
+  pickupLock: number;
   bare: boolean;
   lastChance: number;
   streak: number;
@@ -525,6 +527,7 @@ export function createWorld(seed: number, tuning: Tuning, loadout: Loadout = 'ga
     facingX: 1,
     facingY: 0,
     invuln: 0,
+    pickupLock: 0,
     bare: false,
     lastChance: 0,
     streak: 0,
@@ -1128,12 +1131,15 @@ function hitPlayer(w: World, damage: DamageType, amount: number, fromX: number, 
     return;
   }
   p.invuln = w.tuning.mercySeconds;
+  p.pickupLock = w.tuning.pickupLockSeconds;
   const awayX = p.x - fromX;
   const awayY = p.y - fromY;
   scatterKernels(w, res.removed, p.x, p.y, awayX, awayY, 0.9, null);
   w.events.push({ type: 'hit', x: p.x, y: p.y, damage, count: res.removed.length, weak: res.weak, onPlayer: true });
   if (total(p.kernels) === 0) {
     p.bare = true;
+    // Last Chance is the one window where scooping has to work immediately.
+    p.pickupLock = 0;
     p.lastChance = w.difficulty === 'easy' ? Math.max(6, w.tuning.lastChanceSeconds) : w.tuning.lastChanceSeconds;
     w.events.push({ type: 'bare' });
   }
@@ -1207,6 +1213,7 @@ export function bumpLossFor(w: World): number {
 function updatePlayerState(w: World): void {
   const p = w.player;
   p.invuln = Math.max(0, p.invuln - DT);
+  p.pickupLock = Math.max(0, p.pickupLock - DT);
   p.streakTimer = Math.max(0, p.streakTimer - DT);
   if (p.streakTimer === 0) p.streak = 0;
   p.pickupTimer = Math.max(0, p.pickupTimer - DT);
@@ -1913,7 +1920,7 @@ function updateGround(w: World): void {
     g.enemyLock = Math.max(0, g.enemyLock - DT);
     g.sparkle = Math.max(0, g.sparkle - DT);
 
-    if (g.delay <= 0) {
+    if (g.delay <= 0 && p.pickupLock <= 0) {
       const dx = p.x - g.x;
       const dy = p.y - g.y;
       const d = Math.hypot(dx, dy);

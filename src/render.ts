@@ -742,6 +742,8 @@ export class Renderer {
       g.moveTo(x + Math.cos(a0) * r, y + Math.sin(a0) * r)
         .arc(x, y, r, a0, a0 + Math.PI * 2 * f)
         .stroke({ width: 5, color: RED });
+    } else if (p.pickupLock > 0) {
+      drawDizzy(g, px, y + bob, p.r, time, this.reduceFlash);
     }
 
     // When down to the Heart Kernel, point at the nearest kernels on the ground.
@@ -903,6 +905,86 @@ function enemyPose(e: Enemy, y: number, time: number, zoom: number): { r: number
   const lean = Math.max(-0.45, Math.min(0.45, e.vx / 90));
   const rock = Math.sin(time * 5 * jiggly + e.id) * (e.chompable ? 0.14 : 0.08) * jiggly;
   return { r, cy: y + bob, angle: lean * 0.35 + rock };
+}
+
+function drawStar(g: Graphics, x: number, y: number, radius: number, rot: number): void {
+  const pts: number[] = [];
+  for (let i = 0; i < 10; i++) {
+    const a = rot - Math.PI / 2 + (i * Math.PI) / 5;
+    const rad = i % 2 === 0 ? radius : radius * 0.42;
+    pts.push(x + Math.cos(a) * rad, y + Math.sin(a) * rad);
+  }
+  g.poly(pts, true).fill(INK).stroke({ width: Math.max(1.4, radius * 0.16), color: INK, join: 'round' });
+}
+
+function strokeRun(g: Graphics, pts: Array<[number, number]>, width: number): void {
+  if (pts.length < 2) return;
+  g.moveTo(pts[0][0], pts[0][1]);
+  for (let i = 1; i < pts.length; i++) g.lineTo(pts[i][0], pts[i][1]);
+  g.stroke({ width, color: INK, cap: 'round', join: 'round' });
+}
+
+/**
+ * Dizzy halo, like a ring spinning flat above the head.
+ * The oval stays horizontal. It turns around the vertical axis, so the
+ * gap and the stars travel around the ellipse instead of tumbling it edge-on.
+ * The top of the ellipse is the far side; the bottom is the near side.
+ */
+function drawDizzy(g: Graphics, x: number, y: number, r: number, time: number, calm: boolean): void {
+  const wobble = calm ? 0.35 : 1;
+  const spin = time * (calm ? 1.15 : 2.7);
+  const tilt = Math.sin(time * 2.4) * 0.14 * wobble;
+  const cx = x + Math.sin(time * 4.2) * r * 0.07 * wobble;
+  const cy = y - r * 1.58 + Math.cos(time * 3.3) * r * 0.05 * wobble;
+  const rx = r * 1.15;
+  const ry = r * 0.32;
+  const ink = Math.max(2.2, r * 0.06);
+  const co = Math.cos(tilt);
+  const si = Math.sin(tilt);
+  const at = (a: number): [number, number] => {
+    const lx = Math.cos(a) * rx;
+    const ly = Math.sin(a) * ry;
+    return [cx + lx * co - ly * si, cy + lx * si + ly * co];
+  };
+
+  const gap = 0.62;
+  const sweep = Math.PI * 2 - gap;
+  const steps = 42;
+  const farRuns: Array<Array<[number, number]>> = [];
+  const nearRuns: Array<Array<[number, number]>> = [];
+  let run: Array<[number, number]> = [];
+  let runFar: boolean | null = null;
+  const flush = () => {
+    if (run.length >= 2 && runFar !== null) (runFar ? farRuns : nearRuns).push(run);
+    run = [];
+    runFar = null;
+  };
+  for (let i = 0; i <= steps; i++) {
+    const a = spin + gap / 2 + (sweep * i) / steps;
+    const far = Math.sin(a) < 0;
+    if (runFar !== null && far !== runFar) flush();
+    runFar = far;
+    run.push(at(a));
+  }
+  flush();
+
+  const stars = [1.2, Math.PI + 0.15, 5.05].map((offset, i) => {
+    const a = spin + offset;
+    return { i, a, near: Math.sin(a) >= 0, size: r * (Math.sin(a) >= 0 ? 0.24 : 0.18) };
+  });
+
+  for (const pts of farRuns) strokeRun(g, pts, ink * 0.72);
+  for (const s of stars) {
+    if (s.near) continue;
+    const [sx, sy] = at(s.a);
+    drawStar(g, sx, sy + Math.sin(time * 6.5 + s.i) * r * 0.03 * wobble, s.size, s.a * 0.35);
+  }
+  for (const pts of nearRuns) strokeRun(g, pts, ink);
+  for (const s of stars) {
+    if (!s.near) continue;
+    const [sx, sy] = at(s.a);
+    drawStar(g, sx, sy + Math.sin(time * 6.5 + s.i) * r * 0.03 * wobble, s.size, s.a * 0.35);
+  }
 }
 
 /** A dashed ring, in screen-length dashes so it reads the same at any zoom. */

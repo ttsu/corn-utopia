@@ -190,6 +190,128 @@ describe('world', () => {
     expect(nearby.length).toBe(w.tuning.bumpLoss);
   });
 
+  it('cannot pick up kernels for 5 seconds after getting hit', () => {
+    const w = quietWorld();
+    w.props = [];
+    w.tuning.fieldKernels = 0;
+    w.tuning.mercySeconds = 0;
+    w.player.kernels = kernelsOf({ sunny: 10 });
+    addEnemy(w, 10, 0, kernelsOf({ sunny: 40 }));
+    step(w, EMPTY_COMMAND);
+    expect(defaultTuning().pickupLockSeconds).toBe(5);
+    expect(w.player.pickupLock).toBeCloseTo(w.tuning.pickupLockSeconds - 1 / 60, 5);
+
+    const held = total(w.player.kernels);
+    w.enemies = [];
+    w.props = [];
+    w.player.vx = 0;
+    w.player.vy = 0;
+    const x = w.player.x;
+    const y = w.player.y;
+    const loose = w.player.r + 6;
+    w.ground = [
+      {
+        id: w.nextId++,
+        kind: 'sunny',
+        value: 1,
+        x,
+        y,
+        px: x,
+        py: y,
+        vx: 0,
+        vy: 0,
+        delay: 0,
+        enemyLock: 0,
+        age: 1,
+        sparkle: 0,
+        ownerId: null,
+        dead: false,
+      },
+      {
+        id: w.nextId++,
+        kind: 'zinger',
+        value: 1,
+        x: x + loose,
+        y,
+        px: x + loose,
+        py: y,
+        vx: 0,
+        vy: 0,
+        delay: 0,
+        enemyLock: 0,
+        age: 1,
+        sparkle: 0,
+        ownerId: null,
+        dead: false,
+      },
+    ];
+
+    let steps = 0;
+    while (w.player.pickupLock > 0 && steps < 1000) {
+      step(w, EMPTY_COMMAND);
+      steps++;
+    }
+    expect(steps / 60).toBeCloseTo(5, 1);
+    expect(total(w.player.kernels)).toBe(held);
+    expect(w.ground.filter((g) => !g.dead)).toHaveLength(2);
+    expect(w.ground.find((g) => g.kind === 'zinger')!.x).toBeCloseTo(x + loose, 5);
+
+    step(w, EMPTY_COMMAND);
+    expect(w.player.pickupLock).toBe(0);
+    expect(w.player.kernels.sunny).toBe(held + 1);
+    expect(w.ground.filter((g) => !g.dead).every((g) => g.kind === 'zinger')).toBe(true);
+    expect(w.ground.find((g) => g.kind === 'zinger')!.x).toBeLessThan(x + loose);
+  });
+
+  it('a later hit starts the pickup lock over, and chomping still works during it', () => {
+    const w = quietWorld();
+    w.props = [];
+    w.tuning.fieldKernels = 0;
+    w.tuning.mercySeconds = 0;
+    w.player.kernels = kernelsOf({ sunny: 10 });
+    addEnemy(w, 10, 0, kernelsOf({ sunny: 40 }));
+    step(w, EMPTY_COMMAND);
+    w.enemies = [];
+    w.props = [];
+    w.player.vx = 0;
+    w.player.vy = 0;
+    for (let i = 0; i < 60; i++) step(w, EMPTY_COMMAND);
+    const cooled = w.player.pickupLock;
+    expect(cooled).toBeLessThan(w.tuning.pickupLockSeconds - 0.5);
+
+    addEnemy(w, w.player.x + 10, w.player.y, kernelsOf({ sunny: 40 }));
+    step(w, EMPTY_COMMAND);
+    expect(w.player.pickupLock).toBeGreaterThan(cooled);
+
+    w.enemies = [];
+    w.player.vx = 0;
+    w.player.vy = 0;
+    w.tuning.chompBonusMin = 0;
+    w.tuning.chompBonusMax = 0;
+    const before = total(w.player.kernels);
+    addEnemy(w, w.player.x + 8, w.player.y, kernelsOf({ sunny: 2 }));
+    step(w, EMPTY_COMMAND);
+    expect(total(w.player.kernels)).toBe(before + 2);
+    expect(w.player.pickupLock).toBeGreaterThan(0);
+  });
+
+  it('Last Chance can still scoop a kernel right after the Heart Kernel pops off', () => {
+    const w = quietWorld();
+    w.props = [];
+    w.player.kernels = kernelsOf({ sunny: 1 });
+    addEnemy(w, 10, 0, kernelsOf({ sunny: 12 }));
+    step(w, EMPTY_COMMAND);
+    expect(w.player.bare).toBe(true);
+    expect(w.player.pickupLock).toBe(0);
+    w.enemies = [];
+    w.player.vx = 0;
+    w.player.vy = 0;
+    for (const g of w.ground) Object.assign(g, { x: w.player.x, y: w.player.y, vx: 0, vy: 0, delay: 0 });
+    step(w, EMPTY_COMMAND);
+    expect(w.player.bare).toBe(false);
+    expect(total(w.player.kernels)).toBeGreaterThan(0);
+  });
+
   it('kernels knocked off a cob are only the player’s to grab for a while', () => {
     const w = quietWorld();
     const lock = w.tuning.enemyGrabLock;
