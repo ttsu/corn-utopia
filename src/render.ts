@@ -742,13 +742,8 @@ export class Renderer {
       g.moveTo(x + Math.cos(a0) * r, y + Math.sin(a0) * r)
         .arc(x, y, r, a0, a0 + Math.PI * 2 * f)
         .stroke({ width: 5, color: RED });
-    } else if (p.pickupLock > 0 && w.tuning.pickupLockSeconds > 0) {
-      const f = Math.max(0, p.pickupLock / w.tuning.pickupLockSeconds);
-      const r = p.r + 12;
-      const a0 = -Math.PI / 2;
-      g.moveTo(x + Math.cos(a0) * r, y + Math.sin(a0) * r)
-        .arc(x, y, r, a0, a0 + Math.PI * 2 * f)
-        .stroke({ width: 4, color: 0xc68642 });
+    } else if (p.pickupLock > 0) {
+      drawDizzy(g, px, y + bob, p.r, time, this.reduceFlash);
     }
 
     // When down to the Heart Kernel, point at the nearest kernels on the ground.
@@ -910,6 +905,76 @@ function enemyPose(e: Enemy, y: number, time: number, zoom: number): { r: number
   const lean = Math.max(-0.45, Math.min(0.45, e.vx / 90));
   const rock = Math.sin(time * 5 * jiggly + e.id) * (e.chompable ? 0.14 : 0.08) * jiggly;
   return { r, cy: y + bob, angle: lean * 0.35 + rock };
+}
+
+/** A point on a rotated ellipse. `a` runs around the oval, `rot` spins the whole oval. */
+function ovalPoint(cx: number, cy: number, rx: number, ry: number, rot: number, a: number): [number, number] {
+  const lx = Math.cos(a) * rx;
+  const ly = Math.sin(a) * ry;
+  const co = Math.cos(rot);
+  const si = Math.sin(rot);
+  return [cx + lx * co - ly * si, cy + lx * si + ly * co];
+}
+
+function strokeOvalArc(
+  g: Graphics,
+  cx: number,
+  cy: number,
+  rx: number,
+  ry: number,
+  rot: number,
+  a0: number,
+  a1: number,
+  width: number,
+  color: number,
+): void {
+  const steps = 32;
+  for (let i = 0; i <= steps; i++) {
+    const a = a0 + ((a1 - a0) * i) / steps;
+    const [px, py] = ovalPoint(cx, cy, rx, ry, rot, a);
+    if (i === 0) g.moveTo(px, py);
+    else g.lineTo(px, py);
+  }
+  g.stroke({ width, color, cap: 'round', join: 'round' });
+}
+
+function drawStar(g: Graphics, x: number, y: number, radius: number, rot: number): void {
+  const pts: number[] = [];
+  for (let i = 0; i < 10; i++) {
+    const a = rot - Math.PI / 2 + (i * Math.PI) / 5;
+    const rad = i % 2 === 0 ? radius : radius * 0.42;
+    pts.push(x + Math.cos(a) * rad, y + Math.sin(a) * rad);
+  }
+  g.poly(pts, true).fill(INK).stroke({ width: Math.max(1.4, radius * 0.16), color: INK, join: 'round' });
+}
+
+/**
+ * Dizzy birds swirl: a flat open ring and three stars above the cob.
+ * The whole cluster spins, and the ring and stars wobble on their own.
+ */
+function drawDizzy(g: Graphics, x: number, y: number, r: number, time: number, calm: boolean): void {
+  const spinSpeed = calm ? 0.8 : 2.6;
+  const wobble = calm ? 0.35 : 1;
+  const spin = time * spinSpeed;
+  const rock = Math.sin(time * 5.4) * 0.42 * wobble;
+  const cx = x + Math.sin(time * 7.3) * r * 0.1 * wobble;
+  const cy = y - r * 2.25 + Math.cos(time * 6.2) * r * 0.08 * wobble;
+  const rx = r * 1.05;
+  const ry = r * 0.38;
+  const rot = spin + rock;
+  const ink = Math.max(2.8, r * 0.09);
+
+  strokeOvalArc(g, cx, cy, rx, ry, rot, 0.5, Math.PI * 2 - 0.25, ink, INK);
+  strokeOvalArc(g, cx, cy, rx * 1.12, ry * 1.28, rot + 0.4, 0.15, 1.25, Math.max(1.8, ink * 0.5), INK);
+
+  const stars = [-2.4, -0.7, 0.95];
+  for (let i = 0; i < stars.length; i++) {
+    const breathe = 1 + Math.sin(time * 8.5 + i * 2.1) * 0.12 * wobble;
+    const [sx, sy] = ovalPoint(cx, cy, rx * 1.42 * breathe, ry * 1.7 * breathe, rot, stars[i]);
+    const jx = Math.cos(time * 9 + i) * r * 0.045 * wobble;
+    const jy = Math.sin(time * 7.5 + i * 1.4) * r * 0.04 * wobble;
+    drawStar(g, sx + jx, sy + jy, r * (i === 0 ? 0.24 : 0.19), time * (calm ? 1.4 : 5.5) + i * 1.2);
+  }
 }
 
 /** A dashed ring, in screen-length dashes so it reads the same at any zoom. */
