@@ -1,0 +1,12 @@
+{
+  "name": "corn-utopia",
+  "user": "ubuntu",
+  "install": "[ ! -d '/agent/repos/corn-utopia' ] || cd '/agent/repos/corn-utopia' || exit $?\nnpm ci",
+  "start": "[ ! -d '/agent/repos/corn-utopia' ] || cd '/agent/repos/corn-utopia' || exit $?\nif curl -sf -o /dev/null --max-time 2 http://127.0.0.1:5173/; then\n  echo \"dev server already listening on 5173\"\n  exit 0\nfi\nexec npm run dev -- --host 0.0.0.0 --port 5173",
+  "ports": [
+    {
+      "name": "Vite",
+      "port": 5173
+    }
+  ]
+}
