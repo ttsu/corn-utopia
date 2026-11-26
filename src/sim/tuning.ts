@@ -21,11 +21,14 @@ const spec = (group: string, label: string, value: number, min: number, max: num
 });
 
 export const TUNING_SPECS = {
+  harvestSeconds: spec('Run', 'Harvest Moon (s, 0 = off)', 600, 0, 1200, 30),
+
   playerSpeed: spec('Player', 'Move speed', 200, 80, 400, 10),
   magnetRadius: spec('Player', 'Magnet radius (beyond body)', 10, 0, 250, 5),
   magnetPull: spec('Player', 'Magnet pull strength', 3000, 200, 6000, 50),
   bumpLoss: spec('Player', 'Kernels lost per bump', 2, 1, 6, 1),
   mercySeconds: spec('Player', 'Mercy invulnerability (s)', 0.75, 0.2, 2, 0.05),
+  pickupLockSeconds: spec('Player', 'No pickups after a hit (s)', 5, 0, 12, 0.25),
   lastChanceSeconds: spec('Player', 'Last Chance (s)', 3, 1, 8, 0.5),
   maxTier: spec('Player', 'Top size tier (then extras become Seeds)', 10, 2, 30, 1),
   damageSizeExponent: spec('Player', 'Damage growth with size (exponent)', 0.4, 0, 1.5, 0.05),
@@ -53,6 +56,18 @@ export const TUNING_SPECS = {
   popperShake: spec('Powers', 'Popper shakes loose (% of each cob)', 1.5, 0, 25, 0.5),
   frostyShake: spec('Powers', 'Frosty shakes loose (% of target)', 2, 0, 25, 0.5),
   burnShake: spec('Powers', 'Burn patch shakes loose (% per tick)', 0.5, 0, 10, 0.25),
+  boingRecharge: spec('Powers', 'Boing recharge (s)', 0.55, 0.05, 3, 0.05),
+  zappyRecharge: spec('Powers', 'Zappy recharge (s)', 0.9, 0.05, 3, 0.05),
+  caramelRecharge: spec('Powers', 'Caramel recharge (s)', 1, 0.05, 3, 0.05),
+  sproutRecharge: spec('Powers', 'Sprout recharge (s)', 1.3, 0.05, 4, 0.05),
+  gemRecharge: spec('Powers', 'Gem recharge (s)', 1.2, 0.05, 4, 0.05),
+  boingDamage: spec('Powers', 'Boing knocks off (each cob)', 1, 1, 5, 1),
+  zappyDamage: spec('Powers', 'Zappy knocks off', 1, 1, 5, 1),
+  sproutDamage: spec('Powers', 'Sprout seed knocks off', 1, 1, 4, 1),
+  boingShake: spec('Powers', 'Boing shakes loose (% )', 2, 0, 25, 0.5),
+  zappyShake: spec('Powers', 'Zappy shakes loose (% )', 2.5, 0, 25, 0.5),
+  sproutShake: spec('Powers', 'Sprout shakes loose (% )', 1.5, 0, 25, 0.5),
+
   shotRange: spec('Powers', 'Shot range (at size 1)', 380, 150, 900, 10),
   popperRadius: spec('Powers', 'Popper blast radius', 75, 30, 200, 5),
   burnSeconds: spec('Powers', 'Spicy burn patch (s)', 1.5, 0, 5, 0.25),

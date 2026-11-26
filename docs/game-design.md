@@ -165,7 +165,12 @@ Both kinds count toward your **kernel count** (for chomping), your **health**, a
 - That means your plain kernels are also your **armor**. Collect Soggy kernels and enemy fireballs
   can't knock them off. Tough Nut kernels take 3 hits before popping off.
 - **Knocked-off kernels never disappear.** They stay on the ground until someone picks them up:
-  you, an enemy cob, or a crow (§6.1). Getting hit is a setback you can always undo by scooping.
+  you, an enemy cob, or a crow (§6.1). Getting hit is a setback you can undo by scooping, but not
+  right away.
+- **Scoop lock:** for 5 seconds after a hit that knocks kernels off, your magnet is off and you
+  can't pick kernels up. A dizzy halo — a flat ring with stars — turns above the cob the way a
+  spinning ring does, wobbling a little, until scooping works again. Another hit starts the 5 seconds over. Last Chance skips this
+  lock, so a Bare Cob can still grab a kernel.
 - **Mercy invulnerability:** about 0.75 s after each hit, with the cob flashing and wobbling.
 
 ### 4.4 All Popped Out (Losing)
@@ -395,6 +400,16 @@ at every size, without kids needing bigger numbers:
   - 5 Spicy: fireballs get bigger
   - 10 Spicy: fireballs split into 3
   - 20 Spicy: **Flamethrower** (each tap breathes a short stream of fire instead of one fireball)
+- **[M2] The other powers use the same 5 / 10 / 20 shape** until playtesting replaces them
+  (`src/sim/milestones.ts`):
+  - Zinger: Zippy, Hard Bonk, Volley
+  - Popper: Big Pop, Heavy Pop, Popcorn Rain
+  - Frosty: Long Chill, Quick Freeze, Blizzard
+  - Boing: Extra Bounces, Hard Boing, Pinball
+  - Zappy: Long Chain, Longer Chain, Storm
+  - Caramel: Sticky, Wide Puddle, Taffy
+  - Sprout: Long Garden, Fast Seeds, Garden
+  - Gem: Triple, Double Cast, Prism
 - A milestone triggers a **little celebration** (that power's kernels dance, and its button gets a
   shiny new border).
 
@@ -1099,6 +1114,10 @@ Each milestone has a clear "done when" check. Scope grows only after the previou
 - 3 biomes, points of interest, events. Harvest Run 10-minute structure.
 - Settings: difficulty, Smart Fire, controls (Follow My Finger, drag-to-aim, left-handed), reduce
   flashing/shake.
+- **[M2 fill-ins]** Three biomes ship here: Sunny Farm (inner), Picnic Park, Kitchen Counter.
+  Milestone names besides Spicy are in §5.4. Points of interest, including the salt shaker, are
+  turned off for now. Boing, Caramel, and Gem stay in the sim and are not offered, so the buttons
+  are Zinger, Spicy, Popper, Frosty, Zappy, and Sprout.
 - **Done when:** a full run is winnable and the director feels balanced across power levels.
 
 ### M3 — Meta + Beta

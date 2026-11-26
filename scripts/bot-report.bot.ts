@@ -25,6 +25,7 @@ const loadout: Loadout = process.env.BOT_LOADOUT === 'playtest' ? 'playtest' : '
 function botCommand(w: World, lastShot: { tick: number }): InputCommand {
   const p = w.player;
   if (w.earUps.length > 0) return { ...EMPTY_COMMAND, pickPerk: 0 };
+  if (w.deals.length > 0) return { ...EMPTY_COMMAND, pickDeal: 0 };
   if (mode === 'idle') {
     const a = w.tick * DT * 0.4;
     return { ...EMPTY_COMMAND, moveX: Math.cos(a) * 0.3, moveY: Math.sin(a) * 0.3 };

@@ -172,6 +172,7 @@ interface CobLayers {
 export class Renderer {
   readonly cam: Camera = { x: 0, y: 0, zoom: 1, width: 1, height: 1 };
   reduceShake = false;
+  reduceFlash = false;
   private floaters: Floater[] = [];
   private particles: Particle[] = [];
   private rings: Ring[] = [];
@@ -361,6 +362,28 @@ export class Renderer {
         case 'saved':
           this.floater(this.cam.x, this.cam.y - 50 / this.cam.zoom, 'Phew!', GREEN, 26, 1);
           break;
+        case 'combo':
+          this.floater(e.x, e.y - 18, e.name, 0xffe08a, 22, 1.2);
+          this.burst(e.x, e.y, 0xffe08a, 8, 160);
+          break;
+        case 'milestone':
+          this.floater(this.cam.x, this.cam.y - 70 / Math.max(0.2, this.cam.zoom), `${e.name}!`, WHITE, 26, 1.3);
+          break;
+        case 'harvest':
+          this.floater(this.cam.x, this.cam.y - 80 / Math.max(0.2, this.cam.zoom), 'Harvest Moon!', 0xffe08a, 30, 1.6);
+          this.shake = Math.max(this.shake, 8);
+          break;
+        case 'victory':
+          this.floater(e.x, e.y, 'King Cob!', 0xffe08a, 32, 1.6);
+          this.burst(e.x, e.y, 0xffd23f, 24, 300, true);
+          this.shake = Math.max(this.shake, 10);
+          break;
+        case 'coat':
+          this.floater(e.x, e.y - 16, e.phase === 1 ? 'Stony coat!' : 'Tough coat!', WHITE, 22, 1.2);
+          break;
+        case 'trade':
+          this.floater(this.cam.x, this.cam.y - 40 / Math.max(0.2, this.cam.zoom), e.name, WHITE, 22, 1.1);
+          break;
         default:
           break;
       }
@@ -409,7 +432,28 @@ export class Renderer {
     this.shotSprites.begin();
     for (const patch of w.patches) {
       if (!visible(patch.x, patch.y, patch.r)) continue;
-      g0.circle(patch.x, patch.y, patch.r).fill({ color: 0xff7b00, alpha: Math.min(1, patch.ttl * 2) * (0.35 + 0.1 * Math.sin(time * 20 + patch.id)) });
+      const kind = patch.kind ?? 'fire';
+      const color = kind === 'caramel' ? 0xc68642 : kind === 'slick' ? 0xffe08a : 0xff7b00;
+      g0.circle(patch.x, patch.y, patch.r).fill({ color, alpha: Math.min(1, patch.ttl * 2) * (0.35 + 0.1 * Math.sin(time * 20 + patch.id)) });
+    }
+    for (const plant of w.plants) {
+      if (!visible(plant.x, plant.y, 24)) continue;
+      g0.circle(plant.x, plant.y, 8).fill(0x6b4a1b);
+      g0.ellipse(plant.x, plant.y - 16, 7, 16).fill(0x3d8c40);
+      g0.circle(plant.x, plant.y - 30, 6).fill(0xf4d35e);
+    }
+    for (const b of w.barriers) {
+      if (!visible(b.x, b.y, b.r)) continue;
+      g0.circle(b.x, b.y, b.r).stroke({ width: 5, color: 0x4f7d32, alpha: 0.85 });
+    }
+    for (const boom of w.booms) {
+      if (!visible(boom.x, boom.y, boom.r)) continue;
+      const pulse = 0.35 + 0.2 * Math.sin(time * 16);
+      g0.circle(boom.x, boom.y, boom.r * (0.4 + pulse)).fill({ color: 0xfff8e1, alpha: 0.35 });
+    }
+    for (const poi of w.pois) {
+      if (poi.used || !visible(poi.x, poi.y, 40)) continue;
+      this.drawPoi(g0, poi, time, toScreenX, toScreenY);
     }
     // Ground kernels stay at least a few screen pixels wide so they're findable when you're huge.
     const minGround = 3.2 / cam.zoom;
@@ -608,6 +652,11 @@ export class Renderer {
     const smug = this.smug.some((mark) => (mark.x - x) ** 2 + (mark.y - y) ** 2 < (r + 30) ** 2);
 
     const edge = layers.outline;
+    if (e.popMax > 0) {
+      edge.circle(x, cy, r + outline).stroke({ width: outline, color: RED, alpha: 0.9 });
+      this.drawFoe(e, x, cy, r, toScreenX, toScreenY);
+      return;
+    }
     if (e.chompable) {
       const wobble = Math.sin(time * 8 + e.id) * 0.08;
       this.strokeStatus(edge, x, cy, r, angle, time, e.id, GREEN, outline * 0.95, 1, outline * (0.48 + wobble));
@@ -625,12 +674,25 @@ export class Renderer {
       this.strokeStatus(edge, x, cy, r, angle, time, e.id, 0x7ec8e3, outline * 0.55, 0.85, outline * 0.32);
     }
 
-    this.drawCobBody(layers, x, cy, r, e.kernels, e.kernelOrder, 0, angle, time, e.id, e.hitFlash > 0);
+    if (e.husk > 0) {
+      this.strokeStatus(edge, x, cy, r, angle, time, e.id, 0x6aa84f, outline * 0.7, 0.9, outline * 0.15);
+    }
+    this.drawCobBody(layers, x, cy, r, e.kernels, e.kernelOrder, 0, angle, time, e.id, e.hitFlash > 0 && !this.reduceFlash);
 
     const g = layers.overlay;
     if (e.frozenLeft > 0) fillCobBody(g, x, cy, r, angle, time, e.id, 0xd7f3ff, 0.45);
     const mood: Mood = e.frozenLeft > 0 ? 'surprised' : smug ? 'smug' : e.chompable ? 'worried' : 'angry';
     drawFace(g, x, cy, r, angle, e.vx, e.vy, mood);
+    if (e.king) {
+      g.moveTo(x - r * 0.45, cy - r * 0.95)
+        .lineTo(x - r * 0.25, cy - r * 1.35)
+        .lineTo(x, cy - r * 0.95)
+        .lineTo(x + r * 0.25, cy - r * 1.35)
+        .lineTo(x + r * 0.45, cy - r * 0.95)
+        .closePath()
+        .fill(0xffe08a)
+        .stroke({ width: Math.max(2, r * 0.04), color: INK });
+    }
 
     const badges = shieldBadges(e.kernels);
     if (badges.length > 0) {
@@ -647,7 +709,7 @@ export class Renderer {
     const p = w.player;
     const layers = this.player;
     const n = total(p.kernels);
-    const flashing = p.invuln > 0 && Math.floor(time * 20) % 2 === 0;
+    const flashing = !this.reduceFlash && p.invuln > 0 && Math.floor(time * 20) % 2 === 0;
     const wobble = p.invuln > 0 ? Math.sin(time * 40) * Math.max(2, p.r * 0.05) : 0;
     const body = layers.body.clear();
     const g = layers.overlay.clear();
@@ -690,6 +752,8 @@ export class Renderer {
       g.moveTo(x + Math.cos(a0) * r, y + Math.sin(a0) * r)
         .arc(x, y, r, a0, a0 + Math.PI * 2 * f)
         .stroke({ width: 5, color: RED });
+    } else if (p.pickupLock > 0) {
+      drawDizzy(g, px, y + bob, p.r, time, this.reduceFlash);
     }
 
     // When down to the Heart Kernel, point at the nearest kernels on the ground.
@@ -713,6 +777,68 @@ export class Renderer {
           .fill(WHITE)
           .stroke({ width: 2, color: INK });
       }
+    }
+  }
+
+  private drawPoi(
+    g: Graphics,
+    poi: World['pois'][number],
+    time: number,
+    toScreenX: (x: number) => number,
+    toScreenY: (y: number) => number,
+  ): void {
+    const bob = Math.sin(time * 3 + poi.id) * 3;
+    const y = poi.y + bob;
+    if (poi.kind === 'pinata') g.circle(poi.x, y, 16).fill(0xe5383b).stroke({ width: 3, color: 0xf4a300 });
+    else if (poi.kind === 'patch') g.ellipse(poi.x, y, 18, 10).fill(0x6aa84f);
+    else if (poi.kind === 'sprinkler') g.circle(poi.x, y, 12).fill(0x4cc9f0);
+    else if (poi.kind === 'shrine') g.roundRect(poi.x - 10, y - 16, 20, 28, 4).fill(0xfffaf0).stroke({ width: 3, color: INK });
+    else if (poi.kind === 'rescue') g.circle(poi.x, y, 14).fill(0xffd23f);
+    else g.ellipse(poi.x, y - 8, 6, 18).fill(0xf4d35e);
+    const label =
+      poi.kind === 'pinata'
+        ? 'Piñata'
+        : poi.kind === 'patch'
+          ? 'Patch'
+          : poi.kind === 'sprinkler'
+            ? 'Sprinkler'
+            : poi.kind === 'shrine'
+              ? 'Shrine'
+              : poi.kind === 'rescue'
+                ? 'Rescue'
+                : 'Stalk';
+    this.screenText.show(label, toScreenX(poi.x), toScreenY(y) - 22, 12, WHITE);
+  }
+
+  /** Crows, ants, and bosses that pop instead of getting chomped. */
+  private drawFoe(e: Enemy, x: number, y: number, r: number, toScreenX: (x: number) => number, toScreenY: (y: number) => number): void {
+    const g = this.enemies.body;
+    const flash = e.hitFlash > 0 && !this.reduceFlash;
+    const tint = flash ? WHITE : foeColor(e.type);
+    if (e.type === 'crow') {
+      g.ellipse(x, y, r * 1.1, r * 0.55).fill(tint).stroke({ width: 3, color: INK });
+      g.poly([x + r, y, x + r * 1.45, y - r * 0.15, x + r, y + r * 0.2]).fill(0xf4a300);
+    } else if (e.type === 'ant') {
+      g.circle(x - r * 0.45, y, r * 0.38).fill(tint);
+      g.circle(x, y, r * 0.48).fill(tint);
+      g.circle(x + r * 0.5, y, r * 0.34).fill(tint);
+    } else if (e.type === 'steve') {
+      g.rect(x - 4, y - r * 0.2, 8, r * 1.3).fill(0x6b4a1b);
+      g.roundRect(x - r * 0.7, y - r * 1.05, r * 1.4, r * 0.7, 6).fill(tint).stroke({ width: 3, color: INK });
+    } else if (e.type === 'butter') {
+      g.circle(x, y, r * 0.85).fill(tint).stroke({ width: 4, color: INK });
+      g.roundRect(x + r * 0.2, y - r * 0.45, r * 0.7, r * 0.9, 6).fill(0xfff6d8).stroke({ width: 3, color: INK });
+    } else {
+      g.roundRect(x - r, y - r * 0.7, r * 2, r * 1.4, 8).fill(tint).stroke({ width: 4, color: INK });
+      g.circle(x - r * 0.35, y - r * 0.1, r * 0.12).fill(INK);
+      g.circle(x + r * 0.35, y - r * 0.1, r * 0.12).fill(INK);
+    }
+    if (e.popMax > 0) {
+      const sx = toScreenX(x);
+      const sy = toScreenY(y - r) - 10;
+      const width = 36;
+      this.screenGfx.roundRect(sx - width / 2, sy - 4, width, 8, 4).fill({ color: 0x000000, alpha: 0.45 });
+      this.screenGfx.roundRect(sx - width / 2, sy - 4, width * Math.max(0, e.popHp / e.popMax), 8, 4).fill(0xffe08a);
     }
   }
 
@@ -743,6 +869,15 @@ export class Renderer {
   }
 }
 
+function foeColor(type: Enemy['type']): number {
+  if (type === 'crow') return 0x2b2b2b;
+  if (type === 'ant') return 0x5c3317;
+  if (type === 'steve') return 0xc47a3a;
+  if (type === 'butter') return 0xffe08a;
+  if (type === 'harvey') return 0x8d4a32;
+  return 0x6b4a1b;
+}
+
 function makeCobLayers(): CobLayers {
   const kernelLayer = new Container();
   return { outline: new Graphics(), body: new Graphics(), kernels: new SpritePool(kernelLayer), overlay: new Graphics() };
@@ -756,6 +891,86 @@ function enemyPose(e: Enemy, y: number, time: number, zoom: number): { r: number
   const lean = Math.max(-0.45, Math.min(0.45, e.vx / 90));
   const rock = Math.sin(time * 5 * jiggly + e.id) * (e.chompable ? 0.14 : 0.08) * jiggly;
   return { r, cy: y + bob, angle: lean * 0.35 + rock };
+}
+
+function drawStar(g: Graphics, x: number, y: number, radius: number, rot: number): void {
+  const pts: number[] = [];
+  for (let i = 0; i < 10; i++) {
+    const a = rot - Math.PI / 2 + (i * Math.PI) / 5;
+    const rad = i % 2 === 0 ? radius : radius * 0.42;
+    pts.push(x + Math.cos(a) * rad, y + Math.sin(a) * rad);
+  }
+  g.poly(pts, true).fill(INK).stroke({ width: Math.max(1.4, radius * 0.16), color: INK, join: 'round' });
+}
+
+function strokeRun(g: Graphics, pts: Array<[number, number]>, width: number): void {
+  if (pts.length < 2) return;
+  g.moveTo(pts[0][0], pts[0][1]);
+  for (let i = 1; i < pts.length; i++) g.lineTo(pts[i][0], pts[i][1]);
+  g.stroke({ width, color: INK, cap: 'round', join: 'round' });
+}
+
+/**
+ * Dizzy halo, like a ring spinning flat above the head.
+ * The oval stays horizontal. It turns around the vertical axis, so the
+ * gap and the stars travel around the ellipse instead of tumbling it edge-on.
+ * The top of the ellipse is the far side; the bottom is the near side.
+ */
+function drawDizzy(g: Graphics, x: number, y: number, r: number, time: number, calm: boolean): void {
+  const wobble = calm ? 0.35 : 1;
+  const spin = time * (calm ? 1.15 : 2.7);
+  const tilt = Math.sin(time * 2.4) * 0.14 * wobble;
+  const cx = x + Math.sin(time * 4.2) * r * 0.07 * wobble;
+  const cy = y - r * 1.58 + Math.cos(time * 3.3) * r * 0.05 * wobble;
+  const rx = r * 1.15;
+  const ry = r * 0.32;
+  const ink = Math.max(2.2, r * 0.06);
+  const co = Math.cos(tilt);
+  const si = Math.sin(tilt);
+  const at = (a: number): [number, number] => {
+    const lx = Math.cos(a) * rx;
+    const ly = Math.sin(a) * ry;
+    return [cx + lx * co - ly * si, cy + lx * si + ly * co];
+  };
+
+  const gap = 0.62;
+  const sweep = Math.PI * 2 - gap;
+  const steps = 42;
+  const farRuns: Array<Array<[number, number]>> = [];
+  const nearRuns: Array<Array<[number, number]>> = [];
+  let run: Array<[number, number]> = [];
+  let runFar: boolean | null = null;
+  const flush = () => {
+    if (run.length >= 2 && runFar !== null) (runFar ? farRuns : nearRuns).push(run);
+    run = [];
+    runFar = null;
+  };
+  for (let i = 0; i <= steps; i++) {
+    const a = spin + gap / 2 + (sweep * i) / steps;
+    const far = Math.sin(a) < 0;
+    if (runFar !== null && far !== runFar) flush();
+    runFar = far;
+    run.push(at(a));
+  }
+  flush();
+
+  const stars = [1.2, Math.PI + 0.15, 5.05].map((offset, i) => {
+    const a = spin + offset;
+    return { i, a, near: Math.sin(a) >= 0, size: r * (Math.sin(a) >= 0 ? 0.24 : 0.18) };
+  });
+
+  for (const pts of farRuns) strokeRun(g, pts, ink * 0.72);
+  for (const s of stars) {
+    if (s.near) continue;
+    const [sx, sy] = at(s.a);
+    drawStar(g, sx, sy + Math.sin(time * 6.5 + s.i) * r * 0.03 * wobble, s.size, s.a * 0.35);
+  }
+  for (const pts of nearRuns) strokeRun(g, pts, ink);
+  for (const s of stars) {
+    if (!s.near) continue;
+    const [sx, sy] = at(s.a);
+    drawStar(g, sx, sy + Math.sin(time * 6.5 + s.i) * r * 0.03 * wobble, s.size, s.a * 0.35);
+  }
 }
 
 /** A dashed ring, in screen-length dashes so it reads the same at any zoom. */

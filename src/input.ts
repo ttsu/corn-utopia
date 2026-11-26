@@ -22,7 +22,17 @@ export interface JoystickState {
 }
 
 const JOYSTICK_RADIUS = 60;
-const KEY_SLOTS: Record<string, number> = { Digit1: 0, Digit2: 1, Digit3: 2, Digit4: 3, Digit5: 4 };
+const KEY_SLOTS: Record<string, number> = {
+  Digit1: 0,
+  Digit2: 1,
+  Digit3: 2,
+  Digit4: 3,
+  Digit5: 4,
+  Digit6: 5,
+  Digit7: 6,
+  Digit8: 7,
+  Digit9: 8,
+};
 
 /**
  * Turns touch, mouse, and keyboard into one InputCommand per tick. Tracks several pointers at
@@ -36,7 +46,12 @@ export class Input {
   private queuedTap: { x: number; y: number } | null = null;
   private queuedCycle = false;
   private queuedDash = false;
+  private queuedSmart = false;
+  private queuedAim: { x: number; y: number } | null = null;
   enabled = true;
+  followFinger = false;
+  /** When true, the joystick lives on the right half. */
+  leftHanded = false;
 
   constructor(
     private canvas: HTMLCanvasElement,
@@ -62,6 +77,17 @@ export class Input {
     if (this.enabled) this.queuedDash = true;
   }
 
+  queueSmart(): void {
+    if (this.enabled) this.queuedSmart = true;
+  }
+
+  /** Screen-space point the next shot should fly toward. */
+  queueAim(kind: PowerKind, sx: number, sy: number): void {
+    if (!this.enabled) return;
+    this.queuedFire.push(kind);
+    this.queuedAim = { x: sx, y: sy };
+  }
+
   reset(): void {
     this.joystick = null;
     this.queuedFire.length = 0;
@@ -69,6 +95,8 @@ export class Input {
     this.queuedTap = null;
     this.queuedCycle = false;
     this.queuedDash = false;
+    this.queuedSmart = false;
+    this.queuedAim = null;
   }
 
   private onDown = (e: PointerEvent): void => {
@@ -77,7 +105,7 @@ export class Input {
     const rect = this.canvas.getBoundingClientRect();
     const x = e.clientX - rect.left;
     const y = e.clientY - rect.top;
-    if (x < rect.width / 2) {
+    if (this.leftHanded ? x >= rect.width / 2 : x < rect.width / 2) {
       if (this.joystick) return;
       this.joystick = { pointerId: e.pointerId, originX: x, originY: y, x, y };
       this.canvas.setPointerCapture(e.pointerId);
@@ -143,12 +171,23 @@ export class Input {
     if (this.keys.has('KeyD') || this.keys.has('ArrowRight')) mx += 1;
     if (this.keys.has('KeyW') || this.keys.has('ArrowUp')) my -= 1;
     if (this.keys.has('KeyS') || this.keys.has('ArrowDown')) my += 1;
-    if (mx === 0 && my === 0) {
-      const v = this.joystickVector();
-      const m = Math.hypot(v.x, v.y);
-      if (m > 0.12) {
-        mx = v.x;
-        my = v.y;
+    if (mx === 0 && my === 0 && this.joystick) {
+      if (this.followFinger) {
+        const dx = this.joystick.x - cam.width / 2;
+        const dy = this.joystick.y - cam.height / 2;
+        const d = Math.hypot(dx, dy);
+        if (d > 18) {
+          const m = Math.min(1, d / 90);
+          mx = (dx / d) * m;
+          my = (dy / d) * m;
+        }
+      } else {
+        const v = this.joystickVector();
+        const m = Math.hypot(v.x, v.y);
+        if (m > 0.12) {
+          mx = v.x;
+          my = v.y;
+        }
       }
     }
     const fire = this.queuedFire.splice(0);
@@ -164,10 +203,14 @@ export class Input {
       lockAt: this.queuedTap ? screenToWorld(cam, this.queuedTap.x, this.queuedTap.y) : null,
       cycleTarget: this.queuedCycle,
       dash: this.queuedDash,
+      smart: this.queuedSmart,
+      aim: this.queuedAim ? screenToWorld(cam, this.queuedAim.x, this.queuedAim.y) : null,
     };
     this.queuedTap = null;
     this.queuedCycle = false;
     this.queuedDash = false;
+    this.queuedSmart = false;
+    this.queuedAim = null;
     return cmd;
   }
 }

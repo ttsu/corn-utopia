@@ -1,7 +1,17 @@
 import { chance, hash2, int, makeRng, range } from './rng';
 
+export type Biome = 'farm' | 'picnic' | 'kitchen';
+
+/** Sunny Farm, then Picnic Park, then the Kitchen Counter. Later rings wait for M3. */
+export function biomeAt(x: number, y: number): Biome {
+  const d = Math.hypot(x, y);
+  if (d < 4000) return 'farm';
+  if (d < 8000) return 'picnic';
+  return 'kitchen';
+}
+
 export interface FarmProp {
-  kind: 'hay' | 'mud';
+  kind: 'hay' | 'mud' | 'butter' | 'sink';
   x: number;
   y: number;
   r: number;
@@ -17,9 +27,12 @@ const HAY_STACK = [
   { ox: -5, oy: -32 },
 ];
 
-/** Hay bales and mud puddles for one field chunk. Its own RNG, so it doesn't disturb kernel spawns. */
+/** Hay, mud, butter, and sinks for one chunk. Its own RNG, so it doesn't disturb kernel spawns. */
 export function propsForChunk(seed: number, cx: number, cy: number, chunkSize: number): FarmProp[] {
+  const biome = biomeAt((cx + 0.5) * chunkSize, (cy + 0.5) * chunkSize);
   const rng = makeRng(hash2(seed, cx + 9176, cy - 4403));
+  if (biome === 'picnic') return picnicProps(rng, cx, cy, chunkSize);
+  if (biome === 'kitchen') return kitchenProps(rng, cx, cy, chunkSize);
   const props: FarmProp[] = [];
   const clumps = chance(rng, 0.35) ? 2 : 1;
   for (let c = 0; c < clumps; c++) {
@@ -42,6 +55,38 @@ export function propsForChunk(seed: number, cx: number, cy: number, chunkSize: n
     const y = (cy + range(rng, 0.2, 0.8)) * chunkSize;
     if (Math.hypot(x, y) < CLEAR_RADIUS) continue;
     props.push({ kind: 'mud', x, y, r: range(rng, 36, 64) });
+  }
+  return props;
+}
+
+function picnicProps(rng: ReturnType<typeof makeRng>, cx: number, cy: number, chunkSize: number): FarmProp[] {
+  // Blankets are scenery. Ants are the hazard, and they spawn with the director.
+  const props: FarmProp[] = [];
+  const n = int(rng, 0, 1);
+  for (let i = 0; i < n; i++) {
+    props.push({
+      kind: 'mud',
+      x: (cx + range(rng, 0.25, 0.75)) * chunkSize,
+      y: (cy + range(rng, 0.25, 0.75)) * chunkSize,
+      r: range(rng, 28, 46),
+    });
+  }
+  return props;
+}
+
+function kitchenProps(rng: ReturnType<typeof makeRng>, cx: number, cy: number, chunkSize: number): FarmProp[] {
+  const props: FarmProp[] = [];
+  const butters = int(rng, 1, 2);
+  for (let i = 0; i < butters; i++) {
+    const x = (cx + range(rng, 0.2, 0.8)) * chunkSize;
+    const y = (cy + range(rng, 0.2, 0.8)) * chunkSize;
+    if (Math.hypot(x, y) < CLEAR_RADIUS) continue;
+    props.push({ kind: 'butter', x, y, r: range(rng, 40, 70) });
+  }
+  if (chance(rng, 0.55)) {
+    const x = (cx + range(rng, 0.3, 0.7)) * chunkSize;
+    const y = (cy + range(rng, 0.3, 0.7)) * chunkSize;
+    if (Math.hypot(x, y) >= CLEAR_RADIUS) props.push({ kind: 'sink', x, y, r: range(rng, 46, 68) });
   }
   return props;
 }
@@ -72,13 +117,33 @@ export function decorForChunk(seed: number, cx: number, cy: number, chunkSize: n
   return out;
 }
 
-/** 1 in open ground, less than 1 inside a mud puddle. */
+/** 1 in open ground, slower in mud, faster in a kitchen butter puddle. */
 export function mudSlow(x: number, y: number, props: readonly FarmProp[]): number {
+  let slow = 1;
+  let boost = 1;
   for (const p of props) {
-    if (p.kind !== 'mud') continue;
-    if ((x - p.x) ** 2 + (y - p.y) ** 2 < p.r * p.r) return 0.55;
+    if ((x - p.x) ** 2 + (y - p.y) ** 2 >= p.r * p.r) continue;
+    if (p.kind === 'mud') slow = Math.min(slow, 0.55);
+    if (p.kind === 'butter') boost = Math.max(boost, 1.35);
   }
-  return 1;
+  return slow * boost;
+}
+
+/** A sink splash shoves you out. Returns a velocity to add, in pixels per second. */
+export function sinkPush(x: number, y: number, props: readonly FarmProp[]): { x: number; y: number } {
+  let px = 0;
+  let py = 0;
+  for (const p of props) {
+    if (p.kind !== 'sink') continue;
+    const dx = x - p.x;
+    const dy = y - p.y;
+    const d = Math.hypot(dx, dy);
+    if (d >= p.r || d < 1) continue;
+    const push = (1 - d / p.r) * 220;
+    px += (dx / d) * push;
+    py += (dy / d) * push;
+  }
+  return { x: px, y: py };
 }
 
 /** Pushes a circle out of any hay bale it overlaps. Two passes so a shove into a neighbor still resolves. */

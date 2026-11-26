@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { countsToOrder, kernelsOf, removeLatestKernels, total } from './cob';
-import { POWER_KINDS, type KernelKind } from './kernels';
+import { STARTER_POWERS, type KernelKind } from './kernels';
 import { defaultTuning } from './tuning';
-import { EMPTY_COMMAND, bumpLossFor, canFire, challenge, createWorld, damageScale, shotRange, step, type InputCommand, type World } from './world';
+import { EMPTY_COMMAND, bestPower, bumpLossFor, canFire, challenge, createWorld, damageScale, shotRange, step, type InputCommand, type World } from './world';
 
 function quietWorld(seed = 1): World {
   const w = createWorld(seed, defaultTuning());
@@ -38,6 +38,21 @@ function addEnemy(w: World, x: number, y: number, kernels: ReturnType<typeof ker
     frostHits: 0,
     slowLeft: 0,
     frozenLeft: 0,
+    burnLeft: 0,
+    zapLeft: 0,
+    caramelLeft: 0,
+    stuckLeft: 0,
+    husk: 0,
+    popHp: 0,
+    popMax: 0,
+    shotCd: 0,
+    fuse: -1,
+    loot: kernelsOf({}),
+    chip: kernelsOf({}),
+    king: false,
+    kingPhase: 0,
+    kingStart: 0,
+    gustCd: 0,
   });
   return w.enemies[w.enemies.length - 1];
 }
@@ -49,11 +64,11 @@ describe('world', () => {
     expect(w.player.kernelOrder).toEqual(Array(defaultTuning().gameStartSunny).fill('sunny'));
     const babies = w.enemies.filter((e) => e.type === 'baby');
     expect(babies.length).toBe(4);
-    for (const kind of POWER_KINDS) expect(babies.some((b) => b.kernels[kind] > 0)).toBe(true);
+    for (const kind of STARTER_POWERS) expect(babies.some((b) => b.kernels[kind] > 0)).toBe(true);
     for (const b of babies) {
       expect(total(b.kernels)).toBeLessThan(total(w.player.kernels));
       expect(b.kernelOrder.length).toBe(total(b.kernels));
-      expect(POWER_KINDS).toContain(b.kernelOrder[b.kernelOrder.length - 1]);
+      expect(STARTER_POWERS).toContain(b.kernelOrder[b.kernelOrder.length - 1]);
     }
 
     const mix = createWorld(3, defaultTuning(), 'playtest');
@@ -253,6 +268,128 @@ describe('world', () => {
     expect(total(w.player.kernels)).toBe(8 - w.tuning.bumpLoss);
     const nearby = w.ground.filter((g) => Math.hypot(g.x - w.player.x, g.y - w.player.y) < 100);
     expect(nearby.length).toBe(w.tuning.bumpLoss);
+  });
+
+  it('cannot pick up kernels for 5 seconds after getting hit', () => {
+    const w = quietWorld();
+    w.props = [];
+    w.tuning.fieldKernels = 0;
+    w.tuning.mercySeconds = 0;
+    w.player.kernels = kernelsOf({ sunny: 10 });
+    addEnemy(w, 10, 0, kernelsOf({ sunny: 40 }));
+    step(w, EMPTY_COMMAND);
+    expect(defaultTuning().pickupLockSeconds).toBe(5);
+    expect(w.player.pickupLock).toBeCloseTo(w.tuning.pickupLockSeconds - 1 / 60, 5);
+
+    const held = total(w.player.kernels);
+    w.enemies = [];
+    w.props = [];
+    w.player.vx = 0;
+    w.player.vy = 0;
+    const x = w.player.x;
+    const y = w.player.y;
+    const loose = w.player.r + 6;
+    w.ground = [
+      {
+        id: w.nextId++,
+        kind: 'sunny',
+        value: 1,
+        x,
+        y,
+        px: x,
+        py: y,
+        vx: 0,
+        vy: 0,
+        delay: 0,
+        enemyLock: 0,
+        age: 1,
+        sparkle: 0,
+        ownerId: null,
+        dead: false,
+      },
+      {
+        id: w.nextId++,
+        kind: 'zinger',
+        value: 1,
+        x: x + loose,
+        y,
+        px: x + loose,
+        py: y,
+        vx: 0,
+        vy: 0,
+        delay: 0,
+        enemyLock: 0,
+        age: 1,
+        sparkle: 0,
+        ownerId: null,
+        dead: false,
+      },
+    ];
+
+    let steps = 0;
+    while (w.player.pickupLock > 0 && steps < 1000) {
+      step(w, EMPTY_COMMAND);
+      steps++;
+    }
+    expect(steps / 60).toBeCloseTo(5, 1);
+    expect(total(w.player.kernels)).toBe(held);
+    expect(w.ground.filter((g) => !g.dead)).toHaveLength(2);
+    expect(w.ground.find((g) => g.kind === 'zinger')!.x).toBeCloseTo(x + loose, 5);
+
+    step(w, EMPTY_COMMAND);
+    expect(w.player.pickupLock).toBe(0);
+    expect(w.player.kernels.sunny).toBe(held + 1);
+    expect(w.ground.filter((g) => !g.dead).every((g) => g.kind === 'zinger')).toBe(true);
+    expect(w.ground.find((g) => g.kind === 'zinger')!.x).toBeLessThan(x + loose);
+  });
+
+  it('a later hit starts the pickup lock over, and chomping still works during it', () => {
+    const w = quietWorld();
+    w.props = [];
+    w.tuning.fieldKernels = 0;
+    w.tuning.mercySeconds = 0;
+    w.player.kernels = kernelsOf({ sunny: 10 });
+    addEnemy(w, 10, 0, kernelsOf({ sunny: 40 }));
+    step(w, EMPTY_COMMAND);
+    w.enemies = [];
+    w.props = [];
+    w.player.vx = 0;
+    w.player.vy = 0;
+    for (let i = 0; i < 60; i++) step(w, EMPTY_COMMAND);
+    const cooled = w.player.pickupLock;
+    expect(cooled).toBeLessThan(w.tuning.pickupLockSeconds - 0.5);
+
+    addEnemy(w, w.player.x + 10, w.player.y, kernelsOf({ sunny: 40 }));
+    step(w, EMPTY_COMMAND);
+    expect(w.player.pickupLock).toBeGreaterThan(cooled);
+
+    w.enemies = [];
+    w.player.vx = 0;
+    w.player.vy = 0;
+    w.tuning.chompBonusMin = 0;
+    w.tuning.chompBonusMax = 0;
+    const before = total(w.player.kernels);
+    addEnemy(w, w.player.x + 8, w.player.y, kernelsOf({ sunny: 2 }));
+    step(w, EMPTY_COMMAND);
+    expect(total(w.player.kernels)).toBe(before + 2);
+    expect(w.player.pickupLock).toBeGreaterThan(0);
+  });
+
+  it('Last Chance can still scoop a kernel right after the Heart Kernel pops off', () => {
+    const w = quietWorld();
+    w.props = [];
+    w.player.kernels = kernelsOf({ sunny: 1 });
+    addEnemy(w, 10, 0, kernelsOf({ sunny: 12 }));
+    step(w, EMPTY_COMMAND);
+    expect(w.player.bare).toBe(true);
+    expect(w.player.pickupLock).toBe(0);
+    w.enemies = [];
+    w.player.vx = 0;
+    w.player.vy = 0;
+    for (const g of w.ground) Object.assign(g, { x: w.player.x, y: w.player.y, vx: 0, vy: 0, delay: 0 });
+    step(w, EMPTY_COMMAND);
+    expect(w.player.bare).toBe(false);
+    expect(total(w.player.kernels)).toBeGreaterThan(0);
   });
 
   it('kernels knocked off a cob are only the player’s to grab for a while', () => {
@@ -619,5 +756,78 @@ describe('world', () => {
     const frozenX = e.x;
     for (let i = 0; i < 20; i++) step(w, EMPTY_COMMAND);
     expect(e.x).toBe(frozenX);
+  });
+
+  it('caramel sticks a cob and leaves its kernels on', () => {
+    const w = quietWorld();
+    w.player.kernels = kernelsOf({ sunny: 4, caramel: 2 });
+    const e = addEnemy(w, 80, 0, kernelsOf({ sunny: 20 }));
+    step(w, EMPTY_COMMAND);
+    w.player.pockets = ['caramel'];
+    step(w, fire('caramel'));
+    for (let i = 0; i < 90 && e.caramelLeft === 0; i++) step(w, EMPTY_COMMAND);
+    expect(e.caramelLeft).toBeGreaterThan(0);
+    expect(total(e.kernels)).toBe(20);
+  });
+
+  it('Steam Burst on a frozen cob ignores Toasty', () => {
+    const w = quietWorld();
+    w.tuning.spicyShake = 0;
+    w.player.kernels = kernelsOf({ sunny: 4, spicy: 2 });
+    const e = addEnemy(w, 90, 0, kernelsOf({ sunny: 8, toasty: 6 }));
+    e.frozenLeft = 2;
+    step(w, EMPTY_COMMAND);
+    let burst = false;
+    step(w, fire('spicy'));
+    if (w.events.some((ev) => ev.type === 'combo' && ev.name === 'Steam Burst')) burst = true;
+    for (let i = 0; i < 90 && e.kernels.toasty === 6; i++) {
+      step(w, EMPTY_COMMAND);
+      if (w.events.some((ev) => ev.type === 'combo' && ev.name === 'Steam Burst')) burst = true;
+    }
+    expect(burst).toBe(true);
+    expect(e.kernels.toasty).toBeLessThan(6);
+  });
+
+  it('Smart Fire prefers a power the target does not resist', () => {
+    const w = quietWorld();
+    w.player.kernels = kernelsOf({ sunny: 4, zinger: 2, spicy: 2 });
+    const e = addEnemy(w, 40, 0, kernelsOf({ stony: 30 }));
+    step(w, EMPTY_COMMAND);
+    expect(w.player.targetId).toBe(e.id);
+    expect(bestPower(w)).toBe('spicy');
+  });
+
+  it('spawns King Cob when the Harvest Moon timer ends', () => {
+    const w = quietWorld();
+    w.harvestSeconds = 1 / 60;
+    step(w, EMPTY_COMMAND);
+    expect(w.kingSpawned).toBe(true);
+    expect(w.enemies.some((e) => e.king)).toBe(true);
+    expect(w.events.some((e) => e.type === 'harvest')).toBe(true);
+  });
+
+  it('leaves shrines, other points of interest, and parked powers off the field', () => {
+    const w = createWorld(4, { ...defaultTuning(), maxEnemies: 40 });
+    for (let i = 0; i < 20 * 60; i++) step(w, { ...EMPTY_COMMAND, moveX: 1, moveY: 0.3 });
+    expect(w.pois).toHaveLength(0);
+    expect(w.deals).toHaveLength(0);
+    const parked = (kind: string) => kind === 'boing' || kind === 'caramel' || kind === 'gem';
+    expect(w.ground.some((g) => parked(g.kind))).toBe(false);
+    expect(w.enemies.some((e) => e.kernels.boing + e.kernels.caramel + e.kernels.gem > 0)).toBe(false);
+    expect(w.player.pockets.some(parked)).toBe(false);
+  });
+
+  it('Easy Peasy skips the crow raid', () => {
+    const run = (difficulty: 'easy' | 'normal') => {
+      const w = createWorld(2, { ...defaultTuning(), maxEnemies: 80 }, 'game', { difficulty, harvestSeconds: 0 });
+      w.enemies = [];
+      for (let n = 0; n < 4; n++) {
+        w.nextEvent = w.tick;
+        step(w, EMPTY_COMMAND);
+      }
+      return w.enemies.some((e) => e.type === 'crow');
+    };
+    expect(run('easy')).toBe(false);
+    expect(run('normal')).toBe(true);
   });
 });
